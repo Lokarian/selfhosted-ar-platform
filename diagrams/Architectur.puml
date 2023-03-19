@@ -1,0 +1,50 @@
+@startuml
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam componentBorderColor #000000
+
+package "Self-hosted AR Platform" {
+
+    node "Hololens" {
+
+        [Unity Application] as UnityApplication
+        interface "OpenXR" as OpenXRInterface
+        UnityApplication --> OpenXRInterface :use
+    }
+
+    node "Desktop Client" {
+        interface "WebXR" as WebXRInterface
+        [Angular] as Angular
+        [Three.js] as Threejs
+    }
+
+    node "Edge Server" {
+        package Docker{
+            package Container as ContainerAsp{
+                component "ASP.Net Application" as ASPNet
+                interface "REST" as RESTInterface
+                ASPNet --> RESTInterface :exposes
+            }
+            package Container as ContainerDatabase{
+                Database "Database" as Database
+            }
+            package Container as ContainerUnity{
+                component "Unity Server in Docker" as UnityServer
+            }
+            ContainerAsp -d-> ContainerUnity :orchesrates
+        }
+
+    Folder Storage as PersistentStorage{
+    [Database Files]
+    [Video Recordings]
+    [Object Files]
+    }
+    }
+
+}
+package "Existing Systems"{
+[CAD Provider]
+[User Provider]
+}
+@enduml

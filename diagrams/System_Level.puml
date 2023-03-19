@@ -1,0 +1,20 @@
+@startuml
+cloud "Edge Server" as Edge{
+
+}
+component AR-Brille as AR{
+
+}
+component "Desktop Client" as Desktop{
+
+}
+component "Mobile Client" as Mobile{
+
+}
+
+}
+AR -> Edge
+Desktop -> Edge
+Mobile -> Edge
+
+@enduml
