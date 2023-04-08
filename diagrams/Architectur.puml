@@ -6,25 +6,26 @@ skinparam componentBorderColor #000000
 
 package "Self-hosted AR Platform" {
 
-    node "Hololens" {
-
+    node Hololens {
+        [Angular] as AngularHololens
         [Unity Application] as UnityApplication
         interface "OpenXR" as OpenXRInterface
-        UnityApplication --> OpenXRInterface :use
     }
 
-    node "Desktop Client" {
+    node "Desktop Client" as Desktop{
         interface "WebXR" as WebXRInterface
         [Angular] as Angular
         [Three.js] as Threejs
     }
 
-    node "Edge Server" {
-        package Docker{
-            package Container as ContainerAsp{
-                component "ASP.Net Application" as ASPNet
+    node "Edge Server" as Edge{
+
+        package Docker as DockerHost{
+            package "Asp.net Container" as ContainerAsp{
+                component "ASP.Net Core" as ASPNet
                 interface "REST" as RESTInterface
-                ASPNet --> RESTInterface :exposes
+                component "SignalR" as SignalRHub
+                interface "WebSocket" as WebsocketInterface
             }
             package Container as ContainerDatabase{
                 Database "Database" as Database
@@ -32,19 +33,57 @@ package "Self-hosted AR Platform" {
             package Container as ContainerUnity{
                 component "Unity Server in Docker" as UnityServer
             }
-            ContainerAsp -d-> ContainerUnity :orchesrates
+
+            package Container as ContainerRTSP{
+                component "RTSP Server" as RTSPServer
+            }
+            
         }
 
-    Folder Storage as PersistentStorage{
-    [Database Files]
-    [Video Recordings]
-    [Object Files]
-    }
-    }
+        Folder Storage as PersistentStorage{
+            [Database Files]
+            [Video Recordings]
+            [Object Files]
+        }
 
+        portout "REST" as RESTPort
+        portout "WebSocket" as WebsocketPort
+        portout "RTSP" as RTSPPort
+    }
 }
 package "Existing Systems"{
 [CAD Provider]
 [User Provider]
 }
+
+
+ASPNet -l-> SignalRHub :hosts
+ASPNet --> RESTInterface :exposes
+SignalRHub --> WebsocketInterface :exposes
+
+ASPNet <-u-> Database :persistance
+UnityServer -r-> WebsocketInterface
+
+
+WebsocketInterface -d-> WebsocketPort
+RESTInterface -d-> RESTPort
+RTSPServer -d-> RTSPPort
+
+ContainerAsp -r-> ContainerUnity :orchesrates
+ContainerAsp -l-> RTSPServer :authenticates
+
+Angular -> Threejs :host
+Threejs --> WebXRInterface :use
+
+UnityApplication --> OpenXRInterface :use
+AngularHololens -r-> UnityApplication : start
+
+AngularHololens -u-> RESTPort
+Angular -u-> RESTPort
+AngularHololens -u-> WebsocketPort
+Angular -u-> WebsocketPort
+AngularHololens -u-> RTSPPort
+Angular -u-> RTSPPort
+UnityApplication -u-> WebsocketPort
+
 @enduml

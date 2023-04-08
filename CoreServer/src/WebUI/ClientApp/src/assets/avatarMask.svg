@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="15.448416mm"
+   height="15.44842mm"
+   viewBox="0 0 15.448416 15.44842"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   sodipodi:docname="avatarMask.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="true"
+     inkscape:zoom="10.618967"
+     inkscape:cx="23.778206"
+     inkscape:cy="33.666174"
+     inkscape:window-width="2560"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-98.169184,-141.67257)">
+    <path
+       id="path972"
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 105.89365,141.72257 a 7.6741609,7.6741609 0 0 0 -7.674466,7.67447 7.6741609,7.6741609 0 0 0 7.674466,7.67395 7.6741609,7.6741609 0 0 0 3.21169,-0.70642 2.6411073,2.6411073 0 0 1 -0.57102,-1.63556 2.6411073,2.6411073 0 0 1 2.64118,-2.64118 2.6411073,2.6411073 0 0 1 1.65675,0.58446 7.6741609,7.6741609 0 0 0 0.73535,-3.27525 7.6741609,7.6741609 0 0 0 -7.67395,-7.67447 z"
+       inkscape:export-filename="C:\Users\Samuel\Documents\informatik\selfhosted-ar-platform\ClientApp\src\assets\avatarMask.svg"
+       inkscape:export-xdpi="500"
+       inkscape:export-ydpi="500" />
+  </g>
+</svg>

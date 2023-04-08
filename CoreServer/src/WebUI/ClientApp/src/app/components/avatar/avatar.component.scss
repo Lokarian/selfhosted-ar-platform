@@ -1,0 +1,20 @@
+:host{
+  display: block;
+}
+.mask{
+  -webkit-mask-image: url(/assets/avatarMask.svg);
+  mask-image: url(/assets/avatarMask.svg);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.status{
+  -webkit-mask-image: url(/assets/avatarStatusMask.svg);
+  mask-image: url(/assets/avatarStatusMask.svg);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+}
