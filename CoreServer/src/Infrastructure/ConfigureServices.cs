@@ -4,10 +4,12 @@ using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence;
 using CoreServer.Infrastructure.Persistence.Interceptors;
 using CoreServer.Infrastructure.Services;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using ITokenService = Duende.IdentityServer.Services.ITokenService;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -34,17 +36,17 @@ public static class ConfigureServices
         services.AddScoped<ApplicationDbContextInitialiser>();
 
         services
-            .AddDefaultIdentity<ApplicationUser>()
+            .AddDefaultIdentity<AppIdentityUser>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddIdentityServer()
-            .AddApiAuthorization<ApplicationUser, ApplicationDbContext>();
+            .AddApiAuthorization<AppIdentityUser, ApplicationDbContext>();
 
         services.AddTransient<IDateTime, DateTimeService>();
         services.AddTransient<IIdentityService, IdentityService>();
         services.AddTransient<ICsvFileBuilder, CsvFileBuilder>();
-
+        services.AddTransient<CoreServer.Application.Common.Interfaces.ITokenService,JWTTokenService>();
         services.AddAuthentication()
             .AddIdentityServerJwt();
 

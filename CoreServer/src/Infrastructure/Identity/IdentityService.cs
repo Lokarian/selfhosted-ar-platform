@@ -1,5 +1,6 @@
 ﻿using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Models;
+using CoreServer.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,13 +9,13 @@ namespace CoreServer.Infrastructure.Identity;
 
 public class IdentityService : IIdentityService
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
+    private readonly UserManager<AppIdentityUser> _userManager;
+    private readonly IUserClaimsPrincipalFactory<AppIdentityUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
 
     public IdentityService(
-        UserManager<ApplicationUser> userManager,
-        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
+        UserManager<AppIdentityUser> userManager,
+        IUserClaimsPrincipalFactory<AppIdentityUser> userClaimsPrincipalFactory,
         IAuthorizationService authorizationService)
     {
         _userManager = userManager;
@@ -22,19 +23,12 @@ public class IdentityService : IIdentityService
         _authorizationService = authorizationService;
     }
 
-    public async Task<string?> GetUserNameAsync(string userId)
+    public async Task<(Result Result, string UserId)> CreateUserAsync(AppUser appUser, string password)
     {
-        var user = await _userManager.Users.FirstAsync(u => u.Id == userId);
-
-        return user.UserName;
-    }
-
-    public async Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password)
-    {
-        var user = new ApplicationUser
+        var user = new AppIdentityUser
         {
-            UserName = userName,
-            Email = userName,
+            UserName = appUser.UserName,
+            AppUser = appUser
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -42,16 +36,34 @@ public class IdentityService : IIdentityService
         return (result.ToApplicationResult(), user.Id);
     }
 
-    public async Task<bool> IsInRoleAsync(string userId, string role)
+    public Task<(Result Result, AppUser? user)> LoginAsync(string userName, string password)
     {
-        var user = _userManager.Users.SingleOrDefault(u => u.Id == userId);
+        var user = _userManager.Users
+            .Include(u => u.AppUser)
+            .SingleOrDefault(u => u.UserName == userName);
+
+        if (user == null)
+        {
+            return Task.FromResult((Result.Failure(new[] {"User does not exist."}), (AppUser?) null));
+        }
+
+        var result = _userManager.CheckPasswordAsync(user, password);
+
+        return Task.FromResult(result.Result
+            ? (Result.Success(), user.AppUser)
+            : (Result.Failure(new[] {"Invalid credentials."}), null));
+    }
+
+    public async Task<bool> IsInRoleAsync(Guid userId, string role)
+    {
+        var user = _userManager.Users.SingleOrDefault(u => u.AppUserId == userId);
 
         return user != null && await _userManager.IsInRoleAsync(user, role);
     }
 
-    public async Task<bool> AuthorizeAsync(string userId, string policyName)
+    public async Task<bool> AuthorizeAsync(Guid userId, string policyName)
     {
-        var user = _userManager.Users.SingleOrDefault(u => u.Id == userId);
+        var user = _userManager.Users.SingleOrDefault(u => u.AppUserId == userId);
 
         if (user == null)
         {
@@ -72,7 +84,7 @@ public class IdentityService : IIdentityService
         return user != null ? await DeleteUserAsync(user) : Result.Success();
     }
 
-    public async Task<Result> DeleteUserAsync(ApplicationUser user)
+    public async Task<Result> DeleteUserAsync(AppIdentityUser user)
     {
         var result = await _userManager.DeleteAsync(user);
 

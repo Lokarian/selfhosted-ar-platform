@@ -1,7 +1,7 @@
 ﻿@using CoreServer.Infrastructure.Identity
 @using Microsoft.AspNetCore.Identity
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<AppIdentityUser> SignInManager
+@inject UserManager<AppIdentityUser> UserManager
 
 @{
     string? returnUrl = null;

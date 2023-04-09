@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CoreServer.WebUI.Controllers;
 
-[Authorize]
 public class TodoListsController : ApiControllerBase
 {
     [HttpGet]

@@ -1,4 +1,5 @@
 using CoreServer.Infrastructure.Persistence;
+using CoreServer.WebUI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseIdentityServer();
 app.UseAuthorization();
+app.UseMiddleware<UserMiddleware>();
 
 app.MapControllerRoute(
     name: "default",

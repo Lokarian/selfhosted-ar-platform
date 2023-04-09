@@ -1,4 +1,5 @@
-﻿using CoreServer.Infrastructure.Identity;
+﻿using CoreServer.Domain.Entities;
+using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +19,7 @@ public partial class Testing
     private static IConfiguration _configuration = null!;
     private static IServiceScopeFactory _scopeFactory = null!;
     private static Respawner _checkpoint = null!;
-    private static string? _currentUserId;
+    private static AppUser? _currentUser;
 
     [OneTimeSetUp]
     public void RunBeforeAnyTests()
@@ -27,10 +28,9 @@ public partial class Testing
         _scopeFactory = _factory.Services.GetRequiredService<IServiceScopeFactory>();
         _configuration = _factory.Services.GetRequiredService<IConfiguration>();
 
-        _checkpoint = Respawner.CreateAsync(_configuration.GetConnectionString("DefaultConnection"), new RespawnerOptions
-        {
-            TablesToIgnore = new Respawn.Graph.Table[] { "__EFMigrationsHistory" }
-        }).GetAwaiter().GetResult();
+        _checkpoint = Respawner.CreateAsync(_configuration.GetConnectionString("DefaultConnection"),
+                new RespawnerOptions { TablesToIgnore = new Respawn.Graph.Table[] { "__EFMigrationsHistory" } })
+            .GetAwaiter().GetResult();
     }
 
     public static async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request)
@@ -42,28 +42,29 @@ public partial class Testing
         return await mediator.Send(request);
     }
 
-    public static string? GetCurrentUserId()
+    public static AppUser? GetCurrentUser()
     {
-        return _currentUserId;
+        return _currentUser;
     }
 
-    public static async Task<string> RunAsDefaultUserAsync()
+    public static async Task<AppUser> RunAsDefaultUserAsync()
     {
         return await RunAsUserAsync("test@local", "Testing1234!", Array.Empty<string>());
     }
 
-    public static async Task<string> RunAsAdministratorAsync()
+    public static async Task<AppUser> RunAsAdministratorAsync()
     {
         return await RunAsUserAsync("administrator@local", "Administrator1234!", new[] { "Administrator" });
     }
 
-    public static async Task<string> RunAsUserAsync(string userName, string password, string[] roles)
+    public static async Task<AppUser> RunAsUserAsync(string userName, string password, string[] roles)
     {
         using var scope = _scopeFactory.CreateScope();
 
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppIdentityUser>>();
 
-        var user = new ApplicationUser { UserName = userName, Email = userName };
+        var appUser = new AppUser { Id = Guid.NewGuid(), UserName = userName, Email = userName };
+        var user = new AppIdentityUser { UserName = userName, Email = userName, AppUser = appUser };
 
         var result = await userManager.CreateAsync(user, password);
 
@@ -81,9 +82,9 @@ public partial class Testing
 
         if (result.Succeeded)
         {
-            _currentUserId = user.Id;
+            _currentUser = user.AppUser;
 
-            return _currentUserId;
+            return _currentUser;
         }
 
         var errors = string.Join(Environment.NewLine, result.ToApplicationResult().Errors);
@@ -98,7 +99,8 @@ public partial class Testing
             await _checkpoint.ResetAsync(_configuration.GetConnectionString("DefaultConnection"));
         }
         catch (Exception ex) { }
-        _currentUserId = null;
+
+        _currentUser = null;
     }
 
     public static async Task<TEntity?> FindAsync<TEntity>(params object[] keyValues)

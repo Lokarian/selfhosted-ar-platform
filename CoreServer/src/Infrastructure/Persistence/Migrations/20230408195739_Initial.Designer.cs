@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoreServer.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230408003031_Initial")]
+    [Migration("20230408195739_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -26,6 +26,31 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "uuid-ossp");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AppUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ImageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImageId");
+
+                    b.ToTable("AppUsers");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.TodoItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -36,8 +61,8 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("Done")
                         .HasColumnType("boolean");
@@ -45,8 +70,8 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("LastModifiedById")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("ListId")
                         .HasColumnType("uuid");
@@ -67,6 +92,10 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastModifiedById");
+
                     b.HasIndex("ListId");
 
                     b.ToTable("TodoItems");
@@ -82,14 +111,14 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("LastModifiedById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -98,16 +127,47 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastModifiedById");
+
                     b.ToTable("TodoLists");
                 });
 
-            modelBuilder.Entity("CoreServer.Infrastructure.Identity.ApplicationUser", b =>
+            modelBuilder.Entity("CoreServer.Domain.Entities.UserFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InStorageFileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserFiles");
+                });
+
+            modelBuilder.Entity("CoreServer.Infrastructure.Identity.AppIdentityUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("AppUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -154,6 +214,8 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AppUserId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -442,19 +504,48 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AppUser", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.UserFile", "Image")
+                        .WithMany()
+                        .HasForeignKey("ImageId");
+
+                    b.Navigation("Image");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.TodoItem", b =>
                 {
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "LastModifiedBy")
+                        .WithMany()
+                        .HasForeignKey("LastModifiedById");
+
                     b.HasOne("CoreServer.Domain.Entities.TodoList", "List")
                         .WithMany("Items")
                         .HasForeignKey("ListId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastModifiedBy");
+
                     b.Navigation("List");
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.TodoList", b =>
                 {
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "LastModifiedBy")
+                        .WithMany()
+                        .HasForeignKey("LastModifiedById");
+
                     b.OwnsOne("CoreServer.Domain.ValueObjects.Colour", "Colour", b1 =>
                         {
                             b1.Property<Guid>("TodoListId")
@@ -475,6 +566,19 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Colour")
                         .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastModifiedBy");
+                });
+
+            modelBuilder.Entity("CoreServer.Infrastructure.Identity.AppIdentityUser", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "AppUser")
+                        .WithMany()
+                        .HasForeignKey("AppUserId");
+
+                    b.Navigation("AppUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -488,7 +592,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("CoreServer.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("CoreServer.Infrastructure.Identity.AppIdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -497,7 +601,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("CoreServer.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("CoreServer.Infrastructure.Identity.AppIdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -512,7 +616,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CoreServer.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("CoreServer.Infrastructure.Identity.AppIdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -521,7 +625,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("CoreServer.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("CoreServer.Infrastructure.Identity.AppIdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

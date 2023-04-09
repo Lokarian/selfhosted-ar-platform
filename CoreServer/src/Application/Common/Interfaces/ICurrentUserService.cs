@@ -1,6 +1,8 @@
-﻿namespace CoreServer.Application.Common.Interfaces;
+﻿using CoreServer.Domain.Entities;
+
+namespace CoreServer.Application.Common.Interfaces;
 
 public interface ICurrentUserService
 {
-    string? UserId { get; }
+    AppUser? User { get; set; }
 }

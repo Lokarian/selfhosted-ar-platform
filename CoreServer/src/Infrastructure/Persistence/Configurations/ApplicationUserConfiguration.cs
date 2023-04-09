@@ -5,12 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CoreServer.Infrastructure.Persistence.Configurations;
 
-public class ApplicationUserConfiguration : IEntityTypeConfiguration<ApplicationUser>
+public class ApplicationUserConfiguration : IEntityTypeConfiguration<AppIdentityUser>
 {
-    public void Configure(EntityTypeBuilder<ApplicationUser> builder)
+    public void Configure(EntityTypeBuilder<AppIdentityUser> builder)
     {
-        builder.HasOne<UserFile>(a => a.Image)
-            .WithMany()
-            .HasForeignKey(a => a.ImageId);
     }
 }
