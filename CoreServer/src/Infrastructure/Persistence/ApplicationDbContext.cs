@@ -5,26 +5,24 @@ using CoreServer.Domain.Entities;
 using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence.Configurations;
 using CoreServer.Infrastructure.Persistence.Interceptors;
-using Duende.IdentityServer.EntityFramework.Options;
 using MediatR;
-using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace CoreServer.Infrastructure.Persistence;
 
-public class ApplicationDbContext : ApiAuthorizationDbContext<AppIdentityUser>, IApplicationDbContext
+public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplicationDbContext
 {
     private readonly IMediator _mediator;
     private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
-        IOptions<OperationalStoreOptions> operationalStoreOptions,
         IMediator mediator,
         AuditableEntitySaveChangesInterceptor auditableEntitySaveChangesInterceptor)
-        : base(options, operationalStoreOptions)
+        : base(options)
     {
         _mediator = mediator;
         _auditableEntitySaveChangesInterceptor = auditableEntitySaveChangesInterceptor;

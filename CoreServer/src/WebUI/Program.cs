@@ -1,12 +1,15 @@
+using CoreServer.Application;
+using CoreServer.Infrastructure;
 using CoreServer.Infrastructure.Persistence;
 using CoreServer.WebUI.Services;
+using WebUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
-builder.Services.AddWebUIServices();
+builder.Services.AddWebUIServices(builder.Configuration);
 
 var app = builder.Build();
 
@@ -43,7 +46,6 @@ app.UseSwaggerUi3(settings =>
 app.UseRouting();
 
 app.UseAuthentication();
-app.UseIdentityServer();
 app.UseAuthorization();
 app.UseMiddleware<UserMiddleware>();
 

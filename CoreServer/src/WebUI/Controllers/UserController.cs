@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection.User.Commands;
+﻿using CoreServer.Application.User.Commands.LoginUser;
+using Microsoft.AspNetCore.Mvc;
+
 
 namespace CoreServer.WebUI.Controllers;
 public class UserController: ApiControllerBase

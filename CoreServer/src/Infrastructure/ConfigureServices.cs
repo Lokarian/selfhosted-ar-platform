@@ -5,13 +5,12 @@ using CoreServer.Infrastructure.Persistence;
 using CoreServer.Infrastructure.Persistence.Interceptors;
 using CoreServer.Infrastructure.Services;
 using MediatR;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using ITokenService = Duende.IdentityServer.Services.ITokenService;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace CoreServer.Infrastructure;
 
 public static class ConfigureServices
 {
@@ -35,20 +34,18 @@ public static class ConfigureServices
 
         services.AddScoped<ApplicationDbContextInitialiser>();
 
-        services
-            .AddDefaultIdentity<AppIdentityUser>()
-            .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
 
-        services.AddIdentityServer()
-            .AddApiAuthorization<AppIdentityUser, ApplicationDbContext>();
+        services.AddIdentity<AppIdentityUser, IdentityRole>(config =>
+        {
+            config.Lockout.MaxFailedAccessAttempts=10;
+            config.SignIn.RequireConfirmedEmail = false;
+        }).AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddTransient<IDateTime, DateTimeService>();
         services.AddTransient<IIdentityService, IdentityService>();
         services.AddTransient<ICsvFileBuilder, CsvFileBuilder>();
-        services.AddTransient<CoreServer.Application.Common.Interfaces.ITokenService,JWTTokenService>();
-        services.AddAuthentication()
-            .AddIdentityServerJwt();
+        services.AddTransient<ITokenService,JWTTokenService>();
+        services.AddAuthentication();//todo necessary?
 
         services.AddAuthorization(options =>
             options.AddPolicy("CanPurge", policy => policy.RequireRole("Administrator")));

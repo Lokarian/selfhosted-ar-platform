@@ -1,7 +1,7 @@
 ﻿using CoreServer.Application.Common.Interfaces;
 using MediatR;
 
-namespace Microsoft.Extensions.DependencyInjection.User.Commands;
+namespace CoreServer.Application.User.Commands.LoginUser;
 
 public record LoginUserCommand : IRequest<String>
 {
