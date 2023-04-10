@@ -389,7 +389,7 @@
         }
       }
     },
-    "/api/User/loginTest": {
+    "/api/User/login": {
       "post": {
         "tags": [
           "User"
@@ -421,12 +421,24 @@
         }
       }
     },
-    "/api/User/test": {
-      "get": {
+    "/api/User/register": {
+      "post": {
         "tags": [
           "User"
         ],
-        "operationId": "User_Test",
+        "operationId": "User_Register",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
         "responses": {
           "200": {
             "description": "",
@@ -699,6 +711,21 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "userName": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterUserCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          },
           "userName": {
             "type": "string"
           },

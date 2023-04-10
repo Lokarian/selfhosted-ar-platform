@@ -618,7 +618,7 @@ export class TodoListsClient implements ITodoListsClient {
 
 export interface IUserClient {
     login(command: LoginUserCommand): Observable<string>;
-    test(): Observable<string>;
+    register(command: RegisterUserCommand): Observable<string>;
 }
 
 @Injectable({
@@ -635,7 +635,7 @@ export class UserClient implements IUserClient {
     }
 
     login(command: LoginUserCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/User/loginTest";
+        let url_ = this.baseUrl + "/api/User/login";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -687,24 +687,28 @@ export class UserClient implements IUserClient {
         return _observableOf(null as any);
     }
 
-    test(): Observable<string> {
-        let url_ = this.baseUrl + "/api/User/test";
+    register(command: RegisterUserCommand): Observable<string> {
+        let url_ = this.baseUrl + "/api/User/register";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(command);
+
         let options_ : any = {
+            body: content_,
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processTest(response_);
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRegister(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processTest(response_ as any);
+                    return this.processRegister(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<string>;
                 }
@@ -713,7 +717,7 @@ export class UserClient implements IUserClient {
         }));
     }
 
-    protected processTest(response: HttpResponseBase): Observable<string> {
+    protected processRegister(response: HttpResponseBase): Observable<string> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1381,6 +1385,50 @@ export class LoginUserCommand implements ILoginUserCommand {
 }
 
 export interface ILoginUserCommand {
+    userName?: string;
+    password?: string;
+}
+
+export class RegisterUserCommand implements IRegisterUserCommand {
+    email?: string;
+    userName?: string;
+    password?: string;
+
+    constructor(data?: IRegisterUserCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.email = _data["email"];
+            this.userName = _data["userName"];
+            this.password = _data["password"];
+        }
+    }
+
+    static fromJS(data: any): RegisterUserCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new RegisterUserCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["email"] = this.email;
+        data["userName"] = this.userName;
+        data["password"] = this.password;
+        return data;
+    }
+}
+
+export interface IRegisterUserCommand {
+    email?: string;
     userName?: string;
     password?: string;
 }
