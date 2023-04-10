@@ -1,4 +1,5 @@
 ﻿using CoreServer.Application.User.Commands.LoginUser;
+using CoreServer.Application.User.Queries;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -10,12 +11,5 @@ public class UserController: ApiControllerBase
     public async Task<ActionResult<string>> Login(LoginUserCommand command)
     {
         return await Mediator.Send(command);
-    }
-    //test Endpoint
-    [HttpGet("test")]
-    public async Task<ActionResult<string>> Test()
-    {
-        //return endpoint of request
-        return Request.Path.ToString();
     }
 }

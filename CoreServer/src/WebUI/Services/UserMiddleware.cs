@@ -9,16 +9,16 @@ public class UserMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger _logger;
-    private readonly ISender _mediator;
+    private IServiceScopeFactory _serviceScopeFactory;
 
     public UserMiddleware(
         RequestDelegate next,
         ILogger<UserMiddleware> logger,
-        ISender mediator)
+        IServiceScopeFactory serviceScopeFactory)
     {
         _next = next;
         _logger = logger;
-        _mediator = mediator;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task Invoke(
@@ -32,8 +32,10 @@ public class UserMiddleware
         }
         else
         {
-            currentUserService.User = await _mediator.Send(new GetAppUserByIdQuery { Id = Guid.Parse(userId) });
+            var Mediator = context.RequestServices.GetRequiredService<ISender>();
+            currentUserService.User = await Mediator.Send(new GetAppUserByIdQuery { Id = Guid.Parse(userId) });
         }
+
         await this._next(context);
     }
 }
