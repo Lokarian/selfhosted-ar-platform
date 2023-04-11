@@ -1,7 +1,7 @@
-import {User} from "./user";
+import {AppUser} from "./appUser";
 
 export interface ChatMessage {
   message: string;
-  sender: User;
+  sender: AppUser;
   timestamp: number;
 }

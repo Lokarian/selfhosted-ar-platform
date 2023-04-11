@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.ngxp__container {
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+}

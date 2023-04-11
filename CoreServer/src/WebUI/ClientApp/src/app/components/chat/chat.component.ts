@@ -1,6 +1,6 @@
 import {Component} from '@angular/core';
 import {ChatMessage} from "../../models/chat";
-import {OnlineStatus} from "../../models/user";
+import {OnlineStatus} from "../../models/appUser";
 
 @Component({
   selector: 'app-chat',

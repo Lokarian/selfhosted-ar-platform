@@ -1,0 +1,17 @@
+<div class="absolute top-0 right-0 p-2 max-w-screen md:max-w-2xl">
+  <div *ngFor="let notification of notifications">
+    <div class="text-white px-6 py-4 border-0 rounded relative mb-2"
+         [ngClass]="{'bg-info': notification.severity === 'info', 'bg-warning': notification.severity === 'warn', 'bg-success': notification.severity === 'success', 'bg-error': notification.severity === 'error'}">
+    <span class="inline-block align-middle mr-8">
+    <b class="capitalize">{{notification.title}}</b> {{notification.message}}
+  </span>
+      <button
+        class="absolute bg-transparent text-2xl font-semibold leading-none right-0 top-0 mt-4 mr-6 outline-none focus:outline-none"
+        (click)="removeNotification(notification)">
+        <span>×</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+

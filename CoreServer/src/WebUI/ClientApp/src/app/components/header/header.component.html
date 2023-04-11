@@ -1,7 +1,14 @@
 <div class="flex flex-row h-full w-full justify-between p-1">
   <div></div>
-  <div class="h-full flex items-center gap-2">
-    <p class="text-white text-xs">{{user.name}}</p>
-    <app-avatar [user]="user" class="h-full"></app-avatar>
+  <div *ngIf="user$|async as user" class="h-full flex items-center gap-2" [popper]="userDropdown" [popperShowOnStart]="true" [popperPlacement]="ngxPopperjsPlacements.BOTTOM">
+    <p class="text-white text-xs">{{user.userName}}</p>
+    <app-avatar [user]="user" class="h-full" ></app-avatar>
   </div>
 </div>
+<popper-content #userDropdown *ngIf="user$|async as user">
+  <div class="rounded-2xl bg-background-highlight w-80">
+  <div class="flex flex-row">
+    <app-avatar></app-avatar>
+  </div>
+  </div>
+</popper-content>

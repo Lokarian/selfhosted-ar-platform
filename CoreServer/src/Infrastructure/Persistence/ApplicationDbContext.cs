@@ -6,10 +6,8 @@ using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence.Configurations;
 using CoreServer.Infrastructure.Persistence.Interceptors;
 using MediatR;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace CoreServer.Infrastructure.Persistence;
 

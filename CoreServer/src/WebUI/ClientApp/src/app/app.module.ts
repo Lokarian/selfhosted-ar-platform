@@ -1,21 +1,12 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-
-import { ModalModule } from 'ngx-bootstrap/modal';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { NavMenuComponent } from './nav-menu/nav-menu.component';
-import { HomeComponent } from './home/home.component';
-import { CounterComponent } from './counter/counter.component';
-import { FetchDataComponent } from './fetch-data/fetch-data.component';
-import { TodoComponent } from './todo/todo.component';
-import { TokenComponent } from './token/token.component';
 
-import { ApiAuthorizationModule } from 'src/api-authorization/api-authorization.module';
-import { AuthorizeInterceptor } from 'src/api-authorization/authorize.interceptor';
+import { AuthorizeInterceptor } from 'src/app/services/auth/authorize.interceptor';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {LayoutComponent} from "./components/layout/layout.component";
 import {SidebarComponent} from "./components/sidebar/sidebar.component";
@@ -23,34 +14,37 @@ import {ChatComponent} from "./components/chat/chat.component";
 import {MessageComponent} from "./components/chat/message/message.component";
 import {AvatarComponent} from "./components/avatar/avatar.component";
 import {HeaderComponent} from "./components/header/header.component";
+import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { NotificationComponent } from './components/notification/notification.component';
+import {ErrorInterceptor} from "./services/error-interceptor.service";
+import {NgxPopperjsModule} from "ngx-popperjs";
 
 @NgModule({
   declarations: [
     AppComponent,
-    NavMenuComponent,
-    HomeComponent,
-    CounterComponent,
-    FetchDataComponent,
-    TodoComponent,
-    TokenComponent,
     LayoutComponent,
     SidebarComponent,
     HeaderComponent,
     ChatComponent,
     MessageComponent,
     AvatarComponent,
+    LoginComponent,
+    RegisterComponent,
+    NotificationComponent,
   ],
   imports: [
-    BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
+    BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),
     HttpClientModule,
     FormsModule,
-    ApiAuthorizationModule,
     AppRoutingModule,
+    NgxPopperjsModule.forRoot({applyArrowClass: 'invisible'}),
     BrowserAnimationsModule,
-    ModalModule.forRoot()
+    ReactiveFormsModule
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthorizeInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthorizeInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })

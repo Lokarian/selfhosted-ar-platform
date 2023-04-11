@@ -1,5 +1,7 @@
 import {Component} from '@angular/core';
-import {OnlineStatus, User} from "../../models/user";
+import {OnlineStatus, AppUser} from "../../models/appUser";
+import {NgxPopperjsPlacements} from "ngx-popperjs";
+import {CurrentUserService} from "../../services/current-user.service";
 
 @Component({
   selector: 'app-header',
@@ -7,10 +9,9 @@ import {OnlineStatus, User} from "../../models/user";
   styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent {
-  public user:User = {
-    id: 1,
-    name: 'John Doe',
-    image: 'https://picsum.photos/200',
-    status: OnlineStatus.Online
+  public ngxPopperjsPlacements = NgxPopperjsPlacements;
+  constructor(private currentUserService:CurrentUserService) { }
+  public get user$() {
+    return this.currentUserService.user$;
   }
 }

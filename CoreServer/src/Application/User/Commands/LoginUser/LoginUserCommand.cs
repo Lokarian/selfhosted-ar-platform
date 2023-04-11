@@ -25,7 +25,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, String>
         var (result,user)=await _identityService.LoginAsync(request.UserName, request.Password);
         if (!result.Succeeded)
         {
-            throw new Exception(result.Errors.ToString());
+            throw new Exception(result.Errors.First());
         }
         return await _tokenService.CreateTokenAsync(user!);
     }

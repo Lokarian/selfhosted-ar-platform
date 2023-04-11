@@ -1,5 +1,5 @@
 import {Component, Input} from '@angular/core';
-import {OnlineStatus, User} from "../../models/user";
+import {AppUser} from "../../web-api-client";
 
 @Component({
   selector: 'app-avatar[user]',
@@ -7,7 +7,7 @@ import {OnlineStatus, User} from "../../models/user";
   styleUrls: ['./avatar.component.scss']
 })
 export class AvatarComponent {
-  @Input() user: User;
+  @Input() user: AppUser;
   @Input() size: number =4;
   @Input() showStatus: boolean = true;
 

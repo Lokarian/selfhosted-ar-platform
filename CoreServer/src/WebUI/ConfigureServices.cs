@@ -34,15 +34,16 @@ public static class ConfigureServices
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = configuration["Jwt:Issuer"],
                 ValidAudience = configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? string.Empty))
             };
         });
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
 
         services.AddControllersWithViews(options =>
-                options.Filters.Add<ApiExceptionFilterAttribute>())
-            .AddFluentValidation(x => x.AutomaticValidationEnabled = false);
+            options.Filters.Add<ApiExceptionFilterAttribute>());
+        services.AddFluentValidationClientsideAdapters();
+            
 
         services.AddRazorPages();
 

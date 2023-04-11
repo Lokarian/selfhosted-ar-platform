@@ -1,0 +1,71 @@
+<div class="container mx-auto px-4 h-full">
+  <div class="flex content-center items-center justify-center h-full">
+    <div class="w-full lg:w-4/12 px-4">
+      <div
+        class="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded-lg bg-background-secondary border-0"
+      >
+        <div class="flex-auto px-4 lg:px-10 py-10">
+          <h1 class="text-center text-text font-bold text-2xl pb-5 mb-5 border-b-2 border-text">
+            AR-Platform
+          </h1>
+          <div class="text-text text-center mb-3 font-bold">
+            <small>Sign in with credentials</small>
+          </div>
+          <form [formGroup]="loginForm">
+            <div class="relative w-full mb-3">
+              <label
+                class="block uppercase text-text text-xs font-bold mb-2"
+                for="userName"
+              >Username</label
+              ><input
+              type="text"
+              class="border-0 px-3 py-3 placeholder-text text-white bg-background-highlight rounded text-sm shadow focus:outline-none focus:ring w-full"
+              placeholder="Email"
+              id="userName"
+              formControlName="userName"
+              style="transition: all 0.15s ease 0s;"
+            />
+            </div>
+            <div class="relative w-full mb-3">
+              <label
+                class="block uppercase text-text text-xs font-bold mb-2"
+                for="password"
+              >Password</label
+              ><input
+              type="password"
+              id="password"
+              class="border-0 px-3 py-3 placeholder-text text-white bg-background-highlight rounded text-sm shadow focus:outline-none focus:ring w-full"
+              placeholder="Password"
+              formControlName="password"
+              style="transition: all 0.15s ease 0s;"
+            />
+            </div>
+            <div class="text-center mt-6">
+              <button
+                class="bg-primary text-white active:bg-secondary text-sm font-bold uppercase px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 w-full"
+                type="button"
+                style="transition: all 0.15s ease 0s;"
+                (click)="login()"
+              >
+                Sign In
+              </button>
+            </div>
+          </form>
+          <div class="flex flex-wrap mt-6">
+            <div class="w-1/2">
+              <a href="forgot-password" class="text-text hover:text-primary"
+              ><small>Forgot password?</small></a
+              >
+            </div>
+            <div class="w-1/2 text-right">
+              <a href="register" class="text-text hover:text-primary"
+              ><small>Create new account</small></a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
