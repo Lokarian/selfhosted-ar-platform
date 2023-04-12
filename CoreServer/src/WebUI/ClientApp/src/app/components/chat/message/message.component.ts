@@ -1,5 +1,6 @@
 import {Component, Input} from '@angular/core';
 import {ChatMessage} from "../../../models/chat";
+import {CurrentUserService} from "../../../services/current-user.service";
 
 
 @Component({
@@ -9,8 +10,9 @@ import {ChatMessage} from "../../../models/chat";
 })
 export class MessageComponent {
   @Input() message: ChatMessage;
-
+  constructor(private currentUserService: CurrentUserService) {
+  }
   public get isOwnMessage(): boolean {
-    return this.message.sender.id === 2;//todo: get current user id
+    return this.message.sender.id === this.currentUserService.user.id;
   }
 }

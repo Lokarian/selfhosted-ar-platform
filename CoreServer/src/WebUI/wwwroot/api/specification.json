@@ -786,6 +786,9 @@
                     "$ref": "#/components/schemas/UserFile"
                   }
                 ]
+              },
+              "onlineStatus": {
+                "$ref": "#/components/schemas/OnlineStatus"
               }
             }
           }
@@ -834,6 +837,22 @@
         "type": "object",
         "x-abstract": true,
         "additionalProperties": false
+      },
+      "OnlineStatus": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Online",
+          "Offline",
+          "Busy",
+          "Away"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ]
       },
       "WeatherForecast": {
         "type": "object",

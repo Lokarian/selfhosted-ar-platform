@@ -1533,6 +1533,7 @@ export class AppUser extends BaseEntity implements IAppUser {
     email?: string;
     imageId?: string | undefined;
     image?: UserFile | undefined;
+    onlineStatus?: OnlineStatus;
 
     constructor(data?: IAppUser) {
         super(data);
@@ -1545,6 +1546,7 @@ export class AppUser extends BaseEntity implements IAppUser {
             this.email = _data["email"];
             this.imageId = _data["imageId"];
             this.image = _data["image"] ? UserFile.fromJS(_data["image"]) : <any>undefined;
+            this.onlineStatus = _data["onlineStatus"];
         }
     }
 
@@ -1561,6 +1563,7 @@ export class AppUser extends BaseEntity implements IAppUser {
         data["email"] = this.email;
         data["imageId"] = this.imageId;
         data["image"] = this.image ? this.image.toJSON() : <any>undefined;
+        data["onlineStatus"] = this.onlineStatus;
         super.toJSON(data);
         return data;
     }
@@ -1571,6 +1574,7 @@ export interface IAppUser extends IBaseEntity {
     email?: string;
     imageId?: string | undefined;
     image?: UserFile | undefined;
+    onlineStatus?: OnlineStatus;
 }
 
 export class UserFile extends BaseEntity implements IUserFile {
@@ -1640,6 +1644,13 @@ export abstract class BaseEvent implements IBaseEvent {
 }
 
 export interface IBaseEvent {
+}
+
+export enum OnlineStatus {
+    Online = 0,
+    Offline = 1,
+    Busy = 2,
+    Away = 3,
 }
 
 export class WeatherForecast implements IWeatherForecast {

@@ -1,7 +1,7 @@
 <div class="h-full aspect-square relative">
   <div class="status h-full aspect-square absolute"
-       [class.bg-warning]="user.status===OnlineStatus.Away"
-       [class.bg-success]="user.status===OnlineStatus.Online"
-       [class.bg-danger]="user.status===OnlineStatus.Busy"></div>
-  <img [alt]="user.name" [src]="user.image" class="mask rounded-full h-full aspect-square"/>
+       [class.bg-warning]="user.onlineStatus===OnlineStatus.Away"
+       [class.bg-success]="user.onlineStatus===OnlineStatus.Online"
+       [class.bg-danger]="user.onlineStatus===OnlineStatus.Busy"></div>
+  <img [alt]="user.userName" [src]="user.image" class="mask rounded-full h-full aspect-square"/>
 </div>

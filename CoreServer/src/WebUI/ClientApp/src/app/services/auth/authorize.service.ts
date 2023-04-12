@@ -39,7 +39,10 @@ export class AuthorizeService {
     localStorage.setItem('access_token', token);
     this.tokenSubject.next(token);
   }
-  public removeAccessToken() {
+  public removeAccessToken(triggerReload: boolean = false) {
     localStorage.removeItem('access_token');
+    if (triggerReload) {
+      window.location.reload();
+    }
   }
 }

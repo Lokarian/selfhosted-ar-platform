@@ -1,5 +1,5 @@
 import {Component, Input} from '@angular/core';
-import {AppUser} from "../../web-api-client";
+import {AppUser,OnlineStatus} from "../../web-api-client";
 
 @Component({
   selector: 'app-avatar[user]',
