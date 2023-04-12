@@ -5,3 +5,4 @@
        [class.bg-danger]="user.onlineStatus===OnlineStatus.Busy"></div>
   <img [alt]="user.userName" [src]="user.image" class="mask rounded-full h-full aspect-square"/>
 </div>
+<input type="file" (change)="onFileSelected($event)" accept="image/*" class="" #fileInput />

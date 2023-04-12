@@ -478,6 +478,96 @@
         ]
       }
     },
+    "/api/UserFiles/{id}": {
+      "get": {
+        "tags": [
+          "UserFiles"
+        ],
+        "operationId": "UserFiles_Get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/UserFiles": {
+      "post": {
+        "tags": [
+          "UserFiles"
+        ],
+        "operationId": "UserFiles_Upload",
+        "parameters": [
+          {
+            "name": "fileType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FileType"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecast": {
       "get": {
         "tags": [
@@ -811,9 +901,22 @@
               },
               "mimeType": {
                 "type": "string"
+              },
+              "fileType": {
+                "$ref": "#/components/schemas/FileType"
               }
             }
           }
+        ]
+      },
+      "FileType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "UserImage"
+        ],
+        "enum": [
+          0
         ]
       },
       "BaseEntity": {

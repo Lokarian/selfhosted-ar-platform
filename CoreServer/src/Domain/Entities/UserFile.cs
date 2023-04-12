@@ -2,9 +2,15 @@
 
 public class UserFile : BaseEntity
 {
-    public string InStorageFileName { get; set; } = null!;
 
     public string FileName { get; set; } = null!;
 
     public string MimeType { get; set; } = null!;
+
+    public FileType FileType { get; set; }
+}
+
+public enum FileType
+{
+    UserImage
 }

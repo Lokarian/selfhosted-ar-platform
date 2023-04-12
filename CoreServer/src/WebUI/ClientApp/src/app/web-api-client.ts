@@ -790,6 +790,141 @@ export class UserClient implements IUserClient {
     }
 }
 
+export interface IUserFilesClient {
+    get(id: string): Observable<FileResponse>;
+    upload(fileType: FileType | undefined, file: FileParameter | null | undefined): Observable<FileResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UserFilesClient implements IUserFilesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    get(id: string): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/UserFiles/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGet(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGet(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processGet(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    upload(fileType: FileType | undefined, file: FileParameter | null | undefined): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/UserFiles?";
+        if (fileType === null)
+            throw new Error("The parameter 'fileType' cannot be null.");
+        else if (fileType !== undefined)
+            url_ += "fileType=" + encodeURIComponent("" + fileType) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (file !== null && file !== undefined)
+            content_.append("file", file.data, file.fileName ? file.fileName : "file");
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpload(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpload(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processUpload(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IWeatherForecastClient {
     get(): Observable<WeatherForecast[]>;
 }
@@ -1581,6 +1716,7 @@ export class UserFile extends BaseEntity implements IUserFile {
     inStorageFileName?: string;
     fileName?: string;
     mimeType?: string;
+    fileType?: FileType;
 
     constructor(data?: IUserFile) {
         super(data);
@@ -1592,6 +1728,7 @@ export class UserFile extends BaseEntity implements IUserFile {
             this.inStorageFileName = _data["inStorageFileName"];
             this.fileName = _data["fileName"];
             this.mimeType = _data["mimeType"];
+            this.fileType = _data["fileType"];
         }
     }
 
@@ -1607,6 +1744,7 @@ export class UserFile extends BaseEntity implements IUserFile {
         data["inStorageFileName"] = this.inStorageFileName;
         data["fileName"] = this.fileName;
         data["mimeType"] = this.mimeType;
+        data["fileType"] = this.fileType;
         super.toJSON(data);
         return data;
     }
@@ -1616,6 +1754,11 @@ export interface IUserFile extends IBaseEntity {
     inStorageFileName?: string;
     fileName?: string;
     mimeType?: string;
+    fileType?: FileType;
+}
+
+export enum FileType {
+    UserImage = 0,
 }
 
 export abstract class BaseEvent implements IBaseEvent {
@@ -1699,6 +1842,11 @@ export interface IWeatherForecast {
     temperatureC?: number;
     temperatureF?: number;
     summary?: string | undefined;
+}
+
+export interface FileParameter {
+    data: any;
+    fileName: string;
 }
 
 export interface FileResponse {
