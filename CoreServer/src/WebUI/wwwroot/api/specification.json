@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/TodoItems": {
+    "/api/TodoItems/GetTodoItemsWithPagination": {
       "get": {
         "tags": [
           "TodoItems"
@@ -58,7 +58,9 @@
             "JWT": []
           }
         ]
-      },
+      }
+    },
+    "/api/TodoItems/Create": {
       "post": {
         "tags": [
           "TodoItems"
@@ -96,7 +98,7 @@
         ]
       }
     },
-    "/api/TodoItems/{id}": {
+    "/api/TodoItems/Update/{id}": {
       "put": {
         "tags": [
           "TodoItems"
@@ -144,45 +146,9 @@
             "JWT": []
           }
         ]
-      },
-      "delete": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "TodoItems_Delete",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
       }
     },
-    "/api/TodoItems/UpdateItemDetails": {
+    "/api/TodoItems/UpdateItemDetails/UpdateItemDetails": {
       "put": {
         "tags": [
           "TodoItems"
@@ -231,7 +197,45 @@
         ]
       }
     },
-    "/api/TodoLists": {
+    "/api/TodoItems/Delete/{id}": {
+      "delete": {
+        "tags": [
+          "TodoItems"
+        ],
+        "operationId": "TodoItems_Delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/TodoLists/Get": {
       "get": {
         "tags": [
           "TodoLists"
@@ -249,7 +253,42 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/TodoLists/Get/{id}": {
+      "get": {
+        "tags": [
+          "TodoLists"
+        ],
+        "operationId": "TodoLists_Get2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/TodoLists/Create": {
       "post": {
         "tags": [
           "TodoLists"
@@ -282,38 +321,7 @@
         }
       }
     },
-    "/api/TodoLists/{id}": {
-      "get": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "TodoLists_Get2",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      },
+    "/api/TodoLists/Update/{id}": {
       "put": {
         "tags": [
           "TodoLists"
@@ -356,7 +364,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/TodoLists/Delete/{id}": {
       "delete": {
         "tags": [
           "TodoLists"
@@ -389,7 +399,7 @@
         }
       }
     },
-    "/api/User/login": {
+    "/api/User/Login": {
       "post": {
         "tags": [
           "User"
@@ -421,7 +431,7 @@
         }
       }
     },
-    "/api/User/register": {
+    "/api/User/Register": {
       "post": {
         "tags": [
           "User"
@@ -453,7 +463,7 @@
         }
       }
     },
-    "/api/User/current": {
+    "/api/User/Current": {
       "get": {
         "tags": [
           "User"
@@ -478,7 +488,44 @@
         ]
       }
     },
-    "/api/UserFiles/{id}": {
+    "/api/User/Update": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_Update",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAppUserCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUser"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/UserFiles/Get/{id}": {
       "get": {
         "tags": [
           "UserFiles"
@@ -516,7 +563,7 @@
         ]
       }
     },
-    "/api/UserFiles": {
+    "/api/UserFiles/Upload": {
       "post": {
         "tags": [
           "UserFiles"
@@ -552,6 +599,43 @@
           "200": {
             "description": "",
             "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/UserFiles/Delete/{id}": {
+      "delete": {
+        "tags": [
+          "UserFiles"
+        ],
+        "operationId": "UserFiles_Delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
               "application/octet-stream": {
                 "schema": {
                   "type": "string",
@@ -568,7 +652,7 @@
         ]
       }
     },
-    "/api/WeatherForecast": {
+    "/api/WeatherForecast/Get": {
       "get": {
         "tags": [
           "WeatherForecast"
@@ -893,9 +977,6 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "inStorageFileName": {
-                "type": "string"
-              },
               "fileName": {
                 "type": "string"
               },
@@ -956,6 +1037,32 @@
           2,
           3
         ]
+      },
+      "UpdateAppUserCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "userImage": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserFile"
+              }
+            ]
+          }
+        }
       },
       "WeatherForecast": {
         "type": "object",

@@ -7,3 +7,9 @@
   border: none !important;
   padding: 0 !important;
 }
+body{
+  @apply w-screen h-screen;
+}
+app-root{
+  @apply w-full h-full block;
+}

@@ -1,4 +1,5 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Application.User.Commands;
 using CoreServer.Application.User.Commands.LoginUser;
 using CoreServer.Application.User.Commands.RegisterUser;
 using CoreServer.Application.User.Queries;
@@ -18,13 +19,13 @@ public class UserController : ApiControllerBase
         _currentUserService = currentUserService;
     }
 
-    [HttpPost("login")]
+    [HttpPost]
     public async Task<ActionResult<string>> Login(LoginUserCommand command)
     {
         return await Mediator.Send(command);
     }
 
-    [HttpPost("register")]
+    [HttpPost]
     public async Task<ActionResult<string>> Register(RegisterUserCommand command)
     {
         return await Mediator.Send(command);
@@ -32,9 +33,17 @@ public class UserController : ApiControllerBase
 
     //current user
     [Authorize]
-    [HttpGet("current")]
+    [HttpGet]
     public async Task<ActionResult<AppUser>> Current()
     {
         return await Mediator.Send(new GetAppUserByIdQuery { Id = _currentUserService.User!.Id });
+    }
+
+    [Authorize]
+    [HttpPut]
+    public async Task<ActionResult<AppUser>> Update(UpdateAppUserCommand command)
+    {
+        await Mediator.Send(command);
+        return await Mediator.Send(new GetAppUserByIdQuery { Id = command.Id });
     }
 }

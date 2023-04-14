@@ -5,7 +5,7 @@ using MediatR;
 
 namespace CoreServer.Application.Files.Commands;
 
-public class SaveUserFileCommand: IRequest<Result>
+public class SaveUserFileCommand: IRequest<UserFile>
 {
     public string FileName { get; set; } = null!;
 
@@ -16,7 +16,7 @@ public class SaveUserFileCommand: IRequest<Result>
     public Stream FileStream { get; set; } = null!;
 }
 
-public class SaveUserFileCommandHandler : IRequestHandler<SaveUserFileCommand, Result>
+public class SaveUserFileCommandHandler : IRequestHandler<SaveUserFileCommand, UserFile>
 {
     private readonly IFileStorageService _fileStorageService;
     private readonly IApplicationDbContext _context;
@@ -27,7 +27,7 @@ public class SaveUserFileCommandHandler : IRequestHandler<SaveUserFileCommand, R
         _context = context;
     }
 
-    public async Task<Result> Handle(SaveUserFileCommand request, CancellationToken cancellationToken)
+    public async Task<UserFile> Handle(SaveUserFileCommand request, CancellationToken cancellationToken)
     {
         var userFile = new UserFile
         {
@@ -40,12 +40,12 @@ public class SaveUserFileCommandHandler : IRequestHandler<SaveUserFileCommand, R
         if (result.Succeeded)
         {
             await _context.SaveChangesAsync(cancellationToken);
-            return Result.Success();
+            return userFile;
         }
         else
         {
             _context.UserFiles.Remove(userFile);
-            return Result.Failure(result.Errors);
+            throw new Exception(result.Errors.First());
         }
     }
 }

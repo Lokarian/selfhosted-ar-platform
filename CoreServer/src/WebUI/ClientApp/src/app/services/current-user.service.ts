@@ -32,4 +32,8 @@ export class CurrentUserService {
     this.userSubject.next(user);
   }
 
+  public setUser(user: AppUser) {
+    this.userSubject.next(user);
+  }
+
 }

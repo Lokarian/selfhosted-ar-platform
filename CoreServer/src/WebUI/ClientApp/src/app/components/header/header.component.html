@@ -1,13 +1,13 @@
-<div class="flex flex-row h-full w-full justify-between p-1">
+<div class="flex flex-row h-full w-full justify-between p-1 box-border">
   <div></div>
-  <div *ngIf="user$|async as user" class="h-full flex items-center gap-2" [popper]="userPopup"
+  <div *ngIf="user$|async as user" class="h-full flex flex-row gap-4 items-center" [popper]="userPopup"
         [popperPlacement]="ngxPopperjsPlacements.BOTTOM">
-    <p class="text-white  mr-4">{{user.userName}}</p>
-    <app-avatar [user]="user" class="h-full"></app-avatar>
+    <p class="text-white ">{{user.userName}}</p>
+    <app-avatar [user]="user" class="h-10 w-10"></app-avatar>
     <popper-content #userPopup>
       <div class="rounded-2xl bg-background-highlight w-80 p-4">
         <div class="flex flex-row gap-4">
-          <app-avatar class="w-10" [user]="user$|async"></app-avatar>
+          <app-avatar class="w-10" [user]="user$|async" [allowEdit]="true"></app-avatar>
           <div>
             <h2 class="text-text ">{{user.userName}}</h2>
             <p class="text-text text-xs">{{user.email}}</p>
@@ -20,11 +20,4 @@
     </popper-content>
   </div>
 </div>
-<popper-content *ngIf="user$|async as user">
-  <div class="rounded-2xl bg-background-highlight w-80">
-    <div class="flex flex-row">
-      <app-avatar [user]="user$|async"></app-avatar>
-    </div>
-  </div>
-</popper-content>
 

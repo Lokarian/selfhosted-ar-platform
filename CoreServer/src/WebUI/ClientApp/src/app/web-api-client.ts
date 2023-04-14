@@ -19,8 +19,8 @@ export interface ITodoItemsClient {
     getTodoItemsWithPagination(listId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<PaginatedListOfTodoItemBriefDto>;
     create(command: CreateTodoItemCommand): Observable<string>;
     update(id: string, command: UpdateTodoItemCommand): Observable<FileResponse>;
-    delete(id: string): Observable<FileResponse>;
     updateItemDetails(id: string | undefined, command: UpdateTodoItemDetailCommand): Observable<FileResponse>;
+    delete(id: string): Observable<FileResponse>;
 }
 
 @Injectable({
@@ -37,7 +37,7 @@ export class TodoItemsClient implements ITodoItemsClient {
     }
 
     getTodoItemsWithPagination(listId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<PaginatedListOfTodoItemBriefDto> {
-        let url_ = this.baseUrl + "/api/TodoItems?";
+        let url_ = this.baseUrl + "/api/TodoItems/GetTodoItemsWithPagination?";
         if (listId === null)
             throw new Error("The parameter 'listId' cannot be null.");
         else if (listId !== undefined)
@@ -97,7 +97,7 @@ export class TodoItemsClient implements ITodoItemsClient {
     }
 
     create(command: CreateTodoItemCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/TodoItems";
+        let url_ = this.baseUrl + "/api/TodoItems/Create";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -150,7 +150,7 @@ export class TodoItemsClient implements ITodoItemsClient {
     }
 
     update(id: string, command: UpdateTodoItemCommand): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoItems/{id}";
+        let url_ = this.baseUrl + "/api/TodoItems/Update/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -208,63 +208,8 @@ export class TodoItemsClient implements ITodoItemsClient {
         return _observableOf(null as any);
     }
 
-    delete(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoItems/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDelete(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDelete(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processDelete(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
     updateItemDetails(id: string | undefined, command: UpdateTodoItemDetailCommand): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoItems/UpdateItemDetails?";
+        let url_ = this.baseUrl + "/api/TodoItems/UpdateItemDetails/UpdateItemDetails?";
         if (id === null)
             throw new Error("The parameter 'id' cannot be null.");
         else if (id !== undefined)
@@ -322,12 +267,67 @@ export class TodoItemsClient implements ITodoItemsClient {
         }
         return _observableOf(null as any);
     }
+
+    delete(id: string): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/TodoItems/Delete/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDelete(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDelete(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processDelete(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface ITodoListsClient {
     get(): Observable<TodosVm>;
-    create(command: CreateTodoListCommand): Observable<string>;
     get2(id: string): Observable<FileResponse>;
+    create(command: CreateTodoListCommand): Observable<string>;
     update(id: string, command: UpdateTodoListCommand): Observable<FileResponse>;
     delete(id: string): Observable<FileResponse>;
 }
@@ -346,7 +346,7 @@ export class TodoListsClient implements ITodoListsClient {
     }
 
     get(): Observable<TodosVm> {
-        let url_ = this.baseUrl + "/api/TodoLists";
+        let url_ = this.baseUrl + "/api/TodoLists/Get";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -393,61 +393,8 @@ export class TodoListsClient implements ITodoListsClient {
         return _observableOf(null as any);
     }
 
-    create(command: CreateTodoListCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/TodoLists";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(command);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreate(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreate(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<string>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<string>;
-        }));
-    }
-
-    protected processCreate(response: HttpResponseBase): Observable<string> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-                result200 = resultData200 !== undefined ? resultData200 : <any>null;
-    
-            return _observableOf(result200);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
     get2(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoLists/{id}";
+        let url_ = this.baseUrl + "/api/TodoLists/Get/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -501,8 +448,61 @@ export class TodoListsClient implements ITodoListsClient {
         return _observableOf(null as any);
     }
 
+    create(command: CreateTodoListCommand): Observable<string> {
+        let url_ = this.baseUrl + "/api/TodoLists/Create";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<string>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<string>;
+        }));
+    }
+
+    protected processCreate(response: HttpResponseBase): Observable<string> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = resultData200 !== undefined ? resultData200 : <any>null;
+    
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     update(id: string, command: UpdateTodoListCommand): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoLists/{id}";
+        let url_ = this.baseUrl + "/api/TodoLists/Update/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -561,7 +561,7 @@ export class TodoListsClient implements ITodoListsClient {
     }
 
     delete(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoLists/{id}";
+        let url_ = this.baseUrl + "/api/TodoLists/Delete/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -620,6 +620,7 @@ export interface IUserClient {
     login(command: LoginUserCommand): Observable<string>;
     register(command: RegisterUserCommand): Observable<string>;
     current(): Observable<AppUser>;
+    update(command: UpdateAppUserCommand): Observable<AppUser>;
 }
 
 @Injectable({
@@ -636,7 +637,7 @@ export class UserClient implements IUserClient {
     }
 
     login(command: LoginUserCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/User/login";
+        let url_ = this.baseUrl + "/api/User/Login";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -689,7 +690,7 @@ export class UserClient implements IUserClient {
     }
 
     register(command: RegisterUserCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/User/register";
+        let url_ = this.baseUrl + "/api/User/Register";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -742,7 +743,7 @@ export class UserClient implements IUserClient {
     }
 
     current(): Observable<AppUser> {
-        let url_ = this.baseUrl + "/api/User/current";
+        let url_ = this.baseUrl + "/api/User/Current";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -788,11 +789,64 @@ export class UserClient implements IUserClient {
         }
         return _observableOf(null as any);
     }
+
+    update(command: UpdateAppUserCommand): Observable<AppUser> {
+        let url_ = this.baseUrl + "/api/User/Update";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AppUser>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AppUser>;
+        }));
+    }
+
+    protected processUpdate(response: HttpResponseBase): Observable<AppUser> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = AppUser.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface IUserFilesClient {
     get(id: string): Observable<FileResponse>;
-    upload(fileType: FileType | undefined, file: FileParameter | null | undefined): Observable<FileResponse>;
+    upload(fileType: FileType | undefined, file: FileParameter | null | undefined): Observable<UserFile>;
+    delete(id: string): Observable<FileResponse>;
 }
 
 @Injectable({
@@ -809,7 +863,7 @@ export class UserFilesClient implements IUserFilesClient {
     }
 
     get(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/UserFiles/{id}";
+        let url_ = this.baseUrl + "/api/UserFiles/Get/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -863,8 +917,8 @@ export class UserFilesClient implements IUserFilesClient {
         return _observableOf(null as any);
     }
 
-    upload(fileType: FileType | undefined, file: FileParameter | null | undefined): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/UserFiles?";
+    upload(fileType: FileType | undefined, file: FileParameter | null | undefined): Observable<UserFile> {
+        let url_ = this.baseUrl + "/api/UserFiles/Upload?";
         if (fileType === null)
             throw new Error("The parameter 'fileType' cannot be null.");
         else if (fileType !== undefined)
@@ -880,7 +934,7 @@ export class UserFilesClient implements IUserFilesClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
+                "Accept": "application/json"
             })
         };
 
@@ -891,6 +945,57 @@ export class UserFilesClient implements IUserFilesClient {
                 try {
                     return this.processUpload(response_ as any);
                 } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserFile>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserFile>;
+        }));
+    }
+
+    protected processUpload(response: HttpResponseBase): Observable<UserFile> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = UserFile.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    delete(id: string): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/UserFiles/Delete/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDelete(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDelete(response_ as any);
+                } catch (e) {
                     return _observableThrow(e) as any as Observable<FileResponse>;
                 }
             } else
@@ -898,7 +1003,7 @@ export class UserFilesClient implements IUserFilesClient {
         }));
     }
 
-    protected processUpload(response: HttpResponseBase): Observable<FileResponse> {
+    protected processDelete(response: HttpResponseBase): Observable<FileResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -943,7 +1048,7 @@ export class WeatherForecastClient implements IWeatherForecastClient {
     }
 
     get(): Observable<WeatherForecast[]> {
-        let url_ = this.baseUrl + "/api/WeatherForecast";
+        let url_ = this.baseUrl + "/api/WeatherForecast/Get";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -1713,7 +1818,6 @@ export interface IAppUser extends IBaseEntity {
 }
 
 export class UserFile extends BaseEntity implements IUserFile {
-    inStorageFileName?: string;
     fileName?: string;
     mimeType?: string;
     fileType?: FileType;
@@ -1725,7 +1829,6 @@ export class UserFile extends BaseEntity implements IUserFile {
     override init(_data?: any) {
         super.init(_data);
         if (_data) {
-            this.inStorageFileName = _data["inStorageFileName"];
             this.fileName = _data["fileName"];
             this.mimeType = _data["mimeType"];
             this.fileType = _data["fileType"];
@@ -1741,7 +1844,6 @@ export class UserFile extends BaseEntity implements IUserFile {
 
     override toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["inStorageFileName"] = this.inStorageFileName;
         data["fileName"] = this.fileName;
         data["mimeType"] = this.mimeType;
         data["fileType"] = this.fileType;
@@ -1751,7 +1853,6 @@ export class UserFile extends BaseEntity implements IUserFile {
 }
 
 export interface IUserFile extends IBaseEntity {
-    inStorageFileName?: string;
     fileName?: string;
     mimeType?: string;
     fileType?: FileType;
@@ -1794,6 +1895,54 @@ export enum OnlineStatus {
     Offline = 1,
     Busy = 2,
     Away = 3,
+}
+
+export class UpdateAppUserCommand implements IUpdateAppUserCommand {
+    id?: string;
+    userName?: string | undefined;
+    email?: string | undefined;
+    userImage?: UserFile | undefined;
+
+    constructor(data?: IUpdateAppUserCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userName = _data["userName"];
+            this.email = _data["email"];
+            this.userImage = _data["userImage"] ? UserFile.fromJS(_data["userImage"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): UpdateAppUserCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateAppUserCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userName"] = this.userName;
+        data["email"] = this.email;
+        data["userImage"] = this.userImage ? this.userImage.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IUpdateAppUserCommand {
+    id?: string;
+    userName?: string | undefined;
+    email?: string | undefined;
+    userImage?: UserFile | undefined;
 }
 
 export class WeatherForecast implements IWeatherForecast {

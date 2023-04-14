@@ -19,6 +19,7 @@ import { RegisterComponent } from './pages/register/register.component';
 import { NotificationComponent } from './components/notification/notification.component';
 import {ErrorInterceptor} from "./services/error-interceptor.service";
 import {NgxPopperjsModule} from "ngx-popperjs";
+import { SecurePipe } from './services/secure.pipe';
 
 @NgModule({
   declarations: [
@@ -32,6 +33,7 @@ import {NgxPopperjsModule} from "ngx-popperjs";
     LoginComponent,
     RegisterComponent,
     NotificationComponent,
+    SecurePipe,
   ],
   imports: [
     BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

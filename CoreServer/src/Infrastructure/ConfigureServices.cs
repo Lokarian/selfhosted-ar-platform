@@ -1,4 +1,5 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Domain.Enums;
 using CoreServer.Infrastructure.Files;
 using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence;

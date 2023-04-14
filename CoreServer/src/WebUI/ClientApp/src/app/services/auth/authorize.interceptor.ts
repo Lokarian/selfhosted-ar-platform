@@ -11,6 +11,7 @@ export class AuthorizeInterceptor implements HttpInterceptor {
   constructor(private authorize: AuthorizeService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    console.log("intercepted request: " + req.url)
     return this.authorize.getAccessToken()
       .pipe(mergeMap(token => this.processRequestWithToken(token, req, next)));
   }

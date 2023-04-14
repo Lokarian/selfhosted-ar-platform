@@ -33,7 +33,7 @@ public class FileStorage : IFileStorageService
     public Task<Stream> GetFileAsync(UserFile userFile)
     {
         var filePath = GetFilePath(userFile);
-        using var fileStream = File.Open(filePath, FileMode.Open);
+        var fileStream = File.Open(filePath, FileMode.Open);
         return Task.FromResult(fileStream as Stream);
     }
 
