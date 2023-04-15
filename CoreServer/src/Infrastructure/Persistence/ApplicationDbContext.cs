@@ -2,6 +2,7 @@
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Common;
 using CoreServer.Domain.Entities;
+using CoreServer.Domain.Entities.Chat;
 using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence.Configurations;
 using CoreServer.Infrastructure.Persistence.Interceptors;
@@ -33,6 +34,12 @@ public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplica
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     
     public DbSet<UserFile> UserFiles => Set<UserFile>();
+    
+    public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+    
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    
+    public DbSet<ChatMember> ChatMembers => Set<ChatMember>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

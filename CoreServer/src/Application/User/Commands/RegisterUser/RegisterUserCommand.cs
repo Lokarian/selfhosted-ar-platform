@@ -31,6 +31,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, s
         var (result, user) = await _identityService.CreateUserAsync(appUser, request.Password);
         if (!result.Succeeded)
         {
+            _context.AppUsers.Remove(appUser);
             throw new Exception(result.Errors.ToString());
         }
         return await _tokenService.CreateTokenAsync(appUser);
