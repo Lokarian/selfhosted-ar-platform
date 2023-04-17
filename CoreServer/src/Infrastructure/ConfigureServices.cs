@@ -15,7 +15,8 @@ namespace CoreServer.Infrastructure;
 
 public static class ConfigureServices
 {
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
 
@@ -34,20 +35,21 @@ public static class ConfigureServices
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<ApplicationDbContextInitialiser>();
-
+        services.AddSignalR()
+            .AddMessagePackProtocol();
 
         services.AddIdentity<AppIdentityUser, IdentityRole>(config =>
         {
-            config.Lockout.MaxFailedAccessAttempts=10;
+            config.Lockout.MaxFailedAccessAttempts = 10;
             config.SignIn.RequireConfirmedEmail = false;
         }).AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddTransient<IDateTime, DateTimeService>();
         services.AddTransient<IIdentityService, IdentityService>();
         services.AddTransient<ICsvFileBuilder, CsvFileBuilder>();
-        services.AddTransient<ITokenService,JWTTokenService>();
+        services.AddTransient<ITokenService, JWTTokenService>();
         services.AddTransient<IFileStorageService, FileStorage>();
-        services.AddAuthentication();//todo necessary?
+        services.AddAuthentication(); //todo necessary?
 
         services.AddAuthorization(options =>
             options.AddPolicy("CanPurge", policy => policy.RequireRole("Administrator")));

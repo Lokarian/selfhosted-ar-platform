@@ -1,7 +1,6 @@
 import {Component} from '@angular/core';
-import {OnlineStatus, AppUser} from "../../models/appUser";
 import {NgxPopperjsPlacements} from "ngx-popperjs";
-import {CurrentUserService} from "../../services/current-user.service";
+import {CurrentUserService} from "../../services/user/current-user.service";
 import {AuthorizeService} from "../../services/auth/authorize.service";
 
 @Component({

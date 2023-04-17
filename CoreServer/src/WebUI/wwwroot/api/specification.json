@@ -95,7 +95,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatSession"
+                  "$ref": "#/components/schemas/ChatSessionDto"
                 }
               }
             }
@@ -108,7 +108,7 @@
         ]
       }
     },
-    "/api/Chat/SendMessageToChatSession/message": {
+    "/api/Chat/SendMessageToChatSession": {
       "post": {
         "tags": [
           "Chat"
@@ -145,7 +145,7 @@
         ]
       }
     },
-    "/api/Chat/DeleteChatMessage/message/{id}": {
+    "/api/Chat/DeleteChatMessage/{id}": {
       "delete": {
         "tags": [
           "Chat"
@@ -652,7 +652,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppUser"
+                  "$ref": "#/components/schemas/AppUserDto"
                 }
               }
             }
@@ -689,7 +689,44 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppUser"
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/User/GetAppUserById/{id}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_GetAppUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
                 }
               }
             }
@@ -1408,6 +1445,38 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "AppUserDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "imageId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "image": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserFile"
+              }
+            ]
+          },
+          "onlineStatus": {
+            "$ref": "#/components/schemas/OnlineStatus"
           }
         }
       },

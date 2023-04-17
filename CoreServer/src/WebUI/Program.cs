@@ -1,6 +1,7 @@
 using CoreServer.Application;
 using CoreServer.Infrastructure;
 using CoreServer.Infrastructure.Persistence;
+using CoreServer.Infrastructure.RPC;
 using CoreServer.WebUI.Services;
 using WebUI;
 
@@ -54,7 +55,7 @@ app.MapControllerRoute(
     pattern: "{controller}/{action=Index}/{id?}");
 
 app.MapRazorPages();
-
+app.MapHub<SignalRHub>("/api/hub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

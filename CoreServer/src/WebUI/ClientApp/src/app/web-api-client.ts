@@ -18,7 +18,7 @@ export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 export interface IChatClient {
     getMyChatSessions(): Observable<ChatSessionDto[]>;
     getChatMessages(query: GetChatMessagesQuery): Observable<ChatMessageDto>;
-    createChatSession(command: CreateChatSessionCommand): Observable<ChatSession>;
+    createChatSession(command: CreateChatSessionCommand): Observable<ChatSessionDto>;
     sendMessageToChatSession(command: SendMessageToChatSessionCommand): Observable<ChatMessageDto>;
     deleteChatMessage(id: string): Observable<FileResponse>;
 }
@@ -143,7 +143,7 @@ export class ChatClient implements IChatClient {
         return _observableOf(null as any);
     }
 
-    createChatSession(command: CreateChatSessionCommand): Observable<ChatSession> {
+    createChatSession(command: CreateChatSessionCommand): Observable<ChatSessionDto> {
         let url_ = this.baseUrl + "/api/Chat/CreateChatSession";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -166,14 +166,14 @@ export class ChatClient implements IChatClient {
                 try {
                     return this.processCreateChatSession(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<ChatSession>;
+                    return _observableThrow(e) as any as Observable<ChatSessionDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<ChatSession>;
+                return _observableThrow(response_) as any as Observable<ChatSessionDto>;
         }));
     }
 
-    protected processCreateChatSession(response: HttpResponseBase): Observable<ChatSession> {
+    protected processCreateChatSession(response: HttpResponseBase): Observable<ChatSessionDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -184,7 +184,7 @@ export class ChatClient implements IChatClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = ChatSession.fromJS(resultData200);
+            result200 = ChatSessionDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -196,7 +196,7 @@ export class ChatClient implements IChatClient {
     }
 
     sendMessageToChatSession(command: SendMessageToChatSessionCommand): Observable<ChatMessageDto> {
-        let url_ = this.baseUrl + "/api/Chat/SendMessageToChatSession/message";
+        let url_ = this.baseUrl + "/api/Chat/SendMessageToChatSession";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -248,7 +248,7 @@ export class ChatClient implements IChatClient {
     }
 
     deleteChatMessage(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/Chat/DeleteChatMessage/message/{id}";
+        let url_ = this.baseUrl + "/api/Chat/DeleteChatMessage/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -907,8 +907,9 @@ export class TodoListsClient implements ITodoListsClient {
 export interface IUserClient {
     login(command: LoginUserCommand): Observable<string>;
     register(command: RegisterUserCommand): Observable<string>;
-    current(): Observable<AppUser>;
-    update(command: UpdateAppUserCommand): Observable<AppUser>;
+    current(): Observable<AppUserDto>;
+    update(command: UpdateAppUserCommand): Observable<AppUserDto>;
+    getAppUserById(id: string): Observable<AppUserDto>;
 }
 
 @Injectable({
@@ -1030,7 +1031,7 @@ export class UserClient implements IUserClient {
         return _observableOf(null as any);
     }
 
-    current(): Observable<AppUser> {
+    current(): Observable<AppUserDto> {
         let url_ = this.baseUrl + "/api/User/Current";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1049,14 +1050,14 @@ export class UserClient implements IUserClient {
                 try {
                     return this.processCurrent(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<AppUser>;
+                    return _observableThrow(e) as any as Observable<AppUserDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<AppUser>;
+                return _observableThrow(response_) as any as Observable<AppUserDto>;
         }));
     }
 
-    protected processCurrent(response: HttpResponseBase): Observable<AppUser> {
+    protected processCurrent(response: HttpResponseBase): Observable<AppUserDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1067,7 +1068,7 @@ export class UserClient implements IUserClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = AppUser.fromJS(resultData200);
+            result200 = AppUserDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -1078,7 +1079,7 @@ export class UserClient implements IUserClient {
         return _observableOf(null as any);
     }
 
-    update(command: UpdateAppUserCommand): Observable<AppUser> {
+    update(command: UpdateAppUserCommand): Observable<AppUserDto> {
         let url_ = this.baseUrl + "/api/User/Update";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1101,14 +1102,14 @@ export class UserClient implements IUserClient {
                 try {
                     return this.processUpdate(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<AppUser>;
+                    return _observableThrow(e) as any as Observable<AppUserDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<AppUser>;
+                return _observableThrow(response_) as any as Observable<AppUserDto>;
         }));
     }
 
-    protected processUpdate(response: HttpResponseBase): Observable<AppUser> {
+    protected processUpdate(response: HttpResponseBase): Observable<AppUserDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1119,7 +1120,58 @@ export class UserClient implements IUserClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = AppUser.fromJS(resultData200);
+            result200 = AppUserDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    getAppUserById(id: string): Observable<AppUserDto> {
+        let url_ = this.baseUrl + "/api/User/GetAppUserById/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAppUserById(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAppUserById(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AppUserDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AppUserDto>;
+        }));
+    }
+
+    protected processGetAppUserById(response: HttpResponseBase): Observable<AppUserDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = AppUserDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -2621,6 +2673,62 @@ export interface IRegisterUserCommand {
     email?: string;
     userName?: string;
     password?: string;
+}
+
+export class AppUserDto implements IAppUserDto {
+    id?: string;
+    userName?: string;
+    email?: string;
+    imageId?: string | undefined;
+    image?: UserFile | undefined;
+    onlineStatus?: OnlineStatus;
+
+    constructor(data?: IAppUserDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userName = _data["userName"];
+            this.email = _data["email"];
+            this.imageId = _data["imageId"];
+            this.image = _data["image"] ? UserFile.fromJS(_data["image"]) : <any>undefined;
+            this.onlineStatus = _data["onlineStatus"];
+        }
+    }
+
+    static fromJS(data: any): AppUserDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new AppUserDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userName"] = this.userName;
+        data["email"] = this.email;
+        data["imageId"] = this.imageId;
+        data["image"] = this.image ? this.image.toJSON() : <any>undefined;
+        data["onlineStatus"] = this.onlineStatus;
+        return data;
+    }
+}
+
+export interface IAppUserDto {
+    id?: string;
+    userName?: string;
+    email?: string;
+    imageId?: string | undefined;
+    image?: UserFile | undefined;
+    onlineStatus?: OnlineStatus;
 }
 
 export class UpdateAppUserCommand implements IUpdateAppUserCommand {

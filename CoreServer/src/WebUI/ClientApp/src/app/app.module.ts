@@ -20,6 +20,7 @@ import { NotificationComponent } from './components/notification/notification.co
 import {ErrorInterceptor} from "./services/error-interceptor.service";
 import {NgxPopperjsModule} from "ngx-popperjs";
 import { SecurePipe } from './services/secure.pipe';
+import { UserPipe } from './services/user/user.pipe';
 
 @NgModule({
   declarations: [
@@ -34,6 +35,7 @@ import { SecurePipe } from './services/secure.pipe';
     RegisterComponent,
     NotificationComponent,
     SecurePipe,
+    UserPipe,
   ],
   imports: [
     BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

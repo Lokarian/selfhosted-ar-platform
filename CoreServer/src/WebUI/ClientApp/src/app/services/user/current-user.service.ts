@@ -1,13 +1,13 @@
 import {Injectable} from '@angular/core';
-import {AppUser, UserClient} from "../web-api-client";
+import {AppUserDto, UserClient} from "../../web-api-client";
 import {BehaviorSubject, firstValueFrom} from "rxjs";
-import {AuthorizeService} from "./auth/authorize.service";
+import {AuthorizeService} from "../auth/authorize.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class CurrentUserService {
-  private userSubject: BehaviorSubject<AppUser> = new BehaviorSubject<AppUser>(null);
+  private userSubject: BehaviorSubject<AppUserDto> = new BehaviorSubject<AppUserDto>(null);
 
   constructor(private userClient: UserClient, private authService: AuthorizeService) {
     this.authService.getAccessToken().subscribe(token => {
@@ -23,7 +23,7 @@ export class CurrentUserService {
     return this.userSubject.asObservable();
   }
 
-  public get user(): AppUser {
+  public get user(): AppUserDto {
     return this.userSubject.value;
   }
 
@@ -32,7 +32,7 @@ export class CurrentUserService {
     this.userSubject.next(user);
   }
 
-  public setUser(user: AppUser) {
+  public setUser(user: AppUserDto) {
     this.userSubject.next(user);
   }
 

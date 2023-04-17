@@ -31,20 +31,20 @@ public class ChatController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ChatSession>> CreateChatSession(CreateChatSessionCommand command)
+    public async Task<ActionResult<ChatSessionDto>> CreateChatSession(CreateChatSessionCommand command)
     {
         var chatSession = await Mediator.Send(command);
         return Ok(_mapper.Map<ChatSessionDto>(chatSession));
     }
 
-    [HttpPost("message")]
+    [HttpPost]
     public async Task<ActionResult<ChatMessageDto>> SendMessageToChatSession(SendMessageToChatSessionCommand command)
     {
         ChatMessage chatMessage = await Mediator.Send(command);
         return Ok(_mapper.Map<ChatMessageDto>(chatMessage));
     }
 
-    [HttpDelete("message/{id}")]
+    [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteChatMessage(Guid id)
     {
         await Mediator.Send(new DeleteChatMessageCommand { Id = id });
