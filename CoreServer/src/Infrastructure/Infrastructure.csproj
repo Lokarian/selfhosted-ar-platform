@@ -16,6 +16,8 @@
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.28.1" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.28.1" />
+        <PackageReference Include="zeroc.ice.net" Version="3.7.9" />
+        <PackageReference Include="zeroc.icebuilder.msbuild" Version="5.0.9" />
     </ItemGroup>
 
     <ItemGroup>
@@ -24,6 +26,7 @@
 
     <ItemGroup>
       <Folder Include="Persistence\Migrations" />
+      <Folder Include="RPC\generated" />
     </ItemGroup>
 
 </Project>
