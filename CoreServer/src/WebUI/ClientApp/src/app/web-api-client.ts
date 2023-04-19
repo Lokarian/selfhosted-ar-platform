@@ -1552,7 +1552,7 @@ export class WeatherForecastClient implements IWeatherForecastClient {
 export class ChatSessionDto implements IChatSessionDto {
     id?: string;
     name?: string;
-    lastMessage?: ChatMessage | undefined;
+    lastMessage?: ChatMessageDto | undefined;
     members?: ChatMemberDto[];
 
     constructor(data?: IChatSessionDto) {
@@ -1568,7 +1568,7 @@ export class ChatSessionDto implements IChatSessionDto {
         if (_data) {
             this.id = _data["id"];
             this.name = _data["name"];
-            this.lastMessage = _data["lastMessage"] ? ChatMessage.fromJS(_data["lastMessage"]) : <any>undefined;
+            this.lastMessage = _data["lastMessage"] ? ChatMessageDto.fromJS(_data["lastMessage"]) : <any>undefined;
             if (Array.isArray(_data["members"])) {
                 this.members = [] as any;
                 for (let item of _data["members"])
@@ -1601,385 +1601,8 @@ export class ChatSessionDto implements IChatSessionDto {
 export interface IChatSessionDto {
     id?: string;
     name?: string;
-    lastMessage?: ChatMessage | undefined;
+    lastMessage?: ChatMessageDto | undefined;
     members?: ChatMemberDto[];
-}
-
-export abstract class BaseEntity implements IBaseEntity {
-    id?: string;
-    domainEvents?: BaseEvent[];
-
-    constructor(data?: IBaseEntity) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            if (Array.isArray(_data["domainEvents"])) {
-                this.domainEvents = [] as any;
-                for (let item of _data["domainEvents"])
-                    this.domainEvents!.push(BaseEvent.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): BaseEntity {
-        data = typeof data === 'object' ? data : {};
-        throw new Error("The abstract class 'BaseEntity' cannot be instantiated.");
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        if (Array.isArray(this.domainEvents)) {
-            data["domainEvents"] = [];
-            for (let item of this.domainEvents)
-                data["domainEvents"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface IBaseEntity {
-    id?: string;
-    domainEvents?: BaseEvent[];
-}
-
-export class ChatMessage extends BaseEntity implements IChatMessage {
-    sessionId?: string;
-    session?: ChatSession;
-    senderId?: string;
-    sender?: AppUser;
-    text?: string;
-    sentAt?: Date;
-
-    constructor(data?: IChatMessage) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.sessionId = _data["sessionId"];
-            this.session = _data["session"] ? ChatSession.fromJS(_data["session"]) : <any>undefined;
-            this.senderId = _data["senderId"];
-            this.sender = _data["sender"] ? AppUser.fromJS(_data["sender"]) : <any>undefined;
-            this.text = _data["text"];
-            this.sentAt = _data["sentAt"] ? new Date(_data["sentAt"].toString()) : <any>undefined;
-        }
-    }
-
-    static override fromJS(data: any): ChatMessage {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatMessage();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["sessionId"] = this.sessionId;
-        data["session"] = this.session ? this.session.toJSON() : <any>undefined;
-        data["senderId"] = this.senderId;
-        data["sender"] = this.sender ? this.sender.toJSON() : <any>undefined;
-        data["text"] = this.text;
-        data["sentAt"] = this.sentAt ? this.sentAt.toISOString() : <any>undefined;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IChatMessage extends IBaseEntity {
-    sessionId?: string;
-    session?: ChatSession;
-    senderId?: string;
-    sender?: AppUser;
-    text?: string;
-    sentAt?: Date;
-}
-
-export class ChatSession extends BaseEntity implements IChatSession {
-    messages?: ChatMessage[];
-    members?: ChatMember[];
-    name?: string | undefined;
-
-    constructor(data?: IChatSession) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            if (Array.isArray(_data["messages"])) {
-                this.messages = [] as any;
-                for (let item of _data["messages"])
-                    this.messages!.push(ChatMessage.fromJS(item));
-            }
-            if (Array.isArray(_data["members"])) {
-                this.members = [] as any;
-                for (let item of _data["members"])
-                    this.members!.push(ChatMember.fromJS(item));
-            }
-            this.name = _data["name"];
-        }
-    }
-
-    static override fromJS(data: any): ChatSession {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatSession();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.messages)) {
-            data["messages"] = [];
-            for (let item of this.messages)
-                data["messages"].push(item.toJSON());
-        }
-        if (Array.isArray(this.members)) {
-            data["members"] = [];
-            for (let item of this.members)
-                data["members"].push(item.toJSON());
-        }
-        data["name"] = this.name;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IChatSession extends IBaseEntity {
-    messages?: ChatMessage[];
-    members?: ChatMember[];
-    name?: string | undefined;
-}
-
-export class ChatMember implements IChatMember {
-    sessionId?: string;
-    session?: ChatSession;
-    userId?: string;
-    user?: AppUser;
-    lastSeen?: Date | undefined;
-
-    constructor(data?: IChatMember) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.sessionId = _data["sessionId"];
-            this.session = _data["session"] ? ChatSession.fromJS(_data["session"]) : <any>undefined;
-            this.userId = _data["userId"];
-            this.user = _data["user"] ? AppUser.fromJS(_data["user"]) : <any>undefined;
-            this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): ChatMember {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatMember();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["sessionId"] = this.sessionId;
-        data["session"] = this.session ? this.session.toJSON() : <any>undefined;
-        data["userId"] = this.userId;
-        data["user"] = this.user ? this.user.toJSON() : <any>undefined;
-        data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IChatMember {
-    sessionId?: string;
-    session?: ChatSession;
-    userId?: string;
-    user?: AppUser;
-    lastSeen?: Date | undefined;
-}
-
-export class AppUser extends BaseEntity implements IAppUser {
-    userName?: string;
-    email?: string;
-    imageId?: string | undefined;
-    image?: UserFile | undefined;
-    onlineStatus?: OnlineStatus;
-
-    constructor(data?: IAppUser) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.userName = _data["userName"];
-            this.email = _data["email"];
-            this.imageId = _data["imageId"];
-            this.image = _data["image"] ? UserFile.fromJS(_data["image"]) : <any>undefined;
-            this.onlineStatus = _data["onlineStatus"];
-        }
-    }
-
-    static override fromJS(data: any): AppUser {
-        data = typeof data === 'object' ? data : {};
-        let result = new AppUser();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["userName"] = this.userName;
-        data["email"] = this.email;
-        data["imageId"] = this.imageId;
-        data["image"] = this.image ? this.image.toJSON() : <any>undefined;
-        data["onlineStatus"] = this.onlineStatus;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IAppUser extends IBaseEntity {
-    userName?: string;
-    email?: string;
-    imageId?: string | undefined;
-    image?: UserFile | undefined;
-    onlineStatus?: OnlineStatus;
-}
-
-export class UserFile extends BaseEntity implements IUserFile {
-    fileName?: string;
-    mimeType?: string;
-    fileType?: FileType;
-
-    constructor(data?: IUserFile) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.fileName = _data["fileName"];
-            this.mimeType = _data["mimeType"];
-            this.fileType = _data["fileType"];
-        }
-    }
-
-    static override fromJS(data: any): UserFile {
-        data = typeof data === 'object' ? data : {};
-        let result = new UserFile();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["fileName"] = this.fileName;
-        data["mimeType"] = this.mimeType;
-        data["fileType"] = this.fileType;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IUserFile extends IBaseEntity {
-    fileName?: string;
-    mimeType?: string;
-    fileType?: FileType;
-}
-
-export enum FileType {
-    UserImage = 0,
-}
-
-export abstract class BaseEvent implements IBaseEvent {
-
-    constructor(data?: IBaseEvent) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-    }
-
-    static fromJS(data: any): BaseEvent {
-        data = typeof data === 'object' ? data : {};
-        throw new Error("The abstract class 'BaseEvent' cannot be instantiated.");
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        return data;
-    }
-}
-
-export interface IBaseEvent {
-}
-
-export enum OnlineStatus {
-    Online = 0,
-    Offline = 1,
-    Busy = 2,
-    Away = 3,
-}
-
-export class ChatMemberDto implements IChatMemberDto {
-    userId?: string;
-    lastSeen?: Date | undefined;
-
-    constructor(data?: IChatMemberDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.userId = _data["userId"];
-            this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): ChatMemberDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatMemberDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["userId"] = this.userId;
-        data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IChatMemberDto {
-    userId?: string;
-    lastSeen?: Date | undefined;
 }
 
 export class ChatMessageDto implements IChatMessageDto {
@@ -2028,6 +1651,46 @@ export interface IChatMessageDto {
     text?: string;
     sentAt?: Date;
     senderId?: string;
+}
+
+export class ChatMemberDto implements IChatMemberDto {
+    userId?: string;
+    lastSeen?: Date | undefined;
+
+    constructor(data?: IChatMemberDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.userId = _data["userId"];
+            this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): ChatMemberDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ChatMemberDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["userId"] = this.userId;
+        data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IChatMemberDto {
+    userId?: string;
+    lastSeen?: Date | undefined;
 }
 
 export class GetChatMessagesQuery implements IGetChatMessagesQuery {
@@ -2835,6 +2498,132 @@ export interface IAppUserDto {
     imageId?: string | undefined;
     image?: UserFile | undefined;
     onlineStatus?: OnlineStatus;
+}
+
+export abstract class BaseEntity implements IBaseEntity {
+    id?: string;
+    domainEvents?: BaseEvent[];
+
+    constructor(data?: IBaseEntity) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            if (Array.isArray(_data["domainEvents"])) {
+                this.domainEvents = [] as any;
+                for (let item of _data["domainEvents"])
+                    this.domainEvents!.push(BaseEvent.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): BaseEntity {
+        data = typeof data === 'object' ? data : {};
+        throw new Error("The abstract class 'BaseEntity' cannot be instantiated.");
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        if (Array.isArray(this.domainEvents)) {
+            data["domainEvents"] = [];
+            for (let item of this.domainEvents)
+                data["domainEvents"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IBaseEntity {
+    id?: string;
+    domainEvents?: BaseEvent[];
+}
+
+export class UserFile extends BaseEntity implements IUserFile {
+    fileName?: string;
+    mimeType?: string;
+    fileType?: FileType;
+
+    constructor(data?: IUserFile) {
+        super(data);
+    }
+
+    override init(_data?: any) {
+        super.init(_data);
+        if (_data) {
+            this.fileName = _data["fileName"];
+            this.mimeType = _data["mimeType"];
+            this.fileType = _data["fileType"];
+        }
+    }
+
+    static override fromJS(data: any): UserFile {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserFile();
+        result.init(data);
+        return result;
+    }
+
+    override toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["fileName"] = this.fileName;
+        data["mimeType"] = this.mimeType;
+        data["fileType"] = this.fileType;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IUserFile extends IBaseEntity {
+    fileName?: string;
+    mimeType?: string;
+    fileType?: FileType;
+}
+
+export enum FileType {
+    UserImage = 0,
+}
+
+export abstract class BaseEvent implements IBaseEvent {
+
+    constructor(data?: IBaseEvent) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+    }
+
+    static fromJS(data: any): BaseEvent {
+        data = typeof data === 'object' ? data : {};
+        throw new Error("The abstract class 'BaseEvent' cannot be instantiated.");
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        return data;
+    }
+}
+
+export interface IBaseEvent {
+}
+
+export enum OnlineStatus {
+    Online = 0,
+    Offline = 1,
+    Busy = 2,
+    Away = 3,
 }
 
 export class UpdateAppUserCommand implements IUpdateAppUserCommand {
