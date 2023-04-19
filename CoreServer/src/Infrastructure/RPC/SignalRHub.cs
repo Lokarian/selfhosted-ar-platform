@@ -1,15 +1,15 @@
 ﻿using System.Security.Claims;
 using CoreServer.Application.Chat.Queries;
-using CoreServer.Application.RPCInterfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Infrastructure.RPC;
-public class SignalRHub: Hub<IRpcFusionInterface>
+
+public class SignalRHub : Hub
 {
     private readonly ILogger<SignalRHub> _logger;
-    
+
     public SignalRHub(ILogger<SignalRHub> logger)
     {
         _logger = logger;
@@ -21,7 +21,7 @@ public class SignalRHub: Hub<IRpcFusionInterface>
         _logger.LogInformation($"Client {name} connected");
         return base.OnConnectedAsync();
     }
-    
+
     public override Task OnDisconnectedAsync(Exception exception)
     {
         string name = Context.User.Identity.Name;
@@ -31,6 +31,13 @@ public class SignalRHub: Hub<IRpcFusionInterface>
 
     public async Task SendMessage(string user, string message)
     {
-        await Clients.All.UpdateChatSession(new ChatSessionDto(){Name = "test"});
+        await Clients.All.SendAsync("UpdateChatSession", new ChatSessionDto() { Name = "test" });
+    }
+
+    public async Task RegisterService(string serviceName)
+    {
+        _logger.LogInformation(
+            $"User ${Context.UserIdentifier} on Client {Context.ConnectionId} registered service {serviceName}");
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"{Context.UserIdentifier}-{serviceName}");
     }
 }

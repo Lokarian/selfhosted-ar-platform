@@ -4,7 +4,8 @@ using CoreServer.Application.Chat.Commands.CreateChatSession;
 using CoreServer.Application.Chat.Queries;
 using CoreServer.Application.Chat.Queries.GetSessionMembers;
 using CoreServer.Application.Common.Interfaces;
-using CoreServer.Application.RPCInterfaces;
+using CoreServer.Application.RPC;
+using CoreServer.Application.RPC.common;
 using CoreServer.Application.User.Queries;
 using CoreServer.Domain.Entities.Chat;
 using CoreServer.Infrastructure.RPC;
@@ -18,11 +19,11 @@ namespace CoreServer.WebUI.Controllers;
 public class ChatController : ApiControllerBase
 {
     private readonly IMapper _mapper;
-    private readonly IUserProxy<IRpcChatClient> _chatProxy;
-    private readonly IUserProxy<IRpcUserClient> _userProxy;
+    private readonly IUserProxy<IRpcChatService> _chatProxy;
+    private readonly IUserProxy<IRpcUserService> _userProxy;
     private readonly ICurrentUserService _currentUserService;
 
-    public ChatController(IMapper mapper, IUserProxy<IRpcChatClient> chatProxy,ICurrentUserService currentUserService, IUserProxy<IRpcUserClient> userProxy)
+    public ChatController(IMapper mapper, IUserProxy<IRpcChatService> chatProxy,ICurrentUserService currentUserService, IUserProxy<IRpcUserService> userProxy)
     {
         _mapper = mapper;
         _chatProxy = chatProxy;

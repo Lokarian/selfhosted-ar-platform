@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CoreServer.Application.Chat.Queries;
-using CoreServer.Application.RPCInterfaces;
+using CoreServer.Application.RPC;
+using CoreServer.Application.RPC.common;
 using CoreServer.Domain.Events;
 using MediatR;
 
@@ -8,10 +9,10 @@ namespace CoreServer.Application.Chat.EventHandlers;
 
 public class ChatSessionCreatedEventHandler : INotificationHandler<ChatSessionCreatedEvent>
 {
-    private readonly IUserProxy<IRpcChatClient> _rpcService;
+    private readonly IUserProxy<IRpcChatService> _rpcService;
     private readonly IMapper _mapper;
 
-    public ChatSessionCreatedEventHandler(IUserProxy<IRpcChatClient> rpcService, IMapper mapper)
+    public ChatSessionCreatedEventHandler(IUserProxy<IRpcChatService> rpcService, IMapper mapper)
     {
         _rpcService = rpcService;
         _mapper = mapper;

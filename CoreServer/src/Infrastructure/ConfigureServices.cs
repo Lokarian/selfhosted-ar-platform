@@ -1,5 +1,5 @@
 ﻿using CoreServer.Application.Common.Interfaces;
-using CoreServer.Application.RPCInterfaces;
+using CoreServer.Application.RPC.common;
 using CoreServer.Domain.Enums;
 using CoreServer.Infrastructure.Files;
 using CoreServer.Infrastructure.Identity;

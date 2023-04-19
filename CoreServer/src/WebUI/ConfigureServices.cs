@@ -7,6 +7,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using NJsonSchema;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 
@@ -34,9 +35,10 @@ public static class ConfigureServices
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = configuration["Jwt:Issuer"],
                 ValidAudience = configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? string.Empty))
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? string.Empty))
             };
-            options.Events=new JwtBearerEvents
+            options.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>
                 {
@@ -46,6 +48,7 @@ public static class ConfigureServices
                     {
                         context.Token = accessToken;
                     }
+
                     return Task.CompletedTask;
                 }
             };
@@ -56,14 +59,13 @@ public static class ConfigureServices
         services.AddControllersWithViews(options =>
             options.Filters.Add<ApiExceptionFilterAttribute>());
         services.AddFluentValidationClientsideAdapters();
-            
+
 
         services.AddRazorPages();
 
         // Customise default API behaviour
         services.Configure<ApiBehaviorOptions>(options =>
             options.SuppressModelStateInvalidFilter = true);
-
         services.AddOpenApiDocument(configure =>
         {
             configure.Title = "CoreServer API";
@@ -77,6 +79,8 @@ public static class ConfigureServices
                 });
 
             configure.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
+            
+            
         });
 
         return services;

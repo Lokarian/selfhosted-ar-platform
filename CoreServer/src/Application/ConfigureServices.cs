@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using CoreServer.Application.Common.Behaviours;
+using CoreServer.Application.RPC.common;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;

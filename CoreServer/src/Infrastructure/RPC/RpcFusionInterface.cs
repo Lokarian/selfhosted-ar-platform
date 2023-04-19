@@ -1,8 +1,8 @@
-﻿using CoreServer.Application.RPCInterfaces;
+﻿using CoreServer.Application.RPC;
 
 namespace CoreServer.Infrastructure.RPC;
 
-public interface IRpcFusionInterface: IRpcChatClient, IRpcUserClient
+public interface IRpcFusionInterface: IRpcChatService, IRpcUserService
 {
     
 }

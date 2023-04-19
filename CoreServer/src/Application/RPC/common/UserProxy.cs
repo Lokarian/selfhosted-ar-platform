@@ -1,4 +1,4 @@
-﻿namespace CoreServer.Application.RPCInterfaces;
+﻿namespace CoreServer.Application.RPC.common;
 
 public interface IUserProxy<out T> where T : IRpcService
 {
