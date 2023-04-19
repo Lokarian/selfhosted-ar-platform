@@ -16,7 +16,7 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
             { typeof(ValidationException), HandleValidationException },
             { typeof(NotFoundException), HandleNotFoundException },
             { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
-            { typeof(ForbiddenAccessException), HandleForbiddenAccessException },
+            { typeof(ForbiddenAccessException), HandleForbiddenAccessException }
         };
     }
 
@@ -39,15 +39,14 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
         if (!context.ModelState.IsValid)
         {
             HandleInvalidModelStateException(context);
-            return;
         }
     }
 
     private void HandleValidationException(ExceptionContext context)
     {
-        var exception = (ValidationException)context.Exception;
+        ValidationException exception = (ValidationException)context.Exception;
 
-        var details = new ValidationProblemDetails(exception.Errors)
+        ValidationProblemDetails details = new ValidationProblemDetails(exception.Errors)
         {
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
         };
@@ -59,7 +58,7 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
 
     private void HandleInvalidModelStateException(ExceptionContext context)
     {
-        var details = new ValidationProblemDetails(context.ModelState)
+        ValidationProblemDetails details = new ValidationProblemDetails(context.ModelState)
         {
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
         };
@@ -71,9 +70,9 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
 
     private void HandleNotFoundException(ExceptionContext context)
     {
-        var exception = (NotFoundException)context.Exception;
+        NotFoundException exception = (NotFoundException)context.Exception;
 
-        var details = new ProblemDetails()
+        ProblemDetails details = new ProblemDetails
         {
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
             Title = "The specified resource was not found.",
@@ -87,7 +86,7 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
 
     private void HandleUnauthorizedAccessException(ExceptionContext context)
     {
-        var details = new ProblemDetails
+        ProblemDetails details = new ProblemDetails
         {
             Status = StatusCodes.Status401Unauthorized,
             Title = "Unauthorized",
@@ -101,7 +100,7 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
 
     private void HandleForbiddenAccessException(ExceptionContext context)
     {
-        var details = new ProblemDetails
+        ProblemDetails details = new ProblemDetails
         {
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",

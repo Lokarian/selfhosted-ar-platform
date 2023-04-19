@@ -7,8 +7,8 @@ namespace CoreServer.WebUI.Services;
 
 public class UserMiddleware
 {
-    private readonly RequestDelegate _next;
     private readonly ILogger _logger;
+    private readonly RequestDelegate _next;
     private IServiceScopeFactory _serviceScopeFactory;
 
     public UserMiddleware(
@@ -25,17 +25,17 @@ public class UserMiddleware
         HttpContext context,
         ICurrentUserService currentUserService)
     {
-        var userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        string? userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId is null)
         {
             currentUserService.User = null;
         }
         else
         {
-            var Mediator = context.RequestServices.GetRequiredService<ISender>();
+            ISender Mediator = context.RequestServices.GetRequiredService<ISender>();
             currentUserService.User = await Mediator.Send(new GetAppUserByIdQuery { Id = Guid.Parse(userId) });
         }
 
-        await this._next(context);
+        await _next(context);
     }
 }

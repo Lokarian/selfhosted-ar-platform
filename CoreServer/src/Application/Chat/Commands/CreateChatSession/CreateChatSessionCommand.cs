@@ -1,11 +1,10 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Domain.Entities;
 using CoreServer.Domain.Entities.Chat;
 using CoreServer.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 //import System.Linq;
-using System.Linq.Expressions;
 
 namespace CoreServer.Application.Chat.Commands.CreateChatSession;
 
@@ -28,7 +27,7 @@ public class CreateChatSessionCommandHandler : IRequestHandler<CreateChatSession
 
     public async Task<ChatSession> Handle(CreateChatSessionCommand request, CancellationToken cancellationToken)
     {
-        var users = await _context.AppUsers.AsTracking().Where(u => request.UserIds.Contains(u.Id))
+        List<AppUser> users = await _context.AppUsers.AsTracking().Where(u => request.UserIds.Contains(u.Id))
             .ToListAsync(cancellationToken);
         //add current user to chat session if not already in it
         if (users.All(u => u.Id != _currentUserService.User!.Id))
@@ -36,8 +35,8 @@ public class CreateChatSessionCommandHandler : IRequestHandler<CreateChatSession
             users.Add(_currentUserService.User!);
         }
 
-        var entity = new ChatSession { Name = request.Name };
-        var members = users.Select(u => new ChatMember(u, entity)).ToList();
+        ChatSession entity = new ChatSession { Name = request.Name };
+        List<ChatMember> members = users.Select(u => new ChatMember(u, entity)).ToList();
 
         _context.ChatSessions.Add(entity);
         _context.ChatMembers.AddRange(members);

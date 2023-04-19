@@ -12,8 +12,8 @@ public class GetUserFileQuery : IRequest<UserFileWithFilestream>
 
 public class GetUserFileQueryHandler : IRequestHandler<GetUserFileQuery, UserFileWithFilestream>
 {
-    private readonly IFileStorageService _fileStorageService;
     private readonly IApplicationDbContext _context;
+    private readonly IFileStorageService _fileStorageService;
 
     public GetUserFileQueryHandler(IFileStorageService fileStorageService, IApplicationDbContext context)
     {
@@ -23,13 +23,13 @@ public class GetUserFileQueryHandler : IRequestHandler<GetUserFileQuery, UserFil
 
     public async Task<UserFileWithFilestream> Handle(GetUserFileQuery request, CancellationToken cancellationToken)
     {
-        var userFile = await _context.UserFiles.FindAsync(request.Id);
+        UserFile? userFile = await _context.UserFiles.FindAsync(request.Id);
         if (userFile == null)
         {
             throw new NotFoundException(nameof(UserFile), request.Id);
         }
 
-        var fileStream = await _fileStorageService.GetFileAsync(userFile);
+        Stream fileStream = await _fileStorageService.GetFileAsync(userFile);
         return new UserFileWithFilestream { UserFile = userFile, FileStream = fileStream };
     }
 }

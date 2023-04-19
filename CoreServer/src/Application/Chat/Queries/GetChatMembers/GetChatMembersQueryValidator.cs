@@ -1,4 +1,5 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Domain.Entities.Chat;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +20,7 @@ public class GetChatMembersQueryValidator : AbstractValidator<GetChatMembersQuer
 
     private async Task<bool> UserIsChatMember(Guid sessionId, CancellationToken cancellationToken)
     {
-        var chatMember = await _context.ChatMembers.FirstOrDefaultAsync(
+        ChatMember? chatMember = await _context.ChatMembers.FirstOrDefaultAsync(
             x => x.SessionId == sessionId && x.UserId == _currentUserService.User!.Id,
             cancellationToken);
         return chatMember != null;

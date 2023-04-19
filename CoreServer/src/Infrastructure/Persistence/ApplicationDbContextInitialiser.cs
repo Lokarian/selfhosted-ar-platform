@@ -8,10 +8,10 @@ namespace CoreServer.Infrastructure.Persistence;
 
 public class ApplicationDbContextInitialiser
 {
-    private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
-    private readonly UserManager<AppIdentityUser> _userManager;
+    private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly UserManager<AppIdentityUser> _userManager;
 
     public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger,
         ApplicationDbContext context, UserManager<AppIdentityUser> userManager, RoleManager<IdentityRole> roleManager)
@@ -54,7 +54,7 @@ public class ApplicationDbContextInitialiser
     public async Task TrySeedAsync()
     {
         // Default roles
-        var administratorRole = new IdentityRole("Administrator");
+        IdentityRole administratorRole = new IdentityRole("Administrator");
 
         if (_roleManager.Roles.All(r => r.Name != administratorRole.Name))
         {
@@ -62,9 +62,9 @@ public class ApplicationDbContextInitialiser
         }
 
         // Default users
-        var appUser = new AppUser { UserName = "administratorapp@localhost", Email = "administrator@localhost" };
+        AppUser appUser = new AppUser { UserName = "administratorapp@localhost", Email = "administrator@localhost" };
         _context.AppUsers.Add(appUser);
-        var administrator = new AppIdentityUser
+        AppIdentityUser administrator = new AppIdentityUser
         {
             UserName = "administratoridentity@localhost", Email = "administrator@localhost", AppUser = appUser
         };
@@ -90,7 +90,7 @@ public class ApplicationDbContextInitialiser
                     new TodoItem { Title = "Make a todo list 📃" },
                     new TodoItem { Title = "Check off the first item ✅" },
                     new TodoItem { Title = "Realise you've already done two things on the list! 🤯" },
-                    new TodoItem { Title = "Reward yourself with a nice, long nap 🏆" },
+                    new TodoItem { Title = "Reward yourself with a nice, long nap 🏆" }
                 }
             });
 

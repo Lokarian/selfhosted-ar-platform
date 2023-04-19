@@ -27,8 +27,8 @@ public class GetMyChatSessionsQueryHandler : IRequestHandler<GetMyChatSessionsQu
     public async Task<IEnumerable<ChatSessionDto>> Handle(GetMyChatSessionsQuery request,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.User!.Id;
-        var chatSessions = await _context.ChatSessions.Include(s => s.Messages)
+        Guid userId = _currentUserService.User!.Id;
+        List<ChatSessionDto> chatSessions = await _context.ChatSessions.Include(s => s.Messages)
             .Where(x => x.Members.Any(m => m.UserId == userId))
             .ProjectTo<ChatSessionDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);

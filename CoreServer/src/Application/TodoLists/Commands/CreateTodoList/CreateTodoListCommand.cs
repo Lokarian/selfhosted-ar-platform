@@ -20,7 +20,7 @@ public class CreateTodoListCommandHandler : IRequestHandler<CreateTodoListComman
 
     public async Task<Guid> Handle(CreateTodoListCommand request, CancellationToken cancellationToken)
     {
-        var entity = new TodoList();
+        TodoList entity = new TodoList();
 
         entity.Title = request.Title;
 

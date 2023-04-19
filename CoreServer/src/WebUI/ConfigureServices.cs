@@ -6,8 +6,8 @@ using CoreServer.WebUI.Services;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
-using NJsonSchema;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 
@@ -42,8 +42,8 @@ public static class ConfigureServices
             {
                 OnMessageReceived = context =>
                 {
-                    var accessToken = context.Request.Query["access_token"];
-                    var path = context.HttpContext.Request.Path;
+                    StringValues accessToken = context.Request.Query["access_token"];
+                    PathString path = context.HttpContext.Request.Path;
                     if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/api/hub"))
                     {
                         context.Token = accessToken;

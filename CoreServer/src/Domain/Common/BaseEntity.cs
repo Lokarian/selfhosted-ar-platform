@@ -4,9 +4,8 @@ namespace CoreServer.Domain.Common;
 
 public abstract class BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-
     private readonly List<BaseEvent> _domainEvents = new();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [NotMapped] public IReadOnlyCollection<BaseEvent> DomainEvents => _domainEvents.AsReadOnly();
 

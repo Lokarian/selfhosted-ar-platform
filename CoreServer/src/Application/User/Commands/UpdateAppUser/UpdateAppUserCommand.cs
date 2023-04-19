@@ -26,7 +26,7 @@ public class UpdateAppUserCommandHandler : IRequestHandler<UpdateAppUserCommand>
 
     public async Task<Unit> Handle(UpdateAppUserCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.AppUsers.Include(a => a.Image)
+        AppUser? entity = await _context.AppUsers.Include(a => a.Image)
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
 
         if (entity == null)

@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using CoreServer.Application.Chat.Queries;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
@@ -31,7 +30,7 @@ public class SignalRHub : Hub
 
     public async Task SendMessage(string user, string message)
     {
-        await Clients.All.SendAsync("UpdateChatSession", new ChatSessionDto() { Name = "test" });
+        await Clients.All.SendAsync("UpdateChatSession", new ChatSessionDto { Name = "test" });
     }
 
     public async Task RegisterService(string serviceName)

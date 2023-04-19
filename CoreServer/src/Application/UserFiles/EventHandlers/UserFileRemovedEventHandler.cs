@@ -1,7 +1,6 @@
 ﻿using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Application.UserFiles.EventHandlers;
 

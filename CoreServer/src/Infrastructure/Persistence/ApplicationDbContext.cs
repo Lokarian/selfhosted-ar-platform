@@ -30,15 +30,15 @@ public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplica
     public DbSet<TodoList> TodoLists => Set<TodoList>();
 
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
-    
+
     public DbSet<AppUser> AppUsers => Set<AppUser>();
-    
+
     public DbSet<UserFile> UserFiles => Set<UserFile>();
-    
+
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
-    
+
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
-    
+
     public DbSet<ChatMember> ChatMembers => Set<ChatMember>();
 
     protected override void OnModelCreating(ModelBuilder builder)

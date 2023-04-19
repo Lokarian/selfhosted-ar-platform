@@ -9,8 +9,8 @@ namespace CoreServer.Application.Chat.EventHandlers;
 
 public class ChatSessionCreatedEventHandler : INotificationHandler<ChatSessionCreatedEvent>
 {
-    private readonly IUserProxy<IRpcChatService> _rpcService;
     private readonly IMapper _mapper;
+    private readonly IUserProxy<IRpcChatService> _rpcService;
 
     public ChatSessionCreatedEventHandler(IUserProxy<IRpcChatService> rpcService, IMapper mapper)
     {

@@ -28,7 +28,7 @@ public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessag
 
     public async Task<ChatMessage> Handle(SendMessageToChatSessionCommand request, CancellationToken cancellationToken)
     {
-        var session = await _context.ChatSessions
+        ChatSession? session = await _context.ChatSessions
             .Include(s => s.Messages)
             .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
 
@@ -37,7 +37,8 @@ public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessag
             throw new NotFoundException(nameof(ChatSession), request.SessionId);
         }
 
-        var message = new ChatMessage { Text = request.Text, Sender = _currentUserService.User!, Session = session };
+        ChatMessage message =
+            new ChatMessage { Text = request.Text, Sender = _currentUserService.User!, Session = session };
 
         _context.ChatMessages.Add(message);
         session.AddDomainEvent(new MassageInChatCreatedEvent(message));

@@ -17,36 +17,36 @@ public class SignalRUserProxy<T> : IUserProxy<T> where T : class, IRpcService
     public T Client(Guid userId)
     {
         //get name of interface without the "I" if it starts with one
-        var interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
+        string interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
         T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Group($"{userId}-{interfaceName}"));
         return proxy;
     }
 
     public T Clients(IEnumerable<Guid> userIds)
     {
-        var interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
+        string interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
         T proxy = SignalRDispatchProxy<T>.CreateProxy(
             _hubContext.Clients.Groups(userIds.Select(x => $"{x}-{interfaceName}")));
         return proxy;
     }
 }
 
-class SignalRDispatchProxy<T> : DispatchProxy where T : class, IRpcService
+internal class SignalRDispatchProxy<T> : DispatchProxy where T : class, IRpcService
 {
-    private IClientProxy _target;
     private string _serviceName;
+    private IClientProxy _target;
 
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
-        var endpointName = $"{_serviceName}/{targetMethod?.Name}";
+        string endpointName = $"{_serviceName}/{targetMethod?.Name}";
         Console.WriteLine(endpointName);
-        var result = _target.SendCoreAsync(endpointName, args);
+        Task result = _target.SendCoreAsync(endpointName, args);
         return result;
     }
 
     public static T CreateProxy(IClientProxy target)
     {
-        var proxy = Create<T, SignalRDispatchProxy<T>>() as SignalRDispatchProxy<T>;
+        SignalRDispatchProxy<T>? proxy = Create<T, SignalRDispatchProxy<T>>() as SignalRDispatchProxy<T>;
         proxy._target = target;
         //remove the "I" from the interface name if it starts with one
         proxy._serviceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;

@@ -19,8 +19,8 @@ public class FileStorage : IFileStorageService
         try
         {
             //store file to file system from filetype
-            var filePath = GetFilePath(userFile);
-            using var file = File.Create(filePath);
+            string filePath = GetFilePath(userFile);
+            using FileStream file = File.Create(filePath);
             fileStream.CopyTo(file);
             return Task.FromResult(Result.Success());
         }
@@ -32,28 +32,28 @@ public class FileStorage : IFileStorageService
 
     public Task<Stream> GetFileAsync(UserFile userFile)
     {
-        var filePath = GetFilePath(userFile);
-        var fileStream = File.Open(filePath, FileMode.Open);
+        string filePath = GetFilePath(userFile);
+        FileStream fileStream = File.Open(filePath, FileMode.Open);
         return Task.FromResult(fileStream as Stream);
     }
 
     public Task DeleteFileAsync(UserFile userFile)
     {
-        var filePath = GetFilePath(userFile);
+        string filePath = GetFilePath(userFile);
         File.Delete(filePath);
         return Task.CompletedTask;
     }
 
     private string GetFilePath(UserFile file)
     {
-        var relativePath = this._configuration.GetSection("FileStorage").GetSection("FileTypeRelativePaths")
+        string? relativePath = _configuration.GetSection("FileStorage").GetSection("FileTypeRelativePaths")
             .GetSection(file.FileType.ToString()).Value;
         if (relativePath == null)
         {
             relativePath = file.FileType.ToString();
         }
 
-        return Path.Combine(this._configuration.GetSection("FileStorage").GetSection("StoragePath").Value, relativePath,
+        return Path.Combine(_configuration.GetSection("FileStorage").GetSection("StoragePath").Value, relativePath,
             $"{file.Id}_{file.FileName}");
     }
 }

@@ -2,6 +2,7 @@
 
 public class TodoItem : BaseAuditableEntity
 {
+    private bool _done;
     public Guid ListId { get; set; }
 
     public string? Title { get; set; }
@@ -12,14 +13,12 @@ public class TodoItem : BaseAuditableEntity
 
     public DateTime? Reminder { get; set; }
 
-    private bool _done;
-
     public bool Done
     {
         get => _done;
         set
         {
-            if (value == true && _done == false)
+            if (value && _done == false)
             {
                 AddDomainEvent(new TodoItemCompletedEvent(this));
             }

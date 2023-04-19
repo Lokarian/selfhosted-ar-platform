@@ -10,10 +10,10 @@ public class CsvFileBuilder : ICsvFileBuilder
 {
     public byte[] BuildTodoItemsFile(IEnumerable<TodoItemRecord> records)
     {
-        using var memoryStream = new MemoryStream();
-        using (var streamWriter = new StreamWriter(memoryStream))
+        using MemoryStream memoryStream = new MemoryStream();
+        using (StreamWriter streamWriter = new StreamWriter(memoryStream))
         {
-            using var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
+            using CsvWriter csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
 
             csvWriter.Context.RegisterClassMap<TodoItemRecordMap>();
             csvWriter.WriteRecords(records);

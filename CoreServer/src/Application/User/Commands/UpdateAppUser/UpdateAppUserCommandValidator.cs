@@ -5,8 +5,8 @@ namespace CoreServer.Application.User.Commands.RegisterUser;
 
 public class UpdateAppUserCommandValidator : AbstractValidator<UpdateAppUserCommand>
 {
-    private readonly ICurrentUserService _currentUserService;
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IIdentityService _identityService;
 
     public UpdateAppUserCommandValidator(ICurrentUserService currentUserService, IApplicationDbContext context,

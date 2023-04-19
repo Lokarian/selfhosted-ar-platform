@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using CoreServer.Application.Common.Mappings;
-using CoreServer.Domain.Entities;
 using CoreServer.Domain.Entities.Chat;
 
 namespace CoreServer.Application.Chat.Queries;

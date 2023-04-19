@@ -8,7 +8,6 @@ using CoreServer.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-
 namespace CoreServer.WebUI.Controllers;
 
 public class UserController : ApiControllerBase
@@ -39,7 +38,7 @@ public class UserController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<AppUserDto>> Current()
     {
-        var appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = _currentUserService.User!.Id });
+        AppUser? appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = _currentUserService.User!.Id });
         return _mapper.Map<AppUserDto>(appUser);
     }
 
@@ -48,7 +47,7 @@ public class UserController : ApiControllerBase
     public async Task<ActionResult<AppUserDto>> Update(UpdateAppUserCommand command)
     {
         await Mediator.Send(command);
-        var appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = command.Id });
+        AppUser? appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = command.Id });
         return _mapper.Map<AppUserDto>(appUser);
     }
 
@@ -56,7 +55,7 @@ public class UserController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<AppUserDto>> GetAppUserById(Guid id)
     {
-        var appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = id });
+        AppUser? appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = id });
         return _mapper.Map<AppUserDto>(appUser);
     }
 }

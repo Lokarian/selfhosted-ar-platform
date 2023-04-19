@@ -3,7 +3,6 @@ using CoreServer.Application.TodoLists.Commands.DeleteTodoList;
 using CoreServer.Application.TodoLists.Commands.UpdateTodoList;
 using CoreServer.Application.TodoLists.Queries.ExportTodos;
 using CoreServer.Application.TodoLists.Queries.GetTodos;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoreServer.WebUI.Controllers;
@@ -19,7 +18,7 @@ public class TodoListsController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<FileResult> Get(Guid id)
     {
-        var vm = await Mediator.Send(new ExportTodosQuery { ListId = id });
+        ExportTodosVm vm = await Mediator.Send(new ExportTodosQuery { ListId = id });
 
         return File(vm.Content, vm.ContentType, vm.FileName);
     }

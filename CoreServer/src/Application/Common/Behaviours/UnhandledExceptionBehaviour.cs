@@ -22,7 +22,7 @@ public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavio
         }
         catch (Exception ex)
         {
-            var requestName = typeof(TRequest).Name;
+            string requestName = typeof(TRequest).Name;
 
             _logger.LogError(ex, "CoreServer Request: Unhandled Exception for Request {Name} {@Request}", requestName,
                 request);

@@ -1,5 +1,4 @@
-﻿using CoreServer.Application.Common.Models;
-using CoreServer.Domain.Entities;
+﻿using CoreServer.Domain.Entities;
 
 namespace CoreServer.Application.Common.Interfaces;
 

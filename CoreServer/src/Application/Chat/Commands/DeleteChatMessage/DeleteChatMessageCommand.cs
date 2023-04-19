@@ -21,7 +21,7 @@ public class DeleteChatMessageCommandHandler : IRequestHandler<DeleteChatMessage
 
     public async Task<Unit> Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.ChatMessages.FindAsync(request.Id);
+        ChatMessage? entity = await _context.ChatMessages.FindAsync(request.Id);
 
         if (entity == null)
         {
