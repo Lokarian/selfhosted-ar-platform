@@ -2,11 +2,11 @@
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Security;
 using CoreServer.Domain.Entities.Chat;
-using CoreServer.Domain.Events;
+using CoreServer.Domain.Events.Chat;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Commands.CreateChatSession;
+namespace CoreServer.Application.Chat.Commands.SendMessageToChatSession;
 
 [Authorize]
 public class SendMessageToChatSessionCommand : IRequest<ChatMessage>

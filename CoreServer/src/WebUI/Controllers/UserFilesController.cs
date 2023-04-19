@@ -1,10 +1,10 @@
-﻿using CoreServer.Application.Files.Commands;
-using CoreServer.Application.Files.Queries;
+﻿using CoreServer.Application.UserFiles.Commands;
+using CoreServer.Application.UserFiles.Queries;
 using CoreServer.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CoreServer.WebUI.Controllers;
+namespace WebUI.Controllers;
 
 [Authorize]
 public class UserFilesController : ApiControllerBase

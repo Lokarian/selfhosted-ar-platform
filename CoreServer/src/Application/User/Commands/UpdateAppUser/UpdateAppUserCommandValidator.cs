@@ -1,7 +1,7 @@
 ﻿using CoreServer.Application.Common.Interfaces;
 using FluentValidation;
 
-namespace CoreServer.Application.User.Commands.RegisterUser;
+namespace CoreServer.Application.User.Commands.UpdateAppUser;
 
 public class UpdateAppUserCommandValidator : AbstractValidator<UpdateAppUserCommand>
 {

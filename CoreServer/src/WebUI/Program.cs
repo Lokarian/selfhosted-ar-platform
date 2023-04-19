@@ -2,10 +2,10 @@ using CoreServer.Application;
 using CoreServer.Infrastructure;
 using CoreServer.Infrastructure.Persistence;
 using CoreServer.Infrastructure.RPC;
-using CoreServer.WebUI.Services;
 using WebUI;
+using WebUI.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddApplicationServices();
@@ -21,7 +21,7 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-var app = builder.Build();
+WebApplication app = builder.Build();
 app.UseCors("test");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -30,9 +30,10 @@ if (app.Environment.IsDevelopment())
     app.UseMigrationsEndPoint();
 
     // Initialise and seed database
-    using (var scope = app.Services.CreateScope())
+    using (IServiceScope scope = app.Services.CreateScope())
     {
-        var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
+        ApplicationDbContextInitialiser initialiser =
+            scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
         await initialiser.InitialiseAsync();
         await initialiser.SeedAsync();
     }
@@ -60,8 +61,8 @@ app.UseAuthorization();
 app.UseMiddleware<UserMiddleware>();
 
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller}/{action=Index}/{id?}");
+    "default",
+    "{controller}/{action=Index}/{id?}");
 
 app.MapRazorPages();
 app.MapHub<SignalRHub>("/api/hub");

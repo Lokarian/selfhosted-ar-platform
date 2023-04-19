@@ -3,7 +3,7 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Entities.Chat;
 using MediatR;
 
-namespace CoreServer.Application.Chat.Commands;
+namespace CoreServer.Application.Chat.Commands.DeleteChatMessage;
 
 public class DeleteChatMessageCommand : IRequest
 {

@@ -3,7 +3,7 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Entities;
 using MediatR;
 
-namespace CoreServer.Application.Files.Queries;
+namespace CoreServer.Application.UserFiles.Queries;
 
 public class GetUserFileQuery : IRequest<UserFileWithFilestream>
 {

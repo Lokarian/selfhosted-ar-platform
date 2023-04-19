@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using CoreServer.Application.Chat.Queries;
+using CoreServer.Application.Chat.Queries.GetMyChatSessions;
 using CoreServer.Application.RPC;
 using CoreServer.Application.RPC.common;
 using CoreServer.Domain.Events;
+using CoreServer.Domain.Events.Chat;
 using MediatR;
 
 namespace CoreServer.Application.Chat.EventHandlers;

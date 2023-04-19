@@ -2,7 +2,7 @@
 using CoreServer.Domain.Entities;
 using MediatR;
 
-namespace CoreServer.WebUI.Services;
+namespace WebUI.Services;
 
 public class CurrentUserService : ICurrentUserService
 {

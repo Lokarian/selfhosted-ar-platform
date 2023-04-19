@@ -3,7 +3,7 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Entities;
 using MediatR;
 
-namespace CoreServer.Application.Files.Commands;
+namespace CoreServer.Application.UserFiles.Commands;
 
 public class DeleteUserFileCommand : IRequest
 {

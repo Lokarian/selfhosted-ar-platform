@@ -4,7 +4,7 @@ using CoreServer.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Queries;
+namespace CoreServer.Application.Chat.Queries.GetChatMessages;
 
 public class GetChatMessagesQuery : IRequest<IList<ChatMessageDto>>
 {

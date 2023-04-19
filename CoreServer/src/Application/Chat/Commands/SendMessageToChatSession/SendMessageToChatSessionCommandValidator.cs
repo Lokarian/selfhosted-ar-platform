@@ -3,7 +3,7 @@ using CoreServer.Domain.Entities.Chat;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Commands.CreateChatSession;
+namespace CoreServer.Application.Chat.Commands.SendMessageToChatSession;
 
 public class SendMessageToChatSessionCommandValidator : AbstractValidator<SendMessageToChatSessionCommand>
 {

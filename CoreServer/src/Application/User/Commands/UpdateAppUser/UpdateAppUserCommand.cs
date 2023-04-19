@@ -5,7 +5,7 @@ using CoreServer.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.User.Commands;
+namespace CoreServer.Application.User.Commands.UpdateAppUser;
 
 public class UpdateAppUserCommand : IRequest
 {

@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace CoreServer.Application.Chat.Queries.GetSessionMembers;
+namespace CoreServer.Application.Chat.Queries.GetChatMembers;
 
 public class GetChatMembersQuery : IRequest<IList<ChatMemberDto>>
 {

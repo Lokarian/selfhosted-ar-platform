@@ -4,7 +4,7 @@ using CoreServer.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Queries;
+namespace CoreServer.Application.Chat.Queries.GetMyChatSessions;
 
 public class GetMyChatSessionsQuery : IRequest<IEnumerable<ChatSessionDto>>
 {

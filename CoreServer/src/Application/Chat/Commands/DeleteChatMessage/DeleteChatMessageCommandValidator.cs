@@ -2,7 +2,7 @@
 using CoreServer.Domain.Entities.Chat;
 using FluentValidation;
 
-namespace CoreServer.Application.Chat.Commands;
+namespace CoreServer.Application.Chat.Commands.DeleteChatMessage;
 
 public class DeleteChatMessageCommandValidator : AbstractValidator<DeleteChatMessageCommand>
 {

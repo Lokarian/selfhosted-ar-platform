@@ -1,6 +1,6 @@
 ﻿using CoreServer.Domain.Entities;
 
-namespace CoreServer.Application.Files.Queries;
+namespace CoreServer.Application.UserFiles.Queries;
 
 public class UserFileWithFilestream : IDisposable
 {

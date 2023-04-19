@@ -1,7 +1,8 @@
 ﻿using CoreServer.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace MediatR;
+namespace CoreServer.Infrastructure.Common;
 
 public static class MediatorExtensions
 {

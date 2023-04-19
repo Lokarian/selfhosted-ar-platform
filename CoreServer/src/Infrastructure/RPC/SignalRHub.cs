@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using CoreServer.Application.Chat.Queries;
+using CoreServer.Application.Chat.Queries.GetMyChatSessions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 

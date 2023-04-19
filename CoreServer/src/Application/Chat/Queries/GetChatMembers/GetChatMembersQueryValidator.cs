@@ -3,7 +3,7 @@ using CoreServer.Domain.Entities.Chat;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Queries.GetSessionMembers;
+namespace CoreServer.Application.Chat.Queries.GetChatMembers;
 
 public class GetChatMembersQueryValidator : AbstractValidator<GetChatMembersQuery>
 {

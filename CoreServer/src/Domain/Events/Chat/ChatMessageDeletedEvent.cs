@@ -1,6 +1,6 @@
 ﻿using CoreServer.Domain.Entities.Chat;
 
-namespace CoreServer.Domain.Events;
+namespace CoreServer.Domain.Events.Chat;
 
 public class ChatMessageDeletedEvent : BaseEvent
 {

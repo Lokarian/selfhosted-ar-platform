@@ -3,7 +3,7 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.User.Queries;
 using MediatR;
 
-namespace CoreServer.WebUI.Services;
+namespace WebUI.Services;
 
 public class UserMiddleware
 {

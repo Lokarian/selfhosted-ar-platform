@@ -1,8 +1,6 @@
 ﻿using System.Text;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Infrastructure.Persistence;
-using CoreServer.WebUI.Filters;
-using CoreServer.WebUI.Services;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +8,8 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using NSwag;
 using NSwag.Generation.Processors.Security;
+using WebUI.Filters;
+using WebUI.Services;
 
 namespace WebUI;
 

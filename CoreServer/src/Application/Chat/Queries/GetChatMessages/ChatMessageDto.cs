@@ -2,7 +2,7 @@
 using CoreServer.Application.Common.Mappings;
 using CoreServer.Domain.Entities.Chat;
 
-namespace CoreServer.Application.Chat.Queries;
+namespace CoreServer.Application.Chat.Queries.GetChatMessages;
 
 public class ChatMessageDto : IMapFrom<ChatMessage>
 {

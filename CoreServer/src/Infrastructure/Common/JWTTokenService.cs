@@ -6,7 +6,7 @@ using CoreServer.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace MediatR;
+namespace CoreServer.Infrastructure.Common;
 
 public class JWTTokenService : ITokenService
 {

@@ -5,7 +5,7 @@ using CoreServer.Application.TodoLists.Queries.ExportTodos;
 using CoreServer.Application.TodoLists.Queries.GetTodos;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CoreServer.WebUI.Controllers;
+namespace WebUI.Controllers;
 
 public class TodoListsController : ApiControllerBase
 {

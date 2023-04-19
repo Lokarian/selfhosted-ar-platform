@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
-using CoreServer.Application.Chat.Commands;
 using CoreServer.Application.Chat.Commands.CreateChatSession;
-using CoreServer.Application.Chat.Queries;
-using CoreServer.Application.Chat.Queries.GetSessionMembers;
+using CoreServer.Application.Chat.Commands.DeleteChatMessage;
+using CoreServer.Application.Chat.Commands.SendMessageToChatSession;
+using CoreServer.Application.Chat.Queries.GetChatMembers;
+using CoreServer.Application.Chat.Queries.GetChatMessages;
+using CoreServer.Application.Chat.Queries.GetMyChatSessions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.RPC;
 using CoreServer.Application.RPC.common;
@@ -11,15 +13,15 @@ using CoreServer.Domain.Entities.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CoreServer.WebUI.Controllers;
+namespace WebUI.Controllers;
 
 [Authorize]
 public class ChatController : ApiControllerBase
 {
-    private readonly IMapper _mapper;
     private readonly IUserProxy<IRpcChatService> _chatProxy;
-    private readonly IUserProxy<IRpcUserService> _userProxy;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IMapper _mapper;
+    private readonly IUserProxy<IRpcUserService> _userProxy;
 
     public ChatController(IMapper mapper, IUserProxy<IRpcChatService> chatProxy, ICurrentUserService currentUserService,
         IUserProxy<IRpcUserService> userProxy)
@@ -33,7 +35,7 @@ public class ChatController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult> TestSignalR()
     {
-        await _chatProxy.Client(_currentUserService.User!.Id).UpdateChatSession(new ChatSessionDto()
+        await _chatProxy.Client(_currentUserService.User!.Id).UpdateChatSession(new ChatSessionDto
         {
             Id = new Guid(), Members = new List<ChatMemberDto>(), Name = "test", LastMessage = null
         });
@@ -44,7 +46,7 @@ public class ChatController : ApiControllerBase
     public async Task<ActionResult> TestSignalR2()
     {
         await _userProxy.Client(_currentUserService.User!.Id)
-            .UpdateUser(new AppUserDto() { Id = Guid.NewGuid(), UserName = "signalRUser" });
+            .UpdateUser(new AppUserDto { Id = Guid.NewGuid(), UserName = "signalRUser" });
         return Ok();
     }
 
@@ -63,7 +65,7 @@ public class ChatController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult<ChatSessionDto>> CreateChatSession(CreateChatSessionCommand command)
     {
-        var chatSession = await Mediator.Send(command);
+        ChatSession chatSession = await Mediator.Send(command);
         return Ok(_mapper.Map<ChatSessionDto>(chatSession));
     }
 
