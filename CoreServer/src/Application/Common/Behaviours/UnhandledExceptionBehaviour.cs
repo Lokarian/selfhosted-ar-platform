@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Application.Common.Behaviours;
 
-public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
+public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
 {
     private readonly ILogger<TRequest> _logger;
 
@@ -12,7 +13,8 @@ public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavio
         _logger = logger;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -22,7 +24,8 @@ public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavio
         {
             var requestName = typeof(TRequest).Name;
 
-            _logger.LogError(ex, "CoreServer Request: Unhandled Exception for Request {Name} {@Request}", requestName, request);
+            _logger.LogError(ex, "CoreServer Request: Unhandled Exception for Request {Name} {@Request}", requestName,
+                request);
 
             throw;
         }

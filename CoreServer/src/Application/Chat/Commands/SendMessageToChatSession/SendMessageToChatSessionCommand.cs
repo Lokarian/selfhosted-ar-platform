@@ -15,7 +15,7 @@ public class SendMessageToChatSessionCommand : IRequest<ChatMessage>
     public string Text { get; set; } = null!;
 }
 
-public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessageToChatSessionCommand,ChatMessage>
+public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessageToChatSessionCommand, ChatMessage>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -31,7 +31,7 @@ public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessag
         var session = await _context.ChatSessions
             .Include(s => s.Messages)
             .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
-        
+
         if (session == null)
         {
             throw new NotFoundException(nameof(ChatSession), request.SessionId);

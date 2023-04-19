@@ -4,7 +4,7 @@ using CoreServer.Domain.Entities.Chat;
 
 namespace CoreServer.Application.Chat.Queries.GetSessionMembers;
 
-public class ChatMemberDto: IMapFrom<ChatMember>
+public class ChatMemberDto : IMapFrom<ChatMember>
 {
     public Guid UserId { get; set; }
     public DateTime? LastSeen { get; set; }

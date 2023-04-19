@@ -12,7 +12,7 @@ public interface IApplicationDbContext
 
     DbSet<AppUser> AppUsers { get; }
     DbSet<UserFile> UserFiles { get; }
-    
+
     DbSet<ChatSession> ChatSessions { get; }
     DbSet<ChatMessage> ChatMessages { get; }
     DbSet<ChatMember> ChatMembers { get; }

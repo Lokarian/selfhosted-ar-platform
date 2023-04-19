@@ -25,11 +25,7 @@ public class IdentityService : IIdentityService
 
     public async Task<(Result Result, string UserId)> CreateUserAsync(AppUser appUser, string password)
     {
-        var user = new AppIdentityUser
-        {
-            UserName = appUser.UserName,
-            AppUser = appUser
-        };
+        var user = new AppIdentityUser { UserName = appUser.UserName, AppUser = appUser };
 
         var result = await _userManager.CreateAsync(user, password);
 
@@ -44,14 +40,14 @@ public class IdentityService : IIdentityService
 
         if (user == null)
         {
-            return Task.FromResult((Result.Failure(new[] {"User does not exist."}), (AppUser?) null));
+            return Task.FromResult((Result.Failure(new[] { "User does not exist." }), (AppUser?)null));
         }
 
         var result = _userManager.CheckPasswordAsync(user, password);
 
         return Task.FromResult(result.Result
             ? (Result.Success(), user.AppUser)
-            : (Result.Failure(new[] {"Invalid credentials."}), null));
+            : (Result.Failure(new[] { "Invalid credentials." }), null));
     }
 
     public async Task<bool> IsInRoleAsync(Guid userId, string role)

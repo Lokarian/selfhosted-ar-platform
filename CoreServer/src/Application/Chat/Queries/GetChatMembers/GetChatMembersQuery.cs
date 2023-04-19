@@ -6,4 +6,3 @@ public class GetChatMembersQuery : IRequest<IList<ChatMemberDto>>
 {
     public Guid SessionId { get; set; }
 }
-

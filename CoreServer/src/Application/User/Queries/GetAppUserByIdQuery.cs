@@ -4,10 +4,11 @@ using MediatR;
 
 namespace CoreServer.Application.User.Queries;
 
-public class GetAppUserByIdQuery: IRequest<AppUser?>
+public class GetAppUserByIdQuery : IRequest<AppUser?>
 {
     public Guid Id { get; set; }
 }
+
 public class GetUserQueryHandler : IRequestHandler<GetAppUserByIdQuery, AppUser?>
 {
     private readonly IApplicationDbContext _context;

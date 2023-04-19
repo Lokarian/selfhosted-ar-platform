@@ -37,7 +37,7 @@ public class CreateChatSessionCommandHandler : IRequestHandler<CreateChatSession
         }
 
         var entity = new ChatSession { Name = request.Name };
-        var members = users.Select(u => new ChatMember(u,entity)).ToList();
+        var members = users.Select(u => new ChatMember(u, entity)).ToList();
 
         _context.ChatSessions.Add(entity);
         _context.ChatMembers.AddRange(members);

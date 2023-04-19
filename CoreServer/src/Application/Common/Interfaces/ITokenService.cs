@@ -6,5 +6,4 @@ namespace CoreServer.Application.Common.Interfaces;
 public interface ITokenService
 {
     Task<string> CreateTokenAsync(AppUser user);
-    
 }

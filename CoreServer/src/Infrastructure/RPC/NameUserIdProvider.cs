@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace CoreServer.Infrastructure.RPC;
 
-public class NameUserIdProvider:IUserIdProvider
+public class NameUserIdProvider : IUserIdProvider
 {
     public string? GetUserId(HubConnectionContext connection)
     {

@@ -19,7 +19,7 @@ public class LoggingBehaviour<TRequest> : IRequestPreProcessor<TRequest> where T
     {
         var requestName = typeof(TRequest).Name;
         var userId = _currentUserService.User?.Id.ToString() ?? string.Empty;
-        var userName = _currentUserService.User?.UserName?? string.Empty;
+        var userName = _currentUserService.User?.UserName ?? string.Empty;
 
 
         _logger.LogInformation("CoreServer Request: {Name} {@UserId} {@UserName} {@Request}",

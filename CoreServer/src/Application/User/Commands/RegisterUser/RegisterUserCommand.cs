@@ -17,7 +17,8 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, s
     private readonly ITokenService _tokenService;
     private readonly IApplicationDbContext _context;
 
-    public RegisterUserCommandHandler(IIdentityService identityService, ITokenService tokenService, IApplicationDbContext context)
+    public RegisterUserCommandHandler(IIdentityService identityService, ITokenService tokenService,
+        IApplicationDbContext context)
     {
         _identityService = identityService;
         _tokenService = tokenService;
@@ -34,6 +35,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, s
             _context.AppUsers.Remove(appUser);
             throw new Exception(result.Errors.ToString());
         }
+
         return await _tokenService.CreateTokenAsync(appUser);
     }
 }

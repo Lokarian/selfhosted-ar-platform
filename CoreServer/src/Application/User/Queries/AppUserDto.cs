@@ -3,7 +3,7 @@ using CoreServer.Domain.Entities;
 
 namespace CoreServer.Application.User.Queries;
 
-public class AppUserDto: IMapFrom<AppUser>
+public class AppUserDto : IMapFrom<AppUser>
 {
     public Guid Id { get; set; }
     public string UserName { get; set; } = null!;

@@ -2,7 +2,6 @@
 
 namespace CoreServer.Infrastructure.RPC;
 
-public interface IRpcFusionInterface: IRpcChatService, IRpcUserService
+public interface IRpcFusionInterface : IRpcChatService, IRpcUserService
 {
-    
 }

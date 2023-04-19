@@ -8,7 +8,7 @@ public class ChatMemberConfiguration : IEntityTypeConfiguration<ChatMember>
 {
     public void Configure(EntityTypeBuilder<ChatMember> builder)
     {
-        builder.HasKey(e => new {e.SessionId, e.UserId});
+        builder.HasKey(e => new { e.SessionId, e.UserId });
         builder.HasOne(e => e.Session).WithMany(e => e.Members).HasForeignKey(e => e.SessionId);
         builder.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId);
     }

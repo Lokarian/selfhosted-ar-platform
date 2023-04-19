@@ -3,7 +3,7 @@ using CoreServer.Application.User.Queries;
 
 namespace CoreServer.Application.RPC;
 
-public interface IRpcUserService:IRpcService
+public interface IRpcUserService : IRpcService
 {
     Task UpdateUser(AppUserDto user);
 }

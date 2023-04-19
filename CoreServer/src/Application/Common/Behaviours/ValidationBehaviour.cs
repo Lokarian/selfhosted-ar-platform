@@ -5,7 +5,7 @@ using ValidationException = CoreServer.Application.Common.Exceptions.ValidationE
 namespace CoreServer.Application.Common.Behaviours;
 
 public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-     where TRequest : IRequest<TResponse>
+    where TRequest : IRequest<TResponse>
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -14,7 +14,8 @@ public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TReque
         _validators = validators;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         if (_validators.Any())
         {
@@ -32,6 +33,7 @@ public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TReque
             if (failures.Any())
                 throw new ValidationException(failures);
         }
+
         return await next();
     }
 }

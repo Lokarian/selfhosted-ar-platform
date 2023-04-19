@@ -79,8 +79,6 @@ public static class ConfigureServices
                 });
 
             configure.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
-            
-            
         });
 
         return services;

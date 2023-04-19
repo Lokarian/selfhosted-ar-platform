@@ -13,7 +13,8 @@ namespace CoreServer.WebUI.Controllers;
 public class TodoItemsController : ApiControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<TodoItemBriefDto>>> GetTodoItemsWithPagination([FromQuery] GetTodoItemsWithPaginationQuery query)
+    public async Task<ActionResult<PaginatedList<TodoItemBriefDto>>> GetTodoItemsWithPagination(
+        [FromQuery] GetTodoItemsWithPaginationQuery query)
     {
         return await Mediator.Send(query);
     }

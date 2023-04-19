@@ -38,11 +38,11 @@ public static class ConfigureServices
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<ApplicationDbContextInitialiser>();
-        
+
         services.AddSignalR().AddMessagePackProtocol();
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
         services.AddTransient(typeof(IUserProxy<>), typeof(SignalRUserProxy<>));
-        
+
         services.AddIdentity<AppIdentityUser, IdentityRole>(config =>
         {
             config.Lockout.MaxFailedAccessAttempts = 10;

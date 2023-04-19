@@ -13,7 +13,8 @@ public class ApplicationDbContextInitialiser
     private readonly UserManager<AppIdentityUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
 
-    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger, ApplicationDbContext context, UserManager<AppIdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger,
+        ApplicationDbContext context, UserManager<AppIdentityUser> userManager, RoleManager<IdentityRole> roleManager)
     {
         _logger = logger;
         _context = context;
@@ -63,14 +64,17 @@ public class ApplicationDbContextInitialiser
         // Default users
         var appUser = new AppUser { UserName = "administratorapp@localhost", Email = "administrator@localhost" };
         _context.AppUsers.Add(appUser);
-        var administrator = new AppIdentityUser { UserName = "administratoridentity@localhost", Email = "administrator@localhost", AppUser = appUser };
+        var administrator = new AppIdentityUser
+        {
+            UserName = "administratoridentity@localhost", Email = "administrator@localhost", AppUser = appUser
+        };
 
         if (_userManager.Users.All(u => u.UserName != administrator.UserName))
         {
             await _userManager.CreateAsync(administrator, "Administrator1!");
             if (!string.IsNullOrWhiteSpace(administratorRole.Name))
             {
-                await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                await _userManager.AddToRolesAsync(administrator, new[] { administratorRole.Name });
             }
         }
 
@@ -85,7 +89,7 @@ public class ApplicationDbContextInitialiser
                 {
                     new TodoItem { Title = "Make a todo list 📃" },
                     new TodoItem { Title = "Check off the first item ✅" },
-                    new TodoItem { Title = "Realise you've already done two things on the list! 🤯"},
+                    new TodoItem { Title = "Realise you've already done two things on the list! 🤯" },
                     new TodoItem { Title = "Reward yourself with a nice, long nap 🏆" },
                 }
             });

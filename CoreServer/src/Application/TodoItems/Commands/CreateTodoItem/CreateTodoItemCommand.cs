@@ -23,12 +23,7 @@ public class CreateTodoItemCommandHandler : IRequestHandler<CreateTodoItemComman
 
     public async Task<Guid> Handle(CreateTodoItemCommand request, CancellationToken cancellationToken)
     {
-        var entity = new TodoItem
-        {
-            ListId = request.ListId,
-            Title = request.Title,
-            Done = false
-        };
+        var entity = new TodoItem { ListId = request.ListId, Title = request.Title, Done = false };
 
         entity.AddDomainEvent(new TodoItemCreatedEvent(entity));
 

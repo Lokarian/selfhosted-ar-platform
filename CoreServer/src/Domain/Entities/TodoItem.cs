@@ -13,6 +13,7 @@ public class TodoItem : BaseAuditableEntity
     public DateTime? Reminder { get; set; }
 
     private bool _done;
+
     public bool Done
     {
         get => _done;

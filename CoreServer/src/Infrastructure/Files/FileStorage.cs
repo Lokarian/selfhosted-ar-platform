@@ -50,8 +50,9 @@ public class FileStorage : IFileStorageService
             .GetSection(file.FileType.ToString()).Value;
         if (relativePath == null)
         {
-            relativePath=file.FileType.ToString();
+            relativePath = file.FileType.ToString();
         }
+
         return Path.Combine(this._configuration.GetSection("FileStorage").GetSection("StoragePath").Value, relativePath,
             $"{file.Id}_{file.FileName}");
     }
