@@ -11,9 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddWebUIServices(builder.Configuration);
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("test", builder =>
+    {
+        builder.WithOrigins("https://localhost:44447", "https://localhost:4200") // the Angular app url
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 var app = builder.Build();
-
+app.UseCors("test");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -10,11 +10,14 @@ export class ChatRpcService implements IRPCWebClient{
   constructor() { }
 
   newChatMessage(chatMessage: ChatMessageDto) {
+    console.log(chatMessage);
   }
 
   updateChatSession(chatSession: ChatSessionDto) {
+    console.log(chatSession);
   }
 
   updateUser(user: AppUserDto) {
+    console.log(user);
   }
 }

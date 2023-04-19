@@ -9,7 +9,7 @@ public class ChatSessionDto : IMapFrom<ChatSession>
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
-    public ChatMessage LastMessage { get; set; } = null!;
+    public ChatMessage? LastMessage { get; set; } = null!;
     public IList<ChatMemberDto> Members { get; set; } = new List<ChatMemberDto>();
 
     public void Mapping(Profile profile)

@@ -6,6 +6,58 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/Chat/TestSignalR": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "Chat_TestSignalR",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Chat/TestSignalR2": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "Chat_TestSignalR2",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Chat/GetMyChatSessions": {
       "get": {
         "tags": [
@@ -904,7 +956,12 @@
             "type": "string"
           },
           "lastMessage": {
-            "$ref": "#/components/schemas/ChatMessage"
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatMessage"
+              }
+            ]
           },
           "members": {
             "type": "array",

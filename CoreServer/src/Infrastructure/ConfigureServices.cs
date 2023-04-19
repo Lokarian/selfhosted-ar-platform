@@ -1,12 +1,15 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Application.RPCInterfaces;
 using CoreServer.Domain.Enums;
 using CoreServer.Infrastructure.Files;
 using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence;
 using CoreServer.Infrastructure.Persistence.Interceptors;
+using CoreServer.Infrastructure.RPC;
 using CoreServer.Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,9 +38,11 @@ public static class ConfigureServices
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<ApplicationDbContextInitialiser>();
-        services.AddSignalR()
-            .AddMessagePackProtocol();
-
+        
+        services.AddSignalR().AddMessagePackProtocol();
+        services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
+        services.AddTransient(typeof(IUserProxy<>), typeof(SignalRUserProxy<>));
+        
         services.AddIdentity<AppIdentityUser, IdentityRole>(config =>
         {
             config.Lockout.MaxFailedAccessAttempts = 10;
@@ -49,7 +54,7 @@ public static class ConfigureServices
         services.AddTransient<ICsvFileBuilder, CsvFileBuilder>();
         services.AddTransient<ITokenService, JWTTokenService>();
         services.AddTransient<IFileStorageService, FileStorage>();
-        services.AddAuthentication(); //todo necessary?
+        //services.AddAuthentication(); //todo necessary?
 
         services.AddAuthorization(options =>
             options.AddPolicy("CanPurge", policy => policy.RequireRole("Administrator")));
