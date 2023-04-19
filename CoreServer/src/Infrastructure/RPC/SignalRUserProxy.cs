@@ -18,14 +18,14 @@ public class SignalRUserProxy<T> : IUserProxy<T> where T : class, IRpcService
     {
         //get name of interface without the "I" if it starts with one
         var interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
-        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Group($"{interfaceName}-{userId}"));
+        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Group($"{userId}-{interfaceName}"));
         return proxy;
     }
 
     public T Clients(IEnumerable<Guid> userIds)
     {
         var interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
-        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Groups(userIds.Select(x => $"{interfaceName}-{x}")));
+        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Groups(userIds.Select(x => $"{x}-{interfaceName}")));
         return proxy;
     }
 }
