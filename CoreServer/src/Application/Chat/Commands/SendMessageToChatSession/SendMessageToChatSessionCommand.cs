@@ -41,7 +41,7 @@ public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessag
             new ChatMessage { Text = request.Text, Sender = _currentUserService.User!, Session = session };
 
         _context.ChatMessages.Add(message);
-        session.AddDomainEvent(new MassageInChatCreatedEvent(message));
+        session.AddDomainEvent(new ChatMassageCreatedEvent(message));
 
         await _context.SaveChangesAsync(cancellationToken);
 

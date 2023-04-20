@@ -2,9 +2,9 @@
 
 namespace CoreServer.Domain.Events.Chat;
 
-public class MassageInChatCreatedEvent : BaseEvent
+public class ChatMassageCreatedEvent : BaseEvent
 {
-    public MassageInChatCreatedEvent(ChatMessage message)
+    public ChatMassageCreatedEvent(ChatMessage message)
     {
         Message = message;
     }
