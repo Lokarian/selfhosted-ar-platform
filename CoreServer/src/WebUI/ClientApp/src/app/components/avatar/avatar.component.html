@@ -1,4 +1,4 @@
-<div class="h-full w-full aspect-square relative">
+<div class="h-full w-full aspect-square relative" *ngIf="user">
   <div class="status h-full aspect-square absolute"
        [class.bg-warning]="user.onlineStatus===OnlineStatus.Away"
        [class.bg-success]="user.onlineStatus===OnlineStatus.Online"

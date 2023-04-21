@@ -10,6 +10,7 @@ public class ChatMessageDto : IMapFrom<ChatMessage>
     public string Text { get; set; } = null!;
     public DateTime SentAt { get; set; }
     public Guid SenderId { get; set; }
+    public Guid SessionId { get; set; }
 
     public void Mapping(Profile profile)
     {

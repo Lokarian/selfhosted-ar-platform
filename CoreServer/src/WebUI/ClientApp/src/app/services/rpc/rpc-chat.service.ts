@@ -1,24 +1,25 @@
 import { Injectable } from '@angular/core';
-import {AppUserDto, ChatMessageDto, ChatSessionDto} from "../../web-api-client";
+import { ChatMessageDto, ChatSessionDto} from "../../web-api-client";
 import {IRpcChatService} from "../../models/interfaces/RpcChatService";
 import {RpcService} from "./rpc.service";
 import {SignalRService} from "../signalr.service";
+import {ChatService} from "../chat.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class RpcChatService extends RpcService implements IRpcChatService{
 
-  constructor(private signalRService:SignalRService) {
+  constructor(private signalRService:SignalRService, private chatService: ChatService) {
     super(signalRService);
   }
 
   NewChatMessage(chatMessage: ChatMessageDto) {
-    console.log(chatMessage);
+    this.chatService.addChatMessage(chatMessage);
   }
 
   UpdateChatSession(chatSession: ChatSessionDto) {
-    console.log(chatSession);
+    this.chatService.addChatSession(chatSession);
   }
 
 

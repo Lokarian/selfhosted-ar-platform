@@ -17,7 +17,6 @@ const PROXY_CONFIG = [
       "/favicon.ico"
    ],
     target: target,
-    ws:true,
     secure: false,
     headers: {
       Connection: 'Keep-Alive'

@@ -13,3 +13,16 @@ body{
 app-root{
   @apply w-full h-full block;
 }
+//style the overflow scroll bar
+::-webkit-scrollbar {
+  width: 0.5rem;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-text rounded;
+}
+
+

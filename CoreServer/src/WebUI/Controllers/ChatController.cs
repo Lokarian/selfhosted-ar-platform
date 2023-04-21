@@ -33,31 +33,13 @@ public class ChatController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult> TestSignalR()
-    {
-        await _chatProxy.Client(_currentUserService.User!.Id).UpdateChatSession(new ChatSessionDto
-        {
-            Id = new Guid(), Members = new List<ChatMemberDto>(), Name = "test", LastMessage = null
-        });
-        return Ok();
-    }
-
-    [HttpGet]
-    public async Task<ActionResult> TestSignalR2()
-    {
-        await _userProxy.Client(_currentUserService.User!.Id)
-            .UpdateUser(new AppUserDto { Id = Guid.NewGuid(), UserName = "signalRUser" });
-        return Ok();
-    }
-
-    [HttpGet]
     public async Task<ActionResult<IEnumerable<ChatSessionDto>>> GetMyChatSessions()
     {
         return Ok(await Mediator.Send(new GetMyChatSessionsQuery()));
     }
 
-    [HttpGet]
-    public async Task<ActionResult<ChatMessageDto>> GetChatMessages(GetChatMessagesQuery query)
+    [HttpPost]
+    public async Task<ActionResult<IEnumerable<ChatMessageDto>>> GetChatMessages(GetChatMessagesQuery query)
     {
         return Ok(await Mediator.Send(query));
     }

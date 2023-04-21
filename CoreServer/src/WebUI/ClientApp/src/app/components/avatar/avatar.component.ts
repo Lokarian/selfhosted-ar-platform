@@ -8,7 +8,7 @@ import {CurrentUserService} from "../../services/user/current-user.service";
   styleUrls: ['./avatar.component.scss']
 })
 export class AvatarComponent {
-  @Input() user: AppUserDto;
+  @Input() user: AppUserDto|undefined;
   @Input() size: number = 4;
   @Input() showStatus: boolean = true;
   @Input() allowEdit: boolean = false;

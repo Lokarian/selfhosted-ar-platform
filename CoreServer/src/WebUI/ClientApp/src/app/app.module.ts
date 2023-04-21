@@ -1,5 +1,5 @@
 import {BrowserModule} from '@angular/platform-browser';
-import {APP_INITIALIZER, NgModule} from '@angular/core';
+import {InjectionToken, NgModule} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {HttpClientModule, HTTP_INTERCEPTORS} from '@angular/common/http';
 
@@ -21,8 +21,18 @@ import {ErrorInterceptor} from "./services/error-interceptor.service";
 import {NgxPopperjsModule} from "ngx-popperjs";
 import {SecurePipe} from './services/secure.pipe';
 import {UserPipe} from './services/user/user.pipe';
+import {ChatPageComponent} from "./pages/chat/chat-page.component";
+import {environment} from '../environments/environment';
+import {API_BASE_URL} from "./web-api-client";
 
-
+function baseUrlFactory() {
+  const url = document.getElementsByTagName('base')[0].href;
+  const port = url.split(':')[2];
+  if (port) {
+    return url.replace(port, environment.backendPort.toString());
+  }
+  return `${url}:${environment.backendPort}`;
+}
 
 @NgModule({
   declarations: [
@@ -31,6 +41,7 @@ import {UserPipe} from './services/user/user.pipe';
     SidebarComponent,
     HeaderComponent,
     ChatComponent,
+    ChatPageComponent,
     MessageComponent,
     AvatarComponent,
     LoginComponent,
@@ -49,6 +60,7 @@ import {UserPipe} from './services/user/user.pipe';
     ReactiveFormsModule
   ],
   providers: [
+    {provide: API_BASE_URL, useFactory: baseUrlFactory, deps: []},
     {provide: HTTP_INTERCEPTORS, useClass: AuthorizeInterceptor, multi: true},
     {provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true}
   ],

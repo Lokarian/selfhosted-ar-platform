@@ -11,7 +11,6 @@ export class AuthorizeInterceptor implements HttpInterceptor {
   constructor(private authorize: AuthorizeService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    console.log("intercepted request: " + req.url)
     return this.authorize.getAccessToken()
       .pipe(take(1),mergeMap(token => this.processRequestWithToken(token, req, next)));
   }
@@ -32,14 +31,13 @@ export class AuthorizeInterceptor implements HttpInterceptor {
   }
 
   private isSameOriginUrl(req: any) {
-    // It's an absolute url with the same origin.
-    if (req.url.startsWith(`${window.location.origin}/`)) {
+    if (req.url.replace(/^\w+:\/\//, '').startsWith(`${window.location.hostname}`)) {
       return true;
     }
 
     // It's a protocol relative url with the same origin.
     // For example: //www.example.com/api/Products
-    if (req.url.startsWith(`//${window.location.host}/`)) {
+    if (req.url.startsWith(`//${window.location.hostname}/`)) {
       return true;
     }
 

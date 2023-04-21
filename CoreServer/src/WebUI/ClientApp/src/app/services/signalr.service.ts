@@ -42,7 +42,6 @@ export class SignalRService {
     this._hubConnection.invoke('RegisterService', serviceName);
   }
   public on<T>(methodName: string, callback: (data: T) => void) {
-    console.log('Registering callback for ' + methodName);
     this._hubConnection.on(methodName, callback);
   }
 
