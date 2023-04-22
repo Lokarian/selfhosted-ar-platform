@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {ChatClient, ChatMessageDto, ChatSessionDto, GetChatMessagesQuery} from "../web-api-client";
+import {ChatClient, ChatMessageDto, ChatSessionDto} from "../web-api-client";
 import {BehaviorSubject, firstValueFrom} from "rxjs";
 
 @Injectable({
@@ -69,11 +69,8 @@ export class ChatService {
   }
 
   public async loadMoreMessages(chatSessionId: string, amount = 20) {
-    const messages = await firstValueFrom(this.chatClient.getChatMessages(new GetChatMessagesQuery({
-      sessionId: chatSessionId,
-      from: this.messageStore[chatSessionId].value.length > 0 ? this.messageStore[chatSessionId].value[this.messageStore[chatSessionId].value.length - 1].sentAt : undefined,
-      count: amount
-    })));
+    var earliestMessageTimestamp = this.messageStore[chatSessionId].value.length > 0 ? this.messageStore[chatSessionId].value[this.messageStore[chatSessionId].value.length - 1].sentAt : undefined
+    const messages = await firstValueFrom(this.chatClient.getChatMessages(chatSessionId,earliestMessageTimestamp, amount));
     this.messageStore[chatSessionId].next([...messages, ...this.messageStore[chatSessionId].value]);
     return;
   }

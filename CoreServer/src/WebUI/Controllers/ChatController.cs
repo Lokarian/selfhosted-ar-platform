@@ -38,8 +38,8 @@ public class ChatController : ApiControllerBase
         return Ok(await Mediator.Send(new GetMyChatSessionsQuery()));
     }
 
-    [HttpPost]
-    public async Task<ActionResult<IEnumerable<ChatMessageDto>>> GetChatMessages(GetChatMessagesQuery query)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ChatMessageDto>>> GetChatMessages([FromQuery] GetChatMessagesQuery query)
     {
         return Ok(await Mediator.Send(query));
     }
