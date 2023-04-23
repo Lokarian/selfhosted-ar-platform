@@ -1,8 +1,6 @@
 ﻿using CoreServer.Application.Common.Interfaces;
-using CoreServer.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Infrastructure.RPC;

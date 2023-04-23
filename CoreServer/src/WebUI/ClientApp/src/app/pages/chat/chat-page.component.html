@@ -1,5 +1,6 @@
 <div class="flex flex-row h-full w-full">
-  <div class="w-56 bg-background-secondary h-full p-1">
+  <div class="w-56 bg-background-secondary h-full p-1 overflow-y-auto">
+    <app-user-select class="w-full h-16" [multi]="true" (usersSelected)="createSession($event)"></app-user-select>
     <div class="w-full h-16 p-2 justify-start align-middle rounded hover:bg-background-highlight flex flex-row"
          [class.bg-background-highlight]="session.id===selectedSession?.id" *ngFor="let session of sessions"
     (click)="selectedSession=session">

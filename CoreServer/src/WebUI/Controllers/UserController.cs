@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using CoreServer.Application.Common.Interfaces;
+using CoreServer.Application.Common.Models;
 using CoreServer.Application.User.Commands.LoginUser;
 using CoreServer.Application.User.Commands.RegisterUser;
 using CoreServer.Application.User.Commands.UpdateAppUser;
@@ -57,5 +58,13 @@ public class UserController : ApiControllerBase
     {
         AppUser? appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = id });
         return _mapper.Map<AppUserDto>(appUser);
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<ActionResult<PaginatedList<AppUserDto>>> GetAppUsersBy(
+        [FromQuery] GetAppUsersByPartialNameWithPaginationQuery query)
+    {
+        return Ok(await Mediator.Send(query));
     }
 }

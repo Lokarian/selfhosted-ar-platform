@@ -24,6 +24,7 @@ import {UserPipe} from './services/user/user.pipe';
 import {ChatPageComponent} from "./pages/chat/chat-page.component";
 import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
+import { UserSelectComponent } from './components/user-select/user-select.component';
 
 function baseUrlFactory() {
   const url = document.getElementsByTagName('base')[0].href;
@@ -49,6 +50,7 @@ function baseUrlFactory() {
     NotificationComponent,
     SecurePipe,
     UserPipe,
+    UserSelectComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),
