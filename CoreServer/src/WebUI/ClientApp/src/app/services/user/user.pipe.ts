@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import {UserFacadeService} from "./user-facade.service";
+import {UserFacade} from "./user-facade.service";
 import {Observable} from "rxjs";
 import {AppUserDto} from "../../web-api-client";
 
@@ -8,7 +8,7 @@ import {AppUserDto} from "../../web-api-client";
 })
 export class UserPipe implements PipeTransform {
 
-  constructor(private userFacade: UserFacadeService) {
+  constructor(private userFacade: UserFacade) {
   }
   transform(value: string, ...args: unknown[]): Observable<AppUserDto> {
     return this.userFacade.getUser$(value);

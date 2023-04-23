@@ -18,18 +18,11 @@ namespace WebUI.Controllers;
 [Authorize]
 public class ChatController : ApiControllerBase
 {
-    private readonly IUserProxy<IRpcChatService> _chatProxy;
-    private readonly ICurrentUserService _currentUserService;
     private readonly IMapper _mapper;
-    private readonly IUserProxy<IRpcUserService> _userProxy;
 
-    public ChatController(IMapper mapper, IUserProxy<IRpcChatService> chatProxy, ICurrentUserService currentUserService,
-        IUserProxy<IRpcUserService> userProxy)
+    public ChatController(IMapper mapper)
     {
         _mapper = mapper;
-        _chatProxy = chatProxy;
-        _currentUserService = currentUserService;
-        _userProxy = userProxy;
     }
 
     [HttpGet]

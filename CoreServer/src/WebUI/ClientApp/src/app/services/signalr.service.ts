@@ -26,7 +26,7 @@ export class SignalRService {
             return await firstValueFrom(this.authorizeService.getAccessToken().pipe(filter(token => token !== null)));
           }
         })
-      .withHubProtocol(new MessagePackHubProtocol())
+      //.withHubProtocol(new MessagePackHubProtocol())
       .build();
     this._hubConnection.onreconnecting((error) => this.onReconnecting(error));
     this._hubConnection.onreconnected((error) => this.onReconnected(error));
@@ -42,7 +42,12 @@ export class SignalRService {
     this._hubConnection.invoke('RegisterService', serviceName);
   }
   public on<T>(methodName: string, callback: (data: T) => void) {
-    this._hubConnection.on(methodName, callback);
+
+    this._hubConnection.on(methodName, (data: any) => {
+      //data = this.renameAllKeysToCamelCase(data);
+      data = this.parseAllDates(data);
+      callback(data);
+    });
   }
 
   private onReconnecting(error: any) {
@@ -57,4 +62,44 @@ export class SignalRService {
     console.log('Connection closed', error);
   }
 
+  private renameAllKeysToCamelCase(obj: any) {
+    if (obj instanceof Array) {
+      for (let i = 0; i < obj.length; i++) {
+        obj[i] = this.renameAllKeysToCamelCase(obj[i]);
+      }
+    } else if (obj instanceof Object) {
+      const keys = Object.keys(obj);
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const val = obj[key];
+        delete obj[key];
+        const camelCaseKey = key.charAt(0).toLowerCase() + key.slice(1);
+        obj[camelCaseKey] = this.renameAllKeysToCamelCase(val);
+      }
+    }
+    return obj;
+  }
+
+  /**
+   * parse all iso strings to dates in the object
+   * @param obj
+   * @private
+   */
+  private parseAllDates(obj: any) {
+    if (obj instanceof Array) {
+      for (let i = 0; i < obj.length; i++) {
+        obj[i] = this.parseAllDates(obj[i]);
+      }
+    } else if (obj instanceof Object) {
+      const keys = Object.keys(obj);
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const val = obj[key];
+        obj[key] = this.parseAllDates(val)
+      }
+    }else if (typeof obj === 'string' && obj.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/)) {
+      obj = new Date(obj);
+    }
+    return obj;
+  }
 }

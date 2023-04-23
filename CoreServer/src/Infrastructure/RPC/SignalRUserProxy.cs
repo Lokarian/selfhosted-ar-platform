@@ -1,32 +1,48 @@
 ﻿using System.Reflection;
+using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.RPC.common;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Infrastructure.RPC;
 
 public class SignalRUserProxy<T> : IUserProxy<T> where T : class, IRpcService
 {
     private readonly IHubContext<SignalRHub> _hubContext;
+    private readonly IUserConnectionStore _userConnectionStore;
+    private readonly ILogger<SignalRUserProxy<T>> _logger;
 
-    public SignalRUserProxy(IHubContext<SignalRHub> hubContext)
+    public SignalRUserProxy(IHubContext<SignalRHub> hubContext, IUserConnectionStore userConnectionStore, ILogger<SignalRUserProxy<T>> logger)
     {
         _hubContext = hubContext;
-        Console.WriteLine("new SignalRUserProxy");
+        _userConnectionStore = userConnectionStore;
+        _logger = logger;
     }
 
-    public T Client(Guid userId)
+    public async Task<T> Client(Guid userId)
     {
-        //get name of interface without the "I" if it starts with one
         string interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
-        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Group($"{userId}-{interfaceName}"));
+        var connectionIds = await _userConnectionStore.GetConnectionsForUserService(userId, interfaceName);
+        _logger.LogInformation($"Creating Client proxy for {interfaceName} for {string.Join(", ", connectionIds)}");
+        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Clients(connectionIds));
         return proxy;
     }
 
-    public T Clients(IEnumerable<Guid> userIds)
+    public async Task<T> Clients(IEnumerable<Guid> userIds)
     {
         string interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
-        T proxy = SignalRDispatchProxy<T>.CreateProxy(
-            _hubContext.Clients.Groups(userIds.Select(x => $"{x}-{interfaceName}")));
+        var connectionIds = await _userConnectionStore.GetConnectionsForUserService(userIds, interfaceName);
+        _logger.LogInformation($"Creating Clients proxy for {interfaceName} for {string.Join(", ", connectionIds)}");
+        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Clients(connectionIds));
+        return proxy;
+    }
+
+    public async Task<T> All()
+    {
+        string interfaceName = typeof(T).Name.StartsWith("I") ? typeof(T).Name.Substring(1) : typeof(T).Name;
+        var connectionIds = await _userConnectionStore.GetConnectionsForService(interfaceName);
+        _logger.LogInformation($"Creating All proxy for {interfaceName} for {string.Join(", ", connectionIds)}");
+        T proxy = SignalRDispatchProxy<T>.CreateProxy(_hubContext.Clients.Clients(connectionIds));
         return proxy;
     }
 }
@@ -39,7 +55,6 @@ internal class SignalRDispatchProxy<T> : DispatchProxy where T : class, IRpcServ
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
         string endpointName = $"{_serviceName}/{targetMethod?.Name}";
-        Console.WriteLine(endpointName);
         Task result = _target.SendCoreAsync(endpointName, args);
         return result;
     }

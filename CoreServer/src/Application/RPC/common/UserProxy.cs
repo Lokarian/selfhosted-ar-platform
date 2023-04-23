@@ -1,8 +1,10 @@
 ﻿namespace CoreServer.Application.RPC.common;
 
-public interface IUserProxy<out T> where T : IRpcService
+public interface IUserProxy<T> where T : IRpcService
 {
-    T Client(Guid userId);
+    Task<T> Client(Guid userId);
 
-    T Clients(IEnumerable<Guid> userIds);
+    Task<T> Clients(IEnumerable<Guid> userIds);
+    
+    Task<T> All();
 }

@@ -39,7 +39,7 @@ public class ChatMessageCreatedEventHandler : INotificationHandler<ChatMassageCr
             throw new NotFoundException(nameof(ChatSession), message.SessionId);
         }
 
-        var receiverIds = session.Members.Select(m => m.UserId).Where(id => id != _currentUserService.User!.Id);
-        await _userProxy.Clients(receiverIds).NewChatMessage(_mapper.Map<ChatMessageDto>(message));
+        var receiverIds = session.Members.Select(m => m.UserId);
+        await (await _userProxy.Clients(receiverIds)).NewChatMessage(_mapper.Map<ChatMessageDto>(message));
     }
 }

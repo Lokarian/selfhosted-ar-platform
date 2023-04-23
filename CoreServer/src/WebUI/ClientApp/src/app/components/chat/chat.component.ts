@@ -1,6 +1,6 @@
-import {Component, Input, OnChanges, OnInit} from '@angular/core';
-import {ChatMessageDto, ChatSessionDto} from "../../web-api-client";
-import {ChatService} from "../../services/chat.service";
+import {Component, ElementRef, Input, OnChanges, OnInit, ViewChild} from '@angular/core';
+import {ChatClient, ChatMessageDto, ChatSessionDto, SendMessageToChatSessionCommand} from "../../web-api-client";
+import {ChatFacade} from "../../services/chat-facade.service";
 import {Observable} from "rxjs";
 
 @Component({
@@ -10,10 +10,11 @@ import {Observable} from "rxjs";
 })
 export class ChatComponent implements OnChanges, OnInit {
   @Input() public session: ChatSessionDto;
+  @ViewChild('textArea') private textArea: ElementRef;
   public messages$: Observable<ChatMessageDto[]>;
   private gettingMoreMessages = false;
 
-  constructor(private chatService: ChatService) {
+  constructor(private chatService: ChatFacade, private chatClient: ChatClient) {
 
   }
 
@@ -29,7 +30,6 @@ export class ChatComponent implements OnChanges, OnInit {
   }
 
   onScroll(event: any) {
-    console.log(event.target.scrollTop, event.target.scrollHeight, event.target.clientHeight);
     if (event.target.scrollHeight + event.target.scrollTop - event.target.clientHeight < 100) {
       if (!this.gettingMoreMessages) {
         this.gettingMoreMessages = true;
@@ -39,4 +39,18 @@ export class ChatComponent implements OnChanges, OnInit {
       }
     }
   }
+
+  sendMessage() {
+    const message = this.textArea.nativeElement.value;
+    if (!message || message.trim().length === 0) {
+      return;
+    }
+    this.chatClient.sendMessageToChatSession(new SendMessageToChatSessionCommand({
+      sessionId: this.session.id,
+      text: message
+    })).subscribe(()=> {
+      this.textArea.nativeElement.value = '';
+    });
+  }
+
 }

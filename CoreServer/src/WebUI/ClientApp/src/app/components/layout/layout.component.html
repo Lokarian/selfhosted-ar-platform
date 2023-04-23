@@ -1,4 +1,4 @@
-<div class="h-full w-full flex flex-col">
+<div *ngIf="loaded$|async" class="h-full w-full flex flex-col">
   <app-header class="w-full h-12 bg-primary"></app-header>
   <div class="w-full flex-1 flex flex-row min-h-0">
     <app-sidebar class=""></app-sidebar>

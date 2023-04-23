@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {ChatService} from "../../services/chat.service";
+import {ChatFacade} from "../../services/chat-facade.service";
 import {ChatSessionDto} from "../../web-api-client";
 import {CurrentUserService} from "../../services/user/current-user.service";
 
@@ -12,7 +12,7 @@ export class ChatPageComponent implements OnInit {
   public sessions: ChatSessionDto[] = [];
   public selectedSession: ChatSessionDto | null = null;
 
-  constructor(private chatService: ChatService, private currentUserService: CurrentUserService) {
+  constructor(private chatService: ChatFacade, private currentUserService: CurrentUserService) {
     this.chatService.chatSessions$.subscribe(sessions => {
       this.sessions = sessions;
     });

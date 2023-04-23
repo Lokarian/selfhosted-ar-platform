@@ -5,7 +5,7 @@ import {BehaviorSubject, firstValueFrom} from "rxjs";
 @Injectable({
   providedIn: 'root'
 })
-export class ChatService {
+export class ChatFacade {
   private sessionSubject: BehaviorSubject<ChatSessionDto[]> = new BehaviorSubject<ChatSessionDto[]>([]);
   private sessionsInitialized = false;
   //store behavior subject for each chat session
@@ -70,8 +70,10 @@ export class ChatService {
 
   public async loadMoreMessages(chatSessionId: string, amount = 20) {
     var earliestMessageTimestamp = this.messageStore[chatSessionId].value.length > 0 ? this.messageStore[chatSessionId].value[this.messageStore[chatSessionId].value.length - 1].sentAt : undefined
-    const messages = await firstValueFrom(this.chatClient.getChatMessages(chatSessionId,earliestMessageTimestamp, amount));
-    this.messageStore[chatSessionId].next([...messages, ...this.messageStore[chatSessionId].value]);
+    const messages = await firstValueFrom(this.chatClient.getChatMessages(chatSessionId, earliestMessageTimestamp, amount));
+    var currentMessages = this.messageStore[chatSessionId].value;
+    var newMessages = messages.reduce((acc, m) => this.insertChatMessageIntoArray(m, acc), currentMessages);
+    this.messageStore[chatSessionId].next(newMessages);
     return;
   }
 

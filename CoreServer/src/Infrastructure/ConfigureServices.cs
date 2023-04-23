@@ -8,6 +8,7 @@ using CoreServer.Infrastructure.Persistence.Interceptors;
 using CoreServer.Infrastructure.RPC;
 using CoreServer.Infrastructure.Services;
 using MediatR;
+using MessagePack;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -39,8 +40,9 @@ public static class ConfigureServices
 
         services.AddScoped<ApplicationDbContextInitialiser>();
 
-        services.AddSignalR().AddMessagePackProtocol();
+        services.AddSignalR();//.AddMessagePackProtocol();
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
+        services.AddSingleton<IUserConnectionStore, UserConnectionStore>();
         services.AddTransient(typeof(IUserProxy<>), typeof(SignalRUserProxy<>));
 
         services.AddIdentity<AppIdentityUser, IdentityRole>(config =>

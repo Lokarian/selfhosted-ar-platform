@@ -5,7 +5,7 @@ import {AppUserDto, UserClient} from "../../web-api-client";
 @Injectable({
   providedIn: 'root'
 })
-export class UserFacadeService {
+export class UserFacade {
 
   //dictionary of userIds to replay subjects
   private userCache: { [key: string]: ReplaySubject<AppUserDto> } = {};
@@ -27,7 +27,7 @@ export class UserFacadeService {
     return this.userCache[id].asObservable();
   }
 
-  public UpdateUser(user: AppUserDto) {
+  public updateUser(user: AppUserDto) {
     if (this.userCache[user.id]) {
       this.userCache[user.id].next(user);
     } else {
