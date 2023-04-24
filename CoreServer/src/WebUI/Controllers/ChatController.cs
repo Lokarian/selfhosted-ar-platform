@@ -2,6 +2,7 @@
 using CoreServer.Application.Chat.Commands.CreateChatSession;
 using CoreServer.Application.Chat.Commands.DeleteChatMessage;
 using CoreServer.Application.Chat.Commands.SendMessageToChatSession;
+using CoreServer.Application.Chat.Commands.UpdateChatSession;
 using CoreServer.Application.Chat.Queries.GetChatMembers;
 using CoreServer.Application.Chat.Queries.GetChatMessages;
 using CoreServer.Application.Chat.Queries.GetMyChatSessions;
@@ -49,6 +50,12 @@ public class ChatController : ApiControllerBase
     {
         ChatMessage chatMessage = await Mediator.Send(command);
         return Ok(_mapper.Map<ChatMessageDto>(chatMessage));
+    }
+    [HttpPost]
+    public async Task<ActionResult<ChatSessionDto>> UpdateChatSession(UpdateChatSessionCommand command)
+    {
+        ChatSession chatSession = await Mediator.Send(command);
+        return Ok(_mapper.Map<ChatSessionDto>(chatSession));
     }
 
     [HttpDelete("{id}")]

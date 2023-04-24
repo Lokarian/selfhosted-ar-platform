@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {Observable, ReplaySubject, share} from "rxjs";
+import {firstValueFrom, Observable, ReplaySubject, share} from "rxjs";
 import {AppUserDto, UserClient} from "../../web-api-client";
 
 @Injectable({
@@ -26,6 +26,20 @@ export class UserFacade {
     this.initUser(id);
     return this.userCache[id].asObservable();
   }
+
+  public getUsers$(ids: string[]): Observable<AppUserDto[]> {
+    const promises: Promise<AppUserDto>[] = ids.map(id => {
+      this.initUser(id);
+      return firstValueFrom(this.userCache[id].asObservable());
+    });
+    return new Observable<AppUserDto[]>(subscriber => {
+      Promise.all(promises).then(users => {
+        subscriber.next(users);
+        subscriber.complete();
+      });
+    }).pipe(share());
+  }
+
 
   public updateUser(user: AppUserDto) {
     if (this.userCache[user.id]) {

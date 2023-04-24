@@ -1,4 +1,4 @@
-import {Component, ElementRef, Input, OnChanges, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {ChatClient, ChatMessageDto, ChatSessionDto, SendMessageToChatSessionCommand} from "../../web-api-client";
 import {ChatFacade} from "../../services/chat-facade.service";
 import {Observable} from "rxjs";
@@ -13,28 +13,35 @@ export class ChatComponent implements OnChanges, OnInit {
   @ViewChild('textArea') private textArea: ElementRef;
   public messages$: Observable<ChatMessageDto[]>;
   private gettingMoreMessages = false;
+  private gotAllMessages = false;
 
   constructor(private chatService: ChatFacade, private chatClient: ChatClient) {
 
   }
 
   ngOnInit(): void {
-    this.gettingMoreMessages = true;
-    this.chatService.loadMoreMessages(this.session.id).then(() => {
-      this.gettingMoreMessages = false;
-    });
   }
 
-  ngOnChanges(): void {
-    this.messages$ = this.chatService.getChatMessages$(this.session.id);
+
+  ngOnChanges(changes:SimpleChanges): void {
+    if(changes.session) {
+      this.messages$ = this.chatService.getChatMessages$(this.session.id);
+      this.gettingMoreMessages = true;
+      this.chatService.loadMoreMessages(this.session.id).then(() => {
+        this.gettingMoreMessages = false;
+      });
+    }
   }
 
   onScroll(event: any) {
     if (event.target.scrollHeight + event.target.scrollTop - event.target.clientHeight < 100) {
-      if (!this.gettingMoreMessages) {
+      if (!this.gettingMoreMessages && !this.gotAllMessages) {
         this.gettingMoreMessages = true;
-        this.chatService.loadMoreMessages(this.session.id).then(() => {
+        this.chatService.loadMoreMessages(this.session.id).then((amount) => {
           this.gettingMoreMessages = false;
+          if (amount === 0) {
+            this.gotAllMessages = true;
+          }
         });
       }
     }
@@ -48,7 +55,7 @@ export class ChatComponent implements OnChanges, OnInit {
     this.chatClient.sendMessageToChatSession(new SendMessageToChatSessionCommand({
       sessionId: this.session.id,
       text: message
-    })).subscribe(()=> {
+    })).subscribe(() => {
       this.textArea.nativeElement.value = '';
     });
   }

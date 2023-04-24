@@ -59,7 +59,11 @@ export class SignalRService {
   }
 
   private onClose(error?: Error) {
-    console.log('Connection closed', error);
+    this.notificationService.add({
+      severity: 'error',
+      title: 'Connection lost',
+    })
+    console.log('Signalr connection closed', error);
   }
 
   private renameAllKeysToCamelCase(obj: any) {

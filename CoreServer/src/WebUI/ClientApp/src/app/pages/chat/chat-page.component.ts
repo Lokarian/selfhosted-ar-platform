@@ -1,6 +1,12 @@
 import {Component, OnInit} from '@angular/core';
 import {ChatFacade} from "../../services/chat-facade.service";
-import {AppUserDto, ChatClient, ChatSessionDto, CreateChatSessionCommand} from "../../web-api-client";
+import {
+  AppUserDto,
+  ChatClient,
+  ChatSessionDto,
+  CreateChatSessionCommand,
+  UpdateChatSessionCommand
+} from "../../web-api-client";
 import {CurrentUserService} from "../../services/user/current-user.service";
 
 @Component({
@@ -11,6 +17,7 @@ import {CurrentUserService} from "../../services/user/current-user.service";
 export class ChatPageComponent implements OnInit {
   public sessions: ChatSessionDto[] = [];
   public selectedSession: ChatSessionDto | null = null;
+  public isEdit=false;
 
   constructor(private chatService: ChatFacade, private currentUserService: CurrentUserService,private chatClient: ChatClient) {
     this.chatService.chatSessions$.subscribe(sessions => {
@@ -34,6 +41,19 @@ export class ChatPageComponent implements OnInit {
   createSession(users: AppUserDto[]) {
     this.chatClient.createChatSession(new CreateChatSessionCommand({
       userIds: users.map(u => u.id)
-    }));
+    })).subscribe();
   }
+
+  changeName(value: string) {
+    this.chatClient.updateChatSession(new UpdateChatSessionCommand({
+      name: value,
+      sessionId: this.selectedSession?.id
+    })).subscribe((session)=>{
+      this.chatService.addChatSession(session);
+    });
+  }
+  get selectedSessionUserIds(){
+    return this.selectedSession?.members.map(m=>m.userId) || [];
+  }
+
 }

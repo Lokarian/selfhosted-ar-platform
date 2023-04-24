@@ -25,6 +25,7 @@ import {ChatPageComponent} from "./pages/chat/chat-page.component";
 import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
 import { UserSelectComponent } from './components/user-select/user-select.component';
+import { UsersPipe } from './services/user/users.pipe';
 
 function baseUrlFactory() {
   const url = document.getElementsByTagName('base')[0].href;
@@ -51,16 +52,17 @@ function baseUrlFactory() {
     SecurePipe,
     UserPipe,
     UserSelectComponent,
+    UsersPipe,
   ],
-  imports: [
-    BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),
-    HttpClientModule,
-    FormsModule,
-    AppRoutingModule,
-    NgxPopperjsModule.forRoot({applyArrowClass: 'invisible'}),
-    BrowserAnimationsModule,
-    ReactiveFormsModule
-  ],
+    imports: [
+        BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),
+        HttpClientModule,
+        FormsModule,
+        AppRoutingModule,
+        NgxPopperjsModule.forRoot({applyArrowClass: 'invisible'}),
+        BrowserAnimationsModule,
+        ReactiveFormsModule
+    ],
   providers: [
     {provide: API_BASE_URL, useFactory: baseUrlFactory, deps: []},
     {provide: HTTP_INTERCEPTORS, useClass: AuthorizeInterceptor, multi: true},

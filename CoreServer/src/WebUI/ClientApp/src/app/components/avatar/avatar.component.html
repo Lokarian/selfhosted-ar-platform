@@ -1,10 +1,10 @@
 <div class="h-full w-full aspect-square relative" *ngIf="user">
-  <div class="status h-full aspect-square absolute"
+  <div class="status h-full w-full aspect-square absolute"
        [class.bg-warning]="user.onlineStatus===OnlineStatus.Away"
        [class.bg-success]="user.onlineStatus===OnlineStatus.Online"
        [class.bg-text]="user.onlineStatus===OnlineStatus.Offline"
        [class.bg-danger]="user.onlineStatus===OnlineStatus.Busy"></div>
-  <img *ngIf="avatarUrl" [alt]="user.userName" [src]="avatarUrl|secure|async" class="mask rounded-full h-full w-full aspect-square break-words"/>
+  <img *ngIf="avatarUrl" [alt]="user.userName" [src]="avatarUrl|secure|async" class="mask rounded-full h-full w-full object-cover aspect-square break-words"/>
   <div *ngIf="!avatarUrl" class="mask rounded-full h-full w-full aspect-square flex justify-center  items-center" [style]="'background-color:'+avatarColor" >
     <span class="text-black font-bold">{{avatarText}}</span>
   </div>

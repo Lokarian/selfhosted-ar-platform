@@ -167,6 +167,43 @@
         ]
       }
     },
+    "/api/Chat/UpdateChatSession": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "Chat_UpdateChatSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChatSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Chat/DeleteChatMessage/{id}": {
       "delete": {
         "tags": [
@@ -761,12 +798,12 @@
         ]
       }
     },
-    "/api/User/GetAppUsersBy": {
+    "/api/User/GetAppUsersByPartialName": {
       "get": {
         "tags": [
           "User"
         ],
-        "operationId": "User_GetAppUsersBy",
+        "operationId": "User_GetAppUsersByPartialName",
         "parameters": [
           {
             "name": "PartialName",
@@ -1062,6 +1099,28 @@
           },
           "text": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateChatSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userIds": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string",
+              "format": "guid"
+            }
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

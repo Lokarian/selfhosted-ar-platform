@@ -7,7 +7,7 @@
     <popper-content #userPopup>
       <div class="rounded-2xl bg-background-highlight w-80 p-4">
         <div class="flex flex-row gap-4">
-          <app-avatar class="w-10" [user]="user$|async" [allowEdit]="true"></app-avatar>
+          <app-avatar class="w-10" [user]="user" [allowEdit]="true"></app-avatar>
           <div>
             <h2 class="text-text ">{{user.userName}}</h2>
             <p class="text-text text-xs">{{user.email}}</p>

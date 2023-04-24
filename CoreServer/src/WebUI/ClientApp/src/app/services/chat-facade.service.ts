@@ -40,7 +40,7 @@ export class ChatFacade {
     if (!this.messageStore[chatSession.id]) {
       this.messageStore[chatSession.id] = new BehaviorSubject<ChatMessageDto[]>(chatSession.lastMessage ? [chatSession.lastMessage] : []);
     }
-    this.sessionSubject.next([...this.sessionSubject.value, chatSession]);
+    this.sessionSubject.next([...this.sessionSubject.value, chatSession].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index));
   }
 
   addChatMessage(chatMessage: ChatMessageDto) {
@@ -74,7 +74,7 @@ export class ChatFacade {
     var currentMessages = this.messageStore[chatSessionId].value;
     var newMessages = messages.reduce((acc, m) => this.insertChatMessageIntoArray(m, acc), currentMessages);
     this.messageStore[chatSessionId].next(newMessages);
-    return;
+    return messages.length;
   }
 
 }

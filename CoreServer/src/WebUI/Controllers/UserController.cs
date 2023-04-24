@@ -62,7 +62,7 @@ public class UserController : ApiControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<PaginatedList<AppUserDto>>> GetAppUsersBy(
+    public async Task<ActionResult<PaginatedList<AppUserDto>>> GetAppUsersByPartialName(
         [FromQuery] GetAppUsersByPartialNameWithPaginationQuery query)
     {
         return Ok(await Mediator.Send(query));

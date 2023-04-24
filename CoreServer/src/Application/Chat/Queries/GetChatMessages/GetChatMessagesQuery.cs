@@ -28,6 +28,7 @@ public class GetChatMessagesQueryHandler : IRequestHandler<GetChatMessagesQuery,
     {
         return _context.ChatMessages
             .Include(m => m.Sender)
+            .Where(m => m.SessionId == request.SessionId)
             .Where(m => request.From == null || m.SentAt < request.From)
             .OrderByDescending(m => m.SentAt)
             .Take(request.Count ?? 10)
