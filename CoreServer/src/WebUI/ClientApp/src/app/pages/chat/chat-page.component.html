@@ -2,9 +2,12 @@
   <div class="w-56 bg-background-secondary h-full p-1 overflow-y-auto flex flex-col gap-2">
     <app-user-select class="w-full" [multi]="true" (usersSelected)="createSession($event)"></app-user-select>
     <div class="w-full h-16 p-2 justify-start align-middle rounded hover:bg-background-highlight flex flex-row"
-         [class.bg-background-highlight]="session.id===selectedSession?.id" *ngFor="let session of sessions"
+         [class.bg-background-highlight]="session.id===selectedSession?.id" *ngFor="let session of sessions$|async"
          (click)="selectedSession=session">
       <app-avatar [user]="getRepresentingUserIdInSession(session)|user|async" class="w-10 h-10"></app-avatar>
+      <div *ngIf="hasUnreadMessage(session)" class="rounded-full aspect-square h-2 bg-info">
+
+      </div>
       <div class="flex flex-col ml-2 h-full min-w-0">
         <div class="text-sm font-medium text-white truncate">
           <span *ngIf="session.name">{{session.name}}</span>
@@ -32,7 +35,7 @@
         </svg>
       </button>
       <popper-content #nameEditPopper>
-        <div class="rounded-lg p-2 bg-background-highlight">
+        <div class="rounded-lg p-2 bg-background-highlight w-56">
           <div class="flex">
             <input class="bg-background-primary p-2 rounded text-white text-lg " [ngModel]="selectedSession.name" #sessionNameInput>
             <button class="bg-transparent border-none text-white h-1/2 ml-2 my-auto"
@@ -43,11 +46,13 @@
                       d="M5 13l4 4L19 7"></path>
               </svg>
             </button>
+            <app-user-select class="w-full" [multi]="true" [preselectedUserIds]="selectedSessionUserIds" ></app-user-select>
           </div>
+
 
         </div>
       </popper-content>
     </div>
-    <app-chat class="flex-1 w-full" [session]="selectedSession"></app-chat>
+    <app-chat class="flex-1 w-full min-h-0" [session]="selectedSession"></app-chat>
   </div>
 </div>

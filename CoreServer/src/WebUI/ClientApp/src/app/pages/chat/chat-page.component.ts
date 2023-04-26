@@ -8,6 +8,8 @@ import {
   UpdateChatSessionCommand
 } from "../../web-api-client";
 import {CurrentUserService} from "../../services/user/current-user.service";
+import {Observable} from "rxjs";
+import {map} from "rxjs/operators";
 
 @Component({
   selector: 'app-chat-page',
@@ -15,14 +17,18 @@ import {CurrentUserService} from "../../services/user/current-user.service";
   styleUrls: ['./chat-page.component.css']
 })
 export class ChatPageComponent implements OnInit {
-  public sessions: ChatSessionDto[] = [];
+  public sessions$: Observable<ChatSessionDto[]>
+  M
   public selectedSession: ChatSessionDto | null = null;
-  public isEdit=false;
+  public isEdit = false;
 
-  constructor(private chatService: ChatFacade, private currentUserService: CurrentUserService,private chatClient: ChatClient) {
-    this.chatService.chatSessions$.subscribe(sessions => {
-      this.sessions = sessions;
-    });
+  constructor(private chatService: ChatFacade, private currentUserService: CurrentUserService, private chatClient: ChatClient) {
+    //get sessions from chatService sorted by last lastMessage?.sentAt, if date is null or undefined, put at the end
+    this.sessions$ = this.chatService.chatSessions$.pipe(map(sessions => sessions.sort((a, b) => {
+      const aDate = a.lastMessage?.sentAt || new Date(0);
+      const bDate = b.lastMessage?.sentAt || new Date(0);
+      return aDate > bDate ? -1 : 1;
+    })));
   }
 
   ngOnInit(): void {
@@ -48,12 +54,21 @@ export class ChatPageComponent implements OnInit {
     this.chatClient.updateChatSession(new UpdateChatSessionCommand({
       name: value,
       sessionId: this.selectedSession?.id
-    })).subscribe((session)=>{
+    })).subscribe((session) => {
       this.chatService.addChatSession(session);
     });
   }
-  get selectedSessionUserIds(){
-    return this.selectedSession?.members.map(m=>m.userId) || [];
+
+  hasUnreadMessage(session: ChatSessionDto) {
+    if (!session.lastMessage) {
+      return false;
+    }
+    const myLastReadTime = session.members.find(m => m.userId === this.currentUserService.user.id)?.lastSeen;
+    return myLastReadTime ? session.lastMessage.senderId !== this.currentUserService.user.id && session.lastMessage.sentAt > myLastReadTime  : true;
+  }
+
+  get selectedSessionUserIds() {
+    return this.selectedSession?.members.map(m => m.userId) || [];
   }
 
 }

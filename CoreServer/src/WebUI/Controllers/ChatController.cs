@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreServer.Application.Chat.Commands;
 using CoreServer.Application.Chat.Commands.CreateChatSession;
 using CoreServer.Application.Chat.Commands.DeleteChatMessage;
 using CoreServer.Application.Chat.Commands.SendMessageToChatSession;
@@ -56,6 +57,11 @@ public class ChatController : ApiControllerBase
     {
         ChatSession chatSession = await Mediator.Send(command);
         return Ok(_mapper.Map<ChatSessionDto>(chatSession));
+    }
+    [HttpPost]
+    public async Task<ActionResult> UpdateLastRead(UpdateChatSessionLastReadCommand command)
+    {
+        return Ok(await Mediator.Send(command));
     }
 
     [HttpDelete("{id}")]

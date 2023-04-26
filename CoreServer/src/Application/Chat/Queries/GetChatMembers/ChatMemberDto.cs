@@ -8,6 +8,7 @@ public class ChatMemberDto : IMapFrom<ChatMember>
 {
     public Guid UserId { get; set; }
     public DateTime? LastSeen { get; set; }
+    public Guid SessionId { get; set; }
 
     public void Mapping(Profile profile)
     {

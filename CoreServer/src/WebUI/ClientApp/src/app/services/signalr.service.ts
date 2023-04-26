@@ -1,7 +1,6 @@
-import {Injectable} from '@angular/core';
-import {AppUserDto, ChatMessageDto, ChatSessionDto} from "../web-api-client";
+import {Inject, Injectable} from '@angular/core';
+import {API_BASE_URL} from "../web-api-client";
 import {HubConnection, HubConnectionBuilder} from "@microsoft/signalr";
-import {MessagePackHubProtocol} from "@microsoft/signalr-protocol-msgpack";
 import {AuthorizeService} from "./auth/authorize.service";
 import {BehaviorSubject, firstValueFrom} from "rxjs";
 import {NotificationService} from "./notification.service";
@@ -15,12 +14,12 @@ export class SignalRService {
   private ready = new BehaviorSubject(false);
   public ready$ = this.ready.asObservable();
 
-  constructor(private authorizeService: AuthorizeService, private notificationService: NotificationService) {
+  constructor(private authorizeService: AuthorizeService, private notificationService: NotificationService, @Inject(API_BASE_URL) private baseUrl?: string) {
   }
 
   public async init() {
     this._hubConnection = await new HubConnectionBuilder()
-      .withUrl('https://localhost:5001/api/hub',
+      .withUrl(`${this.baseUrl}/api/hub`,
         {
           accessTokenFactory: async () => {
             return await firstValueFrom(this.authorizeService.getAccessToken().pipe(filter(token => token !== null)));
@@ -31,16 +30,18 @@ export class SignalRService {
     this._hubConnection.onreconnecting((error) => this.onReconnecting(error));
     this._hubConnection.onreconnected((error) => this.onReconnected(error));
     this._hubConnection.onclose((error: any) => this.onClose(error));
-    this._hubConnection.on("IRpcUserClient/UpdateUser",console.log);
+    this._hubConnection.on("IRpcUserClient/UpdateUser", console.log);
     this._hubConnection.start().then(() => {
       this.ready.next(true);
       console.log('SignalR Connected!');
     });
   }
+
   public notifyServerOfServiceRegistration(serviceName: string) {
     console.log('Registering service ' + serviceName);
     this._hubConnection.invoke('RegisterService', serviceName);
   }
+
   public on<T>(methodName: string, callback: (data: T) => void) {
 
     this._hubConnection.on(methodName, (data: any) => {
@@ -101,7 +102,7 @@ export class SignalRService {
         const val = obj[key];
         obj[key] = this.parseAllDates(val)
       }
-    }else if (typeof obj === 'string' && obj.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/)) {
+    } else if (typeof obj === 'string' && obj.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/)) {
       obj = new Date(obj);
     }
     return obj;

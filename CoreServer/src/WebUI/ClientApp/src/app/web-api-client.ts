@@ -21,6 +21,7 @@ export interface IChatClient {
     createChatSession(command: CreateChatSessionCommand): Observable<ChatSessionDto>;
     sendMessageToChatSession(command: SendMessageToChatSessionCommand): Observable<ChatMessageDto>;
     updateChatSession(command: UpdateChatSessionCommand): Observable<ChatSessionDto>;
+    updateLastRead(command: UpdateChatSessionLastReadCommand): Observable<FileResponse>;
     deleteChatMessage(id: string): Observable<FileResponse>;
 }
 
@@ -303,6 +304,62 @@ export class ChatClient implements IChatClient {
             result200 = ChatSessionDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    updateLastRead(command: UpdateChatSessionLastReadCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/Chat/UpdateLastRead";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateLastRead(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateLastRead(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processUpdateLastRead(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -1677,6 +1734,7 @@ export interface IChatMessageDto {
 export class ChatMemberDto implements IChatMemberDto {
     userId?: string;
     lastSeen?: Date | undefined;
+    sessionId?: string;
 
     constructor(data?: IChatMemberDto) {
         if (data) {
@@ -1691,6 +1749,7 @@ export class ChatMemberDto implements IChatMemberDto {
         if (_data) {
             this.userId = _data["userId"];
             this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
+            this.sessionId = _data["sessionId"];
         }
     }
 
@@ -1705,6 +1764,7 @@ export class ChatMemberDto implements IChatMemberDto {
         data = typeof data === 'object' ? data : {};
         data["userId"] = this.userId;
         data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
+        data["sessionId"] = this.sessionId;
         return data;
     }
 }
@@ -1712,6 +1772,7 @@ export class ChatMemberDto implements IChatMemberDto {
 export interface IChatMemberDto {
     userId?: string;
     lastSeen?: Date | undefined;
+    sessionId?: string;
 }
 
 export class CreateChatSessionCommand implements ICreateChatSessionCommand {
@@ -1852,6 +1913,42 @@ export interface IUpdateChatSessionCommand {
     sessionId?: string;
     userIds?: string[] | undefined;
     name?: string | undefined;
+}
+
+export class UpdateChatSessionLastReadCommand implements IUpdateChatSessionLastReadCommand {
+    chatSessionId?: string;
+
+    constructor(data?: IUpdateChatSessionLastReadCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.chatSessionId = _data["chatSessionId"];
+        }
+    }
+
+    static fromJS(data: any): UpdateChatSessionLastReadCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateChatSessionLastReadCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["chatSessionId"] = this.chatSessionId;
+        return data;
+    }
+}
+
+export interface IUpdateChatSessionLastReadCommand {
+    chatSessionId?: string;
 }
 
 export class PaginatedListOfTodoItemBriefDto implements IPaginatedListOfTodoItemBriefDto {

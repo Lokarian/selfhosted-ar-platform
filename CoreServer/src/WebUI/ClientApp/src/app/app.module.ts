@@ -25,9 +25,14 @@ import {ChatPageComponent} from "./pages/chat/chat-page.component";
 import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
 import { UserSelectComponent } from './components/user-select/user-select.component';
-import { UsersPipe } from './services/user/users.pipe';
 
 function baseUrlFactory() {
+  if(environment.production){
+    const href = document.getElementsByTagName('base')[0].href;
+    // get the hostname with this regex: ^((?>\w+:\/\/)?[^\/]+)
+    return href.match(/^((\w+:\/\/)?[^\/]+)/)[0];
+
+  }
   const url = document.getElementsByTagName('base')[0].href;
   const port = url.split(':')[2];
   if (port) {
@@ -52,7 +57,6 @@ function baseUrlFactory() {
     SecurePipe,
     UserPipe,
     UserSelectComponent,
-    UsersPipe,
   ],
     imports: [
         BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

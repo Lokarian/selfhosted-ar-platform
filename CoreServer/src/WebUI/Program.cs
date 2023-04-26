@@ -11,11 +11,12 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddWebUIServices(builder.Configuration);
+string? hostName = Environment.GetEnvironmentVariable("HOST_NAME");
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("test", builder =>
     {
-        builder.WithOrigins("https://localhost:44447", "https://localhost:4200") // the Angular app url
+        builder.WithOrigins("https://localhost:44447", "https://localhost:4200",hostName??"") // the Angular app url
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -28,7 +29,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseMigrationsEndPoint();
-
     // Initialise and seed database
     using (IServiceScope scope = app.Services.CreateScope())
     {
@@ -64,7 +64,6 @@ app.MapControllerRoute(
     "default",
     "{controller}/{action=Index}/{id?}");
 
-app.MapRazorPages();
 app.MapHub<SignalRHub>("/api/hub");
 app.MapFallbackToFile("index.html");
 

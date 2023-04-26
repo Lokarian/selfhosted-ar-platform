@@ -11,12 +11,11 @@ import {CurrentUserService} from "../user/current-user.service";
 })
 export class RpcUserService extends RpcService implements IRpcUserService {
 
-  constructor(private signalRService: SignalRService, private userFacade: UserFacade,private currentUserService: CurrentUserService) {
-    super(signalRService);
+  constructor(private signalRService: SignalRService, private userFacade: UserFacade, private currentUserService: CurrentUserService) {
+    super(signalRService, "RpcUserService", {UpdateUser: (user: AppUserDto) => this.UpdateUser(user)});
   }
 
   UpdateUser(user: AppUserDto) {
-    console.log(user);
     if (user.id === this.currentUserService.user.id) {
       this.currentUserService.setUser(user);
     }

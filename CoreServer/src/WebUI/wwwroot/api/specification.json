@@ -204,6 +204,44 @@
         ]
       }
     },
+    "/api/Chat/UpdateLastRead": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "Chat_UpdateLastRead",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChatSessionLastReadCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Chat/DeleteChatMessage/{id}": {
       "delete": {
         "tags": [
@@ -1069,6 +1107,10 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
           }
         }
       },
@@ -1121,6 +1163,16 @@
           "name": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "UpdateChatSessionLastReadCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chatSessionId": {
+            "type": "string",
+            "format": "guid"
           }
         }
       },

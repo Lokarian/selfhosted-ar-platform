@@ -5,7 +5,7 @@
   <div class="p-4 bg-background-highlight rounded-md max-w-[80%]" [class.bg-primary-bg]="isOwnMessage">
     <div class="text-text text-xs">
       <span class="mr-4"
-            *ngIf="!isOwnMessage">{{message.senderId}}</span><span>{{message.sentAt|date:'shortTime'}}</span>
+            *ngIf="!isOwnMessage">{{(message.senderId|user|async)?.userName}}</span><span>{{message.sentAt|date:'shortTime'}}</span>
     </div>
     <div class="text-white">{{message.text}}</div>
   </div>

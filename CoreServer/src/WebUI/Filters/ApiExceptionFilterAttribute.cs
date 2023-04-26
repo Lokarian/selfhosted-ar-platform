@@ -35,11 +35,31 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
             _exceptionHandlers[type].Invoke(context);
             return;
         }
+        else
+        {
+            HandleGenericException(context);
+        }
 
         if (!context.ModelState.IsValid)
         {
             HandleInvalidModelStateException(context);
         }
+    }
+
+    private void HandleGenericException(ExceptionContext context)
+    {
+        Exception exception = context.Exception;
+        ProblemDetails details = new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An error occurred while processing your request.",
+            Detail = exception.Message,
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1"
+        };
+
+        context.Result = new ObjectResult(details) { StatusCode = StatusCodes.Status500InternalServerError };
+
+        context.ExceptionHandled = true;
     }
 
     private void HandleValidationException(ExceptionContext context)

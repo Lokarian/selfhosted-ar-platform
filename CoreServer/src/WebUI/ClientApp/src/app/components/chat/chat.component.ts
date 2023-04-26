@@ -1,37 +1,52 @@
 import {Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
-import {ChatClient, ChatMessageDto, ChatSessionDto, SendMessageToChatSessionCommand} from "../../web-api-client";
+import {
+  ChatClient,
+  ChatMessageDto,
+  ChatSessionDto,
+  SendMessageToChatSessionCommand,
+  UpdateChatSessionLastReadCommand
+} from "../../web-api-client";
 import {ChatFacade} from "../../services/chat-facade.service";
-import {Observable} from "rxjs";
+import {BehaviorSubject, Observable, of, ReplaySubject, switchMap} from "rxjs";
+import {tap} from "rxjs/operators";
 
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss']
 })
-export class ChatComponent implements OnChanges, OnInit {
-  @Input() public session: ChatSessionDto;
+export class ChatComponent implements OnInit {
+  @Input() set session(value: ChatSessionDto) {
+    this.sessionSubject.next(value);
+  }
+
+  get session(): ChatSessionDto {
+    return this.sessionSubject.value;
+  }
+
   @ViewChild('textArea') private textArea: ElementRef;
   public messages$: Observable<ChatMessageDto[]>;
   private gettingMoreMessages = false;
   private gotAllMessages = false;
+  private sessionSubject = new BehaviorSubject<ChatSessionDto>(null);
 
   constructor(private chatService: ChatFacade, private chatClient: ChatClient) {
 
   }
 
   ngOnInit(): void {
+    this.messages$ = this.sessionSubject.asObservable().pipe(
+      switchMap(session => {
+          if (session) {
+            return this.chatService.getChatMessages$(session.id).pipe(tap((a) => {
+              this.chatService.updateLastRead(session);
+            }));
+          }
+          return of([]);
+        }
+      ));
   }
 
-
-  ngOnChanges(changes:SimpleChanges): void {
-    if(changes.session) {
-      this.messages$ = this.chatService.getChatMessages$(this.session.id);
-      this.gettingMoreMessages = true;
-      this.chatService.loadMoreMessages(this.session.id).then(() => {
-        this.gettingMoreMessages = false;
-      });
-    }
-  }
 
   onScroll(event: any) {
     if (event.target.scrollHeight + event.target.scrollTop - event.target.clientHeight < 100) {

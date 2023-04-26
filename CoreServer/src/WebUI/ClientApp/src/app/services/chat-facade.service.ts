@@ -1,6 +1,13 @@
 import {Injectable} from '@angular/core';
-import {ChatClient, ChatMessageDto, ChatSessionDto} from "../web-api-client";
+import {
+  ChatClient,
+  ChatMemberDto,
+  ChatMessageDto,
+  ChatSessionDto,
+  UpdateChatSessionLastReadCommand
+} from "../web-api-client";
 import {BehaviorSubject, firstValueFrom} from "rxjs";
+import {CurrentUserService} from "./user/current-user.service";
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +18,7 @@ export class ChatFacade {
   //store behavior subject for each chat session
   private messageStore: { [key: string]: BehaviorSubject<ChatMessageDto[]> } = {};
 
-  constructor(private chatClient: ChatClient) {
+  constructor(private chatClient: ChatClient, private currentUserService: CurrentUserService) {
   }
 
   public get chatSessions$() {
@@ -45,6 +52,12 @@ export class ChatFacade {
 
   addChatMessage(chatMessage: ChatMessageDto) {
     this.messageStore[chatMessage.sessionId].next(this.insertChatMessageIntoArray(chatMessage, this.messageStore[chatMessage.sessionId].value));
+    //update the session latest message
+    const session = this.sessionSubject.value.find(s => s.id === chatMessage.sessionId);
+    if (session) {
+      session.lastMessage = chatMessage;
+      this.sessionSubject.next([...this.sessionSubject.value, session].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index))
+    }
   }
 
   /**
@@ -77,4 +90,28 @@ export class ChatFacade {
     return messages.length;
   }
 
+  updateChatMember(chatMember: ChatMemberDto) {
+    const session = this.sessionSubject.value.find(s => s.id === chatMember.sessionId);
+    if (!session) {
+      return;
+    }
+    session.members = session.members.filter(m => m.userId !== chatMember.userId);
+    session.members.push(chatMember);
+    console.log("updated session members", session.members, "for session", session);
+    this.sessionSubject.next([...this.sessionSubject.value, session].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index))
+  }
+
+  updateLastRead(session: ChatSessionDto) {
+    this.chatClient.updateLastRead(new UpdateChatSessionLastReadCommand({chatSessionId: session.id})).subscribe();
+    session = this.sessionSubject.value.find(s => s.id === session.id);
+    if (!session) {
+      return;
+    }
+    const myMember = session.members.find(m => m.userId === this.currentUserService.user.id);
+    if (!myMember) {
+      return;
+    }
+    myMember.lastSeen = new Date();
+    this.sessionSubject.next([...this.sessionSubject.value, session].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index));
+  }
 }

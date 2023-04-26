@@ -8,16 +8,13 @@ import {filter} from "rxjs/operators";
  * - methods must the same name as the Server Interface without the "I" prefix
  */
 export abstract class RpcService {
-  constructor(private signalrService: SignalRService) {
+  constructor(private signalrService: SignalRService,private serviceName: string,methods:{[key:string]:Function}) {
     //loop over all methods in this class and register them with signalr
     signalrService.ready$.pipe(filter(ready => ready)).subscribe(() => {
-      const className = this.constructor.name;
-      for (const methodName of Object.getOwnPropertyNames(Object.getPrototypeOf(this))) {
-        if (methodName !== 'constructor') {
-          this.signalrService.on(`${className}/${methodName}`, (data) => this[methodName](data));
-        }
+      for (const methodName in methods) {
+        this.signalrService.on(`${serviceName}/${methodName}`, (data) => methods[methodName](data));
       }
-      signalrService.notifyServerOfServiceRegistration(className);
+      signalrService.notifyServerOfServiceRegistration(serviceName);
     });
 
   }
