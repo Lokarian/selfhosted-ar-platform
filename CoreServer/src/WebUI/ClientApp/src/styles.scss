@@ -24,5 +24,8 @@ app-root{
 ::-webkit-scrollbar-thumb {
   @apply bg-text rounded;
 }
+.ngxp__container{
+  z-index: 1;
+}
 
 

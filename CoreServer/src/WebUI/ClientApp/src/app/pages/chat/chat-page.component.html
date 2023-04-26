@@ -5,9 +5,7 @@
          [class.bg-background-highlight]="session.id===selectedSession?.id" *ngFor="let session of sessions$|async"
          (click)="selectedSession=session">
       <app-avatar [user]="getRepresentingUserIdInSession(session)|user|async" class="w-10 h-10"></app-avatar>
-      <div *ngIf="hasUnreadMessage(session)" class="rounded-full aspect-square h-2 bg-info">
-
-      </div>
+      <div *ngIf="hasUnreadMessage(session)" class="rounded-full aspect-square h-2 bg-info"></div>
       <div class="flex flex-col ml-2 h-full min-w-0">
         <div class="text-sm font-medium text-white truncate">
           <span *ngIf="session.name">{{session.name}}</span>
@@ -27,7 +25,7 @@
                                                           *ngFor="let userId of getUserIdsForNameDisplay(selectedSession)">{{(userId|user|async)?.userName}}</span>
         </ng-container>
       </div>
-      <button class="bg-transparent border-none text-white h-1/2 ml-4 my-auto"  [popper]="nameEditPopper" >
+      <button class="bg-transparent border-none text-white h-1/2 ml-4 my-auto" [popper]="nameEditPopper">
         <svg class="w-full h-full drop-shadow-lg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M19.3635 5.63645C17.8703 4.14328 15.515 4.14328 14.0218 5.63645L5.63646 14.0218C5.20621 14.452 4.90512 14.951 4.76877 15.4953L3.15711 20.3429C3.10066 20.5592 3.10066 20.7859 3.15711 21.0022C3.29912 21.5658 3.74638 21.9984 4.2944 22H4.2944C4.51075 21.9968 4.72695 21.9454 4.9328 21.8462L9.78048 20.2345C10.3248 20.0981 10.8238 19.797 11.254 19.3668L19.6384 10.9825C21.1316 9.48935 21.1316 7.13405 19.6384 5.64088L19.3635 5.63645ZM8.61823 16.3817L6.03251 17.9674L7.61823 15.3817L8.61823 16.3817ZM17.1841 7.81589L9.85786 15.1421L7.61823 15.3817L7.85786 13.1421L15.1841 5.81588L17.1841 7.81589Z"
@@ -36,8 +34,9 @@
       </button>
       <popper-content #nameEditPopper>
         <div class="rounded-lg p-2 bg-background-highlight w-56">
-          <div class="flex">
-            <input class="bg-background-primary p-2 rounded text-white text-lg " [ngModel]="selectedSession.name" #sessionNameInput>
+          <div class="flex w-full flex-row">
+            <input class="bg-background-primary p-2 rounded text-white text-lg flex-1 min-w-0"
+                   [value]="selectedSession.name" placeholder="Name" #sessionNameInput>
             <button class="bg-transparent border-none text-white h-1/2 ml-2 my-auto"
                     (click)="changeName(sessionNameInput.value)">
               <svg aria-hidden="true" class="aspect-square w-4 text-white" fill="none" stroke="currentColor"
@@ -46,10 +45,12 @@
                       d="M5 13l4 4L19 7"></path>
               </svg>
             </button>
-            <app-user-select class="w-full" [multi]="true" [preselectedUserIds]="selectedSessionUserIds" ></app-user-select>
+
           </div>
-
-
+          <div class="bg-background-primary mt-2 p-2 rounded-lg">
+            <app-user-select class="w-full" [multi]="true" [usePopper]="false"
+                             [preselectedUserIds]="selectedSessionUserIds" (usersSelected)="changeUsers($event)"></app-user-select>
+          </div>
         </div>
       </popper-content>
     </div>

@@ -18,6 +18,7 @@ import {tap} from "rxjs/operators";
 export class ChatComponent implements OnInit {
   @Input() set session(value: ChatSessionDto) {
     this.sessionSubject.next(value);
+    this.loadMoreMessages();
   }
 
   get session(): ChatSessionDto {
@@ -47,22 +48,32 @@ export class ChatComponent implements OnInit {
       ));
   }
 
+  loadMoreMessages() {
+    this.gettingMoreMessages = true;
+    this.chatService.loadMoreMessages(this.session.id).then((amount) => {
+      setTimeout(() => this.gettingMoreMessages = false, 100);
+      if (amount === 0) {
+        this.gotAllMessages = true;
+      }
+    });
+  }
 
   onScroll(event: any) {
     if (event.target.scrollHeight + event.target.scrollTop - event.target.clientHeight < 100) {
       if (!this.gettingMoreMessages && !this.gotAllMessages) {
-        this.gettingMoreMessages = true;
-        this.chatService.loadMoreMessages(this.session.id).then((amount) => {
-          this.gettingMoreMessages = false;
-          if (amount === 0) {
-            this.gotAllMessages = true;
-          }
-        });
+        this.loadMoreMessages();
       }
     }
   }
 
-  sendMessage() {
+  sendMessage(event?: any) {
+    //event is from (keyup.enter) on textarea, if shift is also pressed, don't send
+    if (event) {
+      if (event.shiftKey) {
+        return;
+      }
+      event.preventDefault();
+    }
     const message = this.textArea.nativeElement.value;
     if (!message || message.trim().length === 0) {
       return;
@@ -75,4 +86,9 @@ export class ChatComponent implements OnInit {
     });
   }
 
+  handleKeydown(e: any) {
+    if (!e.shiftKey) {
+      e.preventDefault();
+    }
+  }
 }

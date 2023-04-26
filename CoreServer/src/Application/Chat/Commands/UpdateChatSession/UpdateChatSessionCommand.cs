@@ -3,6 +3,7 @@ using CoreServer.Application.Chat.Queries.GetMyChatSessions;
 using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Entities.Chat;
+using CoreServer.Domain.Events.Chat;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,7 @@ public class UpdateChatSessionCommandHandler : IRequestHandler<UpdateChatSession
     {
         var session = await _context.ChatSessions
             .Include(x => x.Members)
+            .ThenInclude(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
 
         if (session == null)
@@ -37,13 +39,19 @@ public class UpdateChatSessionCommandHandler : IRequestHandler<UpdateChatSession
             throw new NotFoundException(nameof(session), request.SessionId);
         }
 
+        var membersToRemove = new List<ChatMember>();
         if (request.UserIds != null)
         {
             var users = await _context.AppUsers.Where(x => request.UserIds.Contains(x.Id))
                 .ToListAsync(cancellationToken);
-            session.Members.Clear();
-            users.Select(x => new ChatMember() { UserId = x.Id, SessionId = session.Id }).ToList()
-                .ForEach(x => session.Members.Add(x));
+            //get all session members that are not in the request
+            membersToRemove = session.Members.Where(x => !request.UserIds.Contains(x.UserId)).ToList();
+            //get all users that are not in the session
+            var usersToAdd = users.Where(x => session.Members.All(y => y.UserId != x.Id)).ToList();
+            //remove all members that are not in the request
+            membersToRemove.ForEach(x => session.Members.Remove(x));
+            //add all users that are not in the session
+            usersToAdd.ForEach(x => session.Members.Add(new ChatMember { SessionId = session.Id, UserId = x.Id }));
         }
 
         if (request.Name != null)
@@ -51,6 +59,7 @@ public class UpdateChatSessionCommandHandler : IRequestHandler<UpdateChatSession
             session.Name = request.Name;
         }
 
+        session.AddDomainEvent(new ChatSessionUpdatedEvent(session, membersToRemove.Select(m => m.User).ToList()));
         await _context.SaveChangesAsync(cancellationToken);
         return session;
     }

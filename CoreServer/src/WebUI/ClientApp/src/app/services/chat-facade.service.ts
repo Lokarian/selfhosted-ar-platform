@@ -43,11 +43,20 @@ export class ChatFacade {
     return this.messageStore[chatSessionId].asObservable();
   }
 
-  addChatSession(chatSession: ChatSessionDto) {
+  updateChatSession(chatSession: ChatSessionDto) {
+    //if the current user is not a member of the session, remove the session and messestore
+    if (!chatSession.members.some(m => m.userId === this.currentUserService.user.id)) {
+      this.sessionSubject.next(this.sessionSubject.value.filter(s => s.id !== chatSession.id));
+      delete this.messageStore[chatSession.id];
+      return;
+    }
     if (!this.messageStore[chatSession.id]) {
       this.messageStore[chatSession.id] = new BehaviorSubject<ChatMessageDto[]>(chatSession.lastMessage ? [chatSession.lastMessage] : []);
     }
-    this.sessionSubject.next([...this.sessionSubject.value, chatSession].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index));
+    if (!chatSession.lastMessage) {
+      chatSession.lastMessage = this.messageStore[chatSession.id].value[0];
+    }
+    this.sessionSubject.next([...this.sessionSubject.value.filter(s => s.id !== chatSession.id), chatSession]);
   }
 
   addChatMessage(chatMessage: ChatMessageDto) {
@@ -56,7 +65,8 @@ export class ChatFacade {
     const session = this.sessionSubject.value.find(s => s.id === chatMessage.sessionId);
     if (session) {
       session.lastMessage = chatMessage;
-      this.sessionSubject.next([...this.sessionSubject.value, session].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index))
+      this.sessionSubject.next([...this.sessionSubject.value.filter(s => s.id !== session.id), session]);
+
     }
   }
 
@@ -97,8 +107,7 @@ export class ChatFacade {
     }
     session.members = session.members.filter(m => m.userId !== chatMember.userId);
     session.members.push(chatMember);
-    console.log("updated session members", session.members, "for session", session);
-    this.sessionSubject.next([...this.sessionSubject.value, session].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index))
+    this.sessionSubject.next([...this.sessionSubject.value.filter(s => s.id !== session.id), session]);
   }
 
   updateLastRead(session: ChatSessionDto) {
@@ -112,6 +121,7 @@ export class ChatFacade {
       return;
     }
     myMember.lastSeen = new Date();
-    this.sessionSubject.next([...this.sessionSubject.value, session].filter((session, index, self) => self.findIndex(s => s.id === session.id) === index));
+    this.sessionSubject.next([...this.sessionSubject.value.filter(s => s.id !== session.id), session]);
+
   }
 }

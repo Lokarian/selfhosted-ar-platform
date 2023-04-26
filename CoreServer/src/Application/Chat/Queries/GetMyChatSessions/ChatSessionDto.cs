@@ -10,6 +10,7 @@ public class ChatSessionDto : IMapFrom<ChatSession>
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
+    public DateTime CreatedAt { get; set; }
     public ChatMessageDto? LastMessage { get; set; }
     public IList<ChatMemberDto> Members { get; set; } = new List<ChatMemberDto>();
 

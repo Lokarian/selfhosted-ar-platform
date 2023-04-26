@@ -14,11 +14,13 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
         _exceptionHandlers = new Dictionary<Type, Action<ExceptionContext>>
         {
             { typeof(ValidationException), HandleValidationException },
+            { typeof(BusinessRuleException), HandleBusinessRuleException },
             { typeof(NotFoundException), HandleNotFoundException },
             { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
             { typeof(ForbiddenAccessException), HandleForbiddenAccessException }
         };
     }
+
 
     public override void OnException(ExceptionContext context)
     {
@@ -35,10 +37,6 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
             _exceptionHandlers[type].Invoke(context);
             return;
         }
-        else
-        {
-            HandleGenericException(context);
-        }
 
         if (!context.ModelState.IsValid)
         {
@@ -46,21 +44,6 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
         }
     }
 
-    private void HandleGenericException(ExceptionContext context)
-    {
-        Exception exception = context.Exception;
-        ProblemDetails details = new ProblemDetails
-        {
-            Status = StatusCodes.Status500InternalServerError,
-            Title = "An error occurred while processing your request.",
-            Detail = exception.Message,
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1"
-        };
-
-        context.Result = new ObjectResult(details) { StatusCode = StatusCodes.Status500InternalServerError };
-
-        context.ExceptionHandled = true;
-    }
 
     private void HandleValidationException(ExceptionContext context)
     {
@@ -74,6 +57,23 @@ public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
         context.Result = new BadRequestObjectResult(details);
 
         context.ExceptionHandled = true;
+    }
+    
+    
+    private void HandleBusinessRuleException(ExceptionContext obj)
+    {
+        BusinessRuleException exception = (BusinessRuleException)obj.Exception;
+
+        ProblemDetails details = new()
+        {
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+            Title = "Business rule violation",
+            Detail = exception.Message
+        };
+
+        obj.Result = new BadRequestObjectResult(details);
+
+        obj.ExceptionHandled = true;
     }
 
     private void HandleInvalidModelStateException(ExceptionContext context)

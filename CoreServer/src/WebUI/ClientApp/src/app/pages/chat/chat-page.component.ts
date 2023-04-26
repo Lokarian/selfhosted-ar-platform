@@ -8,7 +8,7 @@ import {
   UpdateChatSessionCommand
 } from "../../web-api-client";
 import {CurrentUserService} from "../../services/user/current-user.service";
-import {Observable} from "rxjs";
+import {Observable, tap} from "rxjs";
 import {map} from "rxjs/operators";
 
 @Component({
@@ -24,10 +24,13 @@ export class ChatPageComponent implements OnInit {
 
   constructor(private chatService: ChatFacade, private currentUserService: CurrentUserService, private chatClient: ChatClient) {
     //get sessions from chatService sorted by last lastMessage?.sentAt, if date is null or undefined, put at the end
-    this.sessions$ = this.chatService.chatSessions$.pipe(map(sessions => sessions.sort((a, b) => {
-      const aDate = a.lastMessage?.sentAt || new Date(0);
-      const bDate = b.lastMessage?.sentAt || new Date(0);
-      return aDate > bDate ? -1 : 1;
+    this.sessions$ = this.chatService.chatSessions$.pipe(tap(sessions=>{
+      const session=sessions.find(s=>s.id===this.selectedSession?.id);
+      this.selectedSession=session||null;
+    }),map(sessions => sessions.sort((a, b) => {
+      const aDate = a.lastMessage?.sentAt || a.createdAt;
+      const bDate = b.lastMessage?.sentAt || b.createdAt;
+      return bDate.getTime() - aDate.getTime();
     })));
   }
 
@@ -55,7 +58,16 @@ export class ChatPageComponent implements OnInit {
       name: value,
       sessionId: this.selectedSession?.id
     })).subscribe((session) => {
-      this.chatService.addChatSession(session);
+      this.chatService.updateChatSession(session);
+    });
+  }
+
+  changeUsers(users: AppUserDto[]) {
+    this.chatClient.updateChatSession(new UpdateChatSessionCommand({
+      userIds: users.map(u => u.id),
+      sessionId: this.selectedSession?.id
+    })).subscribe((session) => {
+      this.chatService.updateChatSession(session);
     });
   }
 
@@ -63,8 +75,11 @@ export class ChatPageComponent implements OnInit {
     if (!session.lastMessage) {
       return false;
     }
-    const myLastReadTime = session.members.find(m => m.userId === this.currentUserService.user.id)?.lastSeen;
-    return myLastReadTime ? session.lastMessage.senderId !== this.currentUserService.user.id && session.lastMessage.sentAt > myLastReadTime  : true;
+    const myMember = session.members.find(m => m.userId === this.currentUserService.user.id);
+    if (session.lastMessage.senderId === this.currentUserService.user.id) {
+      return false;
+    }
+    return session.lastMessage.sentAt > myMember?.lastSeen;
   }
 
   get selectedSessionUserIds() {

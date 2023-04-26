@@ -2,7 +2,7 @@
 
 public abstract class BaseAuditableEntity : BaseEntity
 {
-    public DateTime Created { get; set; }
+    public DateTime CreatedAt { get; set; }=DateTime.UtcNow;
 
     public Guid? CreatedById { get; set; }
     public AppUser? CreatedBy { get; set; } = null!;

@@ -1626,6 +1626,7 @@ export class WeatherForecastClient implements IWeatherForecastClient {
 export class ChatSessionDto implements IChatSessionDto {
     id?: string;
     name?: string;
+    createdAt?: Date;
     lastMessage?: ChatMessageDto | undefined;
     members?: ChatMemberDto[];
 
@@ -1642,6 +1643,7 @@ export class ChatSessionDto implements IChatSessionDto {
         if (_data) {
             this.id = _data["id"];
             this.name = _data["name"];
+            this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
             this.lastMessage = _data["lastMessage"] ? ChatMessageDto.fromJS(_data["lastMessage"]) : <any>undefined;
             if (Array.isArray(_data["members"])) {
                 this.members = [] as any;
@@ -1662,6 +1664,7 @@ export class ChatSessionDto implements IChatSessionDto {
         data = typeof data === 'object' ? data : {};
         data["id"] = this.id;
         data["name"] = this.name;
+        data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
         data["lastMessage"] = this.lastMessage ? this.lastMessage.toJSON() : <any>undefined;
         if (Array.isArray(this.members)) {
             data["members"] = [];
@@ -1675,6 +1678,7 @@ export class ChatSessionDto implements IChatSessionDto {
 export interface IChatSessionDto {
     id?: string;
     name?: string;
+    createdAt?: Date;
     lastMessage?: ChatMessageDto | undefined;
     members?: ChatMemberDto[];
 }

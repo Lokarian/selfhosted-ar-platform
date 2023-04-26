@@ -15,7 +15,7 @@ export class RegisterComponent implements OnInit {
   public registerForm = new FormGroup({
     userName: new FormControl('', [Validators.required]),
     email: new FormControl('', [Validators.required]),
-    password: new FormControl('', [Validators.required, Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)]),
+    password: new FormControl('', [Validators.required, /*Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)*/]),
     confirmPassword: new FormControl('', [Validators.required])
   });
 

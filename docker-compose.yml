@@ -29,5 +29,6 @@ services:
       HOST_NAME: ${HOST_NAME}
     volumes:
       - ${CERTS_VOLUME}:/https
+      - ${FILES_VOLUME}:/filestorage
     depends_on:
       - db

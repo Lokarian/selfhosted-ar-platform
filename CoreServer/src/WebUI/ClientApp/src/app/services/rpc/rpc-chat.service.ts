@@ -19,15 +19,13 @@ export class RpcChatService extends RpcService implements IRpcChatService {
   }
 
   NewChatMessage(chatMessage: ChatMessageDto) {
-    console.log("NewChatMessage", chatMessage);
     this.chatService.addChatMessage(chatMessage);
   }
 
   UpdateChatSession(chatSession: ChatSessionDto) {
-    this.chatService.addChatSession(chatSession);
+    this.chatService.updateChatSession(chatSession);
   }
   UpdateChatMember(chatMember:ChatMemberDto){
-    console.log("UpdateChatMember", chatMember);
     this.chatService.updateChatMember(chatMember);
   }
 

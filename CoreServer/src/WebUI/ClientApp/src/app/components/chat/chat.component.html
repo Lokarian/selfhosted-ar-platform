@@ -5,7 +5,7 @@
   <!--text bar for chat-->
   <div class="flex flex-row">
       <textarea class="flex-1 border border-border rounded-md p-2 bg-background-highlight max-h-24 text-white focus:border-primary focus:outline-none"
-                placeholder="Type a message..." #textArea ></textarea>
+                placeholder="Type a message..." (keydown.enter)="handleKeydown($event)" (keyup.enter)="sendMessage($event)" #textArea ></textarea>
     <button class=" text-text font-bold py-2 px-1 rounded-r-md group" (click)="sendMessage()">
       <svg class="w-6 h-6 group-hover:stroke-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"
            xmlns="http://www.w3.org/2000/svg">
