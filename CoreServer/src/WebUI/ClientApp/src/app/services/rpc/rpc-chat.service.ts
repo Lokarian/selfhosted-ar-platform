@@ -28,6 +28,6 @@ export class RpcChatService extends RpcService implements IRpcChatService {
   UpdateChatMember(chatMember:ChatMemberDto){
     this.chatService.updateChatMember(chatMember);
   }
-
+  SendVideoStream
 
 }

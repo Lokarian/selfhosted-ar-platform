@@ -1,8 +1,8 @@
 import {Inject, Injectable} from '@angular/core';
 import {API_BASE_URL} from "../web-api-client";
-import {HubConnection, HubConnectionBuilder} from "@microsoft/signalr";
+import {HubConnection, HubConnectionBuilder, Subject} from "@microsoft/signalr";
 import {AuthorizeService} from "./auth/authorize.service";
-import {BehaviorSubject, firstValueFrom} from "rxjs";
+import {BehaviorSubject, firstValueFrom, Observable} from "rxjs";
 import {NotificationService} from "./notification.service";
 import {filter} from "rxjs/operators";
 
@@ -48,6 +48,21 @@ export class SignalRService {
       //data = this.renameAllKeysToCamelCase(data);
       data = this.parseAllDates(data);
       callback(data);
+    });
+  }
+
+  public stream(methodName: string, observable: Observable<any>) {
+    const subject = new Subject();
+    observable.subscribe({
+      next: (v) => {
+        subject.next(v);
+      },
+      error: (v) => {
+        subject.complete();
+      },
+      complete: () => {
+        subject.complete();
+      }
     });
   }
 

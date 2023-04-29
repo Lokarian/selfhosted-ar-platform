@@ -32,3 +32,10 @@ services:
       - ${FILES_VOLUME}:/filestorage
     depends_on:
       - db
+  
+  videoBroker:
+    image: aler9/rtsp-simple-server
+    restart: always
+    ports:
+      - "8888:8888" # HLS
+      - "8889:8889" # WebRTC

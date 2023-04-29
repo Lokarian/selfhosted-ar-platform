@@ -1,4 +1,5 @@
-﻿using CoreServer.Application.Common.Interfaces;
+﻿using System.Threading.Channels;
+using CoreServer.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -38,5 +39,14 @@ public class SignalRHub : Hub
             $"User ${Context.UserIdentifier} on Client {Context.ConnectionId} registered service {serviceName}");
         _userConnectionStore.AddServiceToConnection(Context.ConnectionId, serviceName);
         return Task.CompletedTask;
+    }
+
+    public async Task ReceiveVideoStream(ChannelReader<byte[]> stream)
+    {
+        while( await stream.WaitToReadAsync())
+        {
+            byte[] data = await stream.ReadAsync();
+            Console.WriteLine($"Video: Received {data.Length} bytes");
+        }
     }
 }

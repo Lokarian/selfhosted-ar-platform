@@ -25,6 +25,7 @@ import {ChatPageComponent} from "./pages/chat/chat-page.component";
 import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
 import { UserSelectComponent } from './components/user-select/user-select.component';
+import { VideoComponent } from './components/video/video.component';
 
 function baseUrlFactory() {
   if(environment.production){
@@ -57,6 +58,7 @@ function baseUrlFactory() {
     SecurePipe,
     UserPipe,
     UserSelectComponent,
+    VideoComponent,
   ],
     imports: [
         BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

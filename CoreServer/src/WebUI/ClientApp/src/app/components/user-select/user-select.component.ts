@@ -40,7 +40,7 @@ export class UserSelectComponent implements OnInit, AfterViewInit {
   public pageSize = 5;
   public selectedUsers: AppUserDto[] = [];
   public popperWidth = 0;
-  constructor(private userClient: UserClient, private userFacade: UserFacade) {
+  constructor(private userClient: UserClient, private userFacade: UserFacade, private cdr: ChangeDetectorRef) {
   }
 
 
@@ -55,9 +55,8 @@ export class UserSelectComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.popperWidth = this.container.nativeElement.offsetWidth;
-    }, 0);
+    this.popperWidth = this.container.nativeElement.offsetWidth;
+    this.cdr.detectChanges();
   }
   searchForUsers() {
     this.userClient.getAppUsersByPartialName(this.searchTextSubject.value, this.pageNumber, this.pageSize).subscribe((users) => {
