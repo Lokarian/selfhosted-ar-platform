@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Models;
 using CoreServer.Application.User.Commands.LoginUser;
@@ -39,6 +40,10 @@ public class UserController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<AppUserDto>> Current()
     {
+        if (_currentUserService.User is null)
+        {
+            throw new NotFoundException(nameof(AppUser));
+        }
         AppUser? appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = _currentUserService.User!.Id });
         return _mapper.Map<AppUserDto>(appUser);
     }

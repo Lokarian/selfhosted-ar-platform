@@ -2,15 +2,9 @@
 using CoreServer.Application.Chat.Commands;
 using CoreServer.Application.Chat.Commands.CreateChatSession;
 using CoreServer.Application.Chat.Commands.DeleteChatMessage;
-using CoreServer.Application.Chat.Commands.SendMessageToChatSession;
-using CoreServer.Application.Chat.Commands.UpdateChatSession;
-using CoreServer.Application.Chat.Queries.GetChatMembers;
+using CoreServer.Application.Chat.Commands.SendMessageToChat;
 using CoreServer.Application.Chat.Queries.GetChatMessages;
 using CoreServer.Application.Chat.Queries.GetMyChatSessions;
-using CoreServer.Application.Common.Interfaces;
-using CoreServer.Application.RPC;
-using CoreServer.Application.RPC.common;
-using CoreServer.Application.User.Queries;
 using CoreServer.Domain.Entities.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,22 +36,16 @@ public class ChatController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult<ChatSessionDto>> CreateChatSession(CreateChatSessionCommand command)
     {
-        ChatSession chatSession = await Mediator.Send(command);
-        return Ok(_mapper.Map<ChatSessionDto>(chatSession));
+        return Ok(await Mediator.Send(command));
     }
 
     [HttpPost]
-    public async Task<ActionResult<ChatMessageDto>> SendMessageToChatSession(SendMessageToChatSessionCommand command)
+    public async Task<ActionResult<ChatMessageDto>> SendMessageToChatSession(SendMessageToChatCommand command)
     {
         ChatMessage chatMessage = await Mediator.Send(command);
         return Ok(_mapper.Map<ChatMessageDto>(chatMessage));
     }
-    [HttpPost]
-    public async Task<ActionResult<ChatSessionDto>> UpdateChatSession(UpdateChatSessionCommand command)
-    {
-        ChatSession chatSession = await Mediator.Send(command);
-        return Ok(_mapper.Map<ChatSessionDto>(chatSession));
-    }
+    
     [HttpPost]
     public async Task<ActionResult> UpdateLastRead(UpdateChatSessionLastReadCommand command)
     {

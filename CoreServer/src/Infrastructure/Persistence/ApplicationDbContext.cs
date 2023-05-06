@@ -3,6 +3,8 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Common;
 using CoreServer.Domain.Entities;
 using CoreServer.Domain.Entities.Chat;
+using CoreServer.Domain.Entities.Session;
+using CoreServer.Domain.Entities.Video;
 using CoreServer.Infrastructure.Common;
 using CoreServer.Infrastructure.Identity;
 using CoreServer.Infrastructure.Persistence.Configurations;
@@ -37,11 +39,16 @@ public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplica
 
     public DbSet<UserFile> UserFiles => Set<UserFile>();
 
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<SessionMember> SessionMembers => Set<SessionMember>();
+
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
-
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
-
     public DbSet<ChatMember> ChatMembers => Set<ChatMember>();
+
+    public DbSet<VideoSession> VideoSessions => Set<VideoSession>();
+    public DbSet<VideoStream> VideoStreams => Set<VideoStream>();
+    public DbSet<VideoMember> VideoMembers => Set<VideoMember>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

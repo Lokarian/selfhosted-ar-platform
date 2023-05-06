@@ -2,43 +2,44 @@
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Security;
 using CoreServer.Domain.Entities.Chat;
+using CoreServer.Domain.Entities.Session;
 using CoreServer.Domain.Events.Chat;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Commands.SendMessageToChatSession;
+namespace CoreServer.Application.Chat.Commands.SendMessageToChat;
 
 [Authorize]
-public class SendMessageToChatSessionCommand : IRequest<ChatMessage>
+public class SendMessageToChatCommand : IRequest<ChatMessage>
 {
     public Guid SessionId { get; set; }
     public string Text { get; set; } = null!;
 }
 
-public class SendMessageToChatSessionCommandHandler : IRequestHandler<SendMessageToChatSessionCommand, ChatMessage>
+public class SendMessageToChatCommandHandler : IRequestHandler<SendMessageToChatCommand, ChatMessage>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public SendMessageToChatSessionCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
+    public SendMessageToChatCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
     {
         _context = context;
         _currentUserService = currentUserService;
     }
 
-    public async Task<ChatMessage> Handle(SendMessageToChatSessionCommand request, CancellationToken cancellationToken)
+    public async Task<ChatMessage> Handle(SendMessageToChatCommand request, CancellationToken cancellationToken)
     {
-        ChatSession? session = await _context.ChatSessions
+        var session = await _context.ChatSessions
             .Include(s => s.Messages)
-            .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
+            .FirstOrDefaultAsync(s => s.BaseSessionId == request.SessionId, cancellationToken);
 
         if (session == null)
         {
             throw new NotFoundException(nameof(ChatSession), request.SessionId);
         }
 
-        ChatMessage message =
-            new ChatMessage { Text = request.Text, Sender = _currentUserService.User!, Session = session };
+
+        var message = new ChatMessage { Text = request.Text, Sender = _currentUserService.User!, Session = session };
 
         _context.ChatMessages.Add(message);
         session.AddDomainEvent(new ChatMassageCreatedEvent(message));

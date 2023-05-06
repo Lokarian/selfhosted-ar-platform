@@ -2,9 +2,10 @@ import {Inject, Injectable} from '@angular/core';
 import {API_BASE_URL} from "../web-api-client";
 import {HubConnection, HubConnectionBuilder, Subject} from "@microsoft/signalr";
 import {AuthorizeService} from "./auth/authorize.service";
-import {BehaviorSubject, firstValueFrom, Observable} from "rxjs";
+import {BehaviorSubject, firstValueFrom, Observable, share} from "rxjs";
 import {NotificationService} from "./notification.service";
 import {filter} from "rxjs/operators";
+import {MessagePackHubProtocol} from "@microsoft/signalr-protocol-msgpack";
 
 @Injectable({
   providedIn: 'root'
@@ -50,11 +51,10 @@ export class SignalRService {
       callback(data);
     });
   }
-
-  public stream(methodName: string, observable: Observable<any>) {
+  public stream(method:string, observable: Observable<any>,...args: any[]) {
     const subject = new Subject();
     observable.subscribe({
-      next: (v) => {
+      next: async (v) => {
         subject.next(v);
       },
       error: (v) => {
@@ -64,7 +64,22 @@ export class SignalRService {
         subject.complete();
       }
     });
+    console.log("Publishing stream", subject, ...args);
+    return this._hubConnection.send(method, subject, ...args);
   }
+  public dataStream(id:string,observable:Observable<any>) {
+    return this.stream("PublishStream",observable,id);
+  }
+
+  public getStream<T extends any>( id:string) {
+    return new Observable<T>(
+      observer => {
+        const stream = this._hubConnection.stream("SubscribeToStream", id)
+        const subscription = stream.subscribe(observer);
+        return () => subscription.dispose();
+      }
+    ).pipe(share());
+  };
 
   private onReconnecting(error: any) {
     console.log('Reconnecting', error);

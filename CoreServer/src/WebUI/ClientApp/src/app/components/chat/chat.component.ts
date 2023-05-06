@@ -1,10 +1,18 @@
-import {Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
+import {
+  ApplicationRef,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input, NgZone,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+  ViewChild
+} from '@angular/core';
 import {
   ChatClient,
   ChatMessageDto,
-  ChatSessionDto,
-  SendMessageToChatSessionCommand,
-  UpdateChatSessionLastReadCommand
+  ChatSessionDto, SendMessageToChatCommand,
 } from "../../web-api-client";
 import {ChatFacade} from "../../services/chat-facade.service";
 import {BehaviorSubject, Observable, of, ReplaySubject, switchMap} from "rxjs";
@@ -16,41 +24,33 @@ import {tap} from "rxjs/operators";
   styleUrls: ['./chat.component.scss']
 })
 export class ChatComponent implements OnInit {
+
+  private _session: ChatSessionDto;
   @Input() set session(value: ChatSessionDto) {
-    this.sessionSubject.next(value);
+    this._session = value;
     this.loadMoreMessages();
   }
-
   get session(): ChatSessionDto {
-    return this.sessionSubject.value;
+    return this._session;
   }
 
   @ViewChild('textArea') private textArea: ElementRef;
+
   public messages$: Observable<ChatMessageDto[]>;
   private gettingMoreMessages = false;
   private gotAllMessages = false;
-  private sessionSubject = new BehaviorSubject<ChatSessionDto>(null);
 
-  constructor(private chatService: ChatFacade, private chatClient: ChatClient) {
+  constructor(private chatFacade: ChatFacade, private chatClient: ChatClient,private appRef:ApplicationRef ) {
 
   }
 
   ngOnInit(): void {
-    this.messages$ = this.sessionSubject.asObservable().pipe(
-      switchMap(session => {
-          if (session) {
-            return this.chatService.getChatMessages$(session.id).pipe(tap((a) => {
-              this.chatService.updateLastRead(session);
-            }));
-          }
-          return of([]);
-        }
-      ));
+    this.chatFacade.updateLastRead(this.session.baseSessionId);
   }
 
   loadMoreMessages() {
     this.gettingMoreMessages = true;
-    this.chatService.loadMoreMessages(this.session.id).then((amount) => {
+    this.chatFacade.loadMoreMessages(this.session.baseSessionId).then((amount) => {
       setTimeout(() => this.gettingMoreMessages = false, 100);
       if (amount === 0) {
         this.gotAllMessages = true;
@@ -78,8 +78,8 @@ export class ChatComponent implements OnInit {
     if (!message || message.trim().length === 0) {
       return;
     }
-    this.chatClient.sendMessageToChatSession(new SendMessageToChatSessionCommand({
-      sessionId: this.session.id,
+    this.chatClient.sendMessageToChatSession(new SendMessageToChatCommand({
+      sessionId: this.session.baseSessionId,
       text: message
     })).subscribe(() => {
       this.textArea.nativeElement.value = '';

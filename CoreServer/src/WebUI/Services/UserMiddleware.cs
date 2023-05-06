@@ -1,6 +1,8 @@
 ﻿using System.Security.Claims;
+using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.User.Queries;
+using CoreServer.Domain.Entities;
 using MediatR;
 
 namespace WebUI.Services;

@@ -1,5 +1,5 @@
 import {BrowserModule} from '@angular/platform-browser';
-import {InjectionToken, NgModule} from '@angular/core';
+import { NgModule} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {HttpClientModule, HTTP_INTERCEPTORS} from '@angular/common/http';
 
@@ -26,6 +26,7 @@ import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
 import { UserSelectComponent } from './components/user-select/user-select.component';
 import { VideoComponent } from './components/video/video.component';
+import { SessionPageComponent } from './pages/session/session-page.component';
 
 function baseUrlFactory() {
   if(environment.production){
@@ -59,6 +60,7 @@ function baseUrlFactory() {
     UserPipe,
     UserSelectComponent,
     VideoComponent,
+    SessionPageComponent,
   ],
     imports: [
         BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

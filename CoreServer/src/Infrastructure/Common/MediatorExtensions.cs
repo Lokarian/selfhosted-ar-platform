@@ -8,16 +8,17 @@ public static class MediatorExtensions
 {
     public static async Task DispatchDomainEvents(this IMediator mediator, DbContext context)
     {
-        IEnumerable<BaseEntity> entities = context.ChangeTracker
-            .Entries<BaseEntity>()
+        IEnumerable<EntityWithEvents> entities = context.ChangeTracker
+            .Entries<EntityWithEvents>()
             .Where(e => e.Entity.DomainEvents.Any())
             .Select(e => e.Entity);
 
-        List<BaseEvent> domainEvents = entities
+        var entityWithEventsEnumerable = entities.ToList();
+        List<BaseEvent> domainEvents = entityWithEventsEnumerable
             .SelectMany(e => e.DomainEvents)
             .ToList();
 
-        entities.ToList().ForEach(e => e.ClearDomainEvents());
+        entityWithEventsEnumerable.ForEach(e => e.ClearDomainEvents());
 
         foreach (BaseEvent domainEvent in domainEvents)
         {

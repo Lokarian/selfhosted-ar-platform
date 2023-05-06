@@ -28,8 +28,17 @@ export class CurrentUserService {
   }
 
   public async loadUser() {
-    const user = await firstValueFrom(await this.userClient.current());
-    this.userSubject.next(user);
+    try {
+      const user = await firstValueFrom(await this.userClient.current());
+      this.userSubject.next(user);
+    }
+    catch (e) {
+      //if 404 then log out
+      if (e.status === 404) {
+        this.authService.removeAccessToken(true);
+      }
+    }
+
   }
 
   public setUser(user: AppUserDto) {

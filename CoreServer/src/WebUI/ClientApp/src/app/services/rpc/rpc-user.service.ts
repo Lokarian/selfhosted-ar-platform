@@ -5,6 +5,7 @@ import {RpcService} from "./rpc.service";
 import {SignalRService} from "../signalr.service";
 import {UserFacade} from "../user/user-facade.service";
 import {CurrentUserService} from "../user/current-user.service";
+import {filter, first} from "rxjs/operators";
 
 @Injectable({
   providedIn: 'root'
@@ -16,9 +17,13 @@ export class RpcUserService extends RpcService implements IRpcUserService {
   }
 
   UpdateUser(user: AppUserDto) {
-    if (user.id === this.currentUserService.user.id) {
-      this.currentUserService.setUser(user);
-    }
+    //when the app starts server may respond with the update to the current user before the current user is set via usercontroller.current(),
+    //so we need to wait for the current user to be set before we update it
+    this.currentUserService.user$.pipe(filter(u=>!!u),first()).subscribe(u=>{
+      if (user.id === this.currentUserService.user.id) {
+        this.currentUserService.setUser(user);
+      }
+    });
     this.userFacade.updateUser(user);
   }
 }

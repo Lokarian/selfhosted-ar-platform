@@ -9,13 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreServer.Application.Chat.EventHandlers;
 
-public class ChatMemberUpdatedEventhandler : INotificationHandler<ChatMemberUpdatedEvent>
+public class ChatMemberUpdatedEventHandler : INotificationHandler<ChatMemberUpdatedEvent>
 {
     private readonly IUserProxy<IRpcChatService> _userProxy;
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
 
-    public ChatMemberUpdatedEventhandler(IUserProxy<IRpcChatService> userProxy, IApplicationDbContext context, IMapper mapper)
+    public ChatMemberUpdatedEventHandler(IUserProxy<IRpcChatService> userProxy, IApplicationDbContext context, IMapper mapper)
     {
         _userProxy = userProxy;
         _context = context;
@@ -25,7 +25,7 @@ public class ChatMemberUpdatedEventhandler : INotificationHandler<ChatMemberUpda
     public async Task Handle(ChatMemberUpdatedEvent notification, CancellationToken cancellationToken)
     {
         var receivers = _context.ChatMembers.Where(x => x.SessionId == notification.ChatMember.SessionId)
-            .Select(x => x.UserId);
+            .Select(x => x.BaseMember.UserId);
         var proxy = await _userProxy.Clients(receivers);
         await proxy.UpdateChatMember(_mapper.Map<ChatMemberDto>(notification.ChatMember));
     }

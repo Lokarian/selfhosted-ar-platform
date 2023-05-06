@@ -141,7 +141,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SendMessageToChatSessionCommand"
+                "$ref": "#/components/schemas/SendMessageToChatCommand"
               }
             }
           },
@@ -155,43 +155,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChatMessageDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Chat/UpdateChatSession": {
-      "post": {
-        "tags": [
-          "Chat"
-        ],
-        "operationId": "Chat_UpdateChatSession",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateChatSessionCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatSessionDto"
                 }
               }
             }
@@ -268,6 +231,141 @@
                 "schema": {
                   "type": "string",
                   "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MediaServer/AuthenticateUser": {
+      "post": {
+        "tags": [
+          "MediaServer"
+        ],
+        "operationId": "MediaServer_AuthenticateUser",
+        "requestBody": {
+          "x-name": "query",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCanAccessStreamQuery"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Session/GetMySessions": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "operationId": "Session_GetMySessions",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Session/CreateSession": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "operationId": "Session_CreateSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Session/UpdateSession": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "operationId": "Session_UpdateSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
                 }
               }
             }
@@ -1017,6 +1115,295 @@
         ]
       }
     },
+    "/api/Video/GetMyVideoSessions": {
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_GetMyVideoSessions",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/GetVideoSessionMembers": {
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_GetVideoSessionMembers",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoMemberDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/GetVideoStreams": {
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_GetVideoStreams",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoStreamDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/CreateVideoSession": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_CreateVideoSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideoSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/RequestVideoStream": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_RequestVideoStream",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideoStreamCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoStreamDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/StopVideoStream": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_StopVideoStream",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopVideoStreamCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoStreamDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/JoinVideoSession": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_JoinVideoSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinVideoSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TupleOfVideoMemberDtoAndString"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/LeaveVideoSession": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_LeaveVideoSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveVideoSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecast/Get": {
       "get": {
         "tags": [
@@ -1047,16 +1434,17 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "id": {
+          "baseSessionId": {
             "type": "string",
             "format": "guid"
           },
-          "name": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
+          "baseSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDto"
+              }
+            ]
           },
           "lastMessage": {
             "nullable": true,
@@ -1071,6 +1459,142 @@
             "items": {
               "$ref": "#/components/schemas/ChatMemberDto"
             }
+          }
+        }
+      },
+      "SessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionMemberDto"
+            }
+          },
+          "chatSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatSessionDto"
+              }
+            ]
+          },
+          "videoSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/VideoSessionDto"
+              }
+            ]
+          }
+        }
+      },
+      "SessionMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "VideoSessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDto"
+              }
+            ]
+          },
+          "referencePoint": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "members": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/VideoMemberDto"
+            }
+          },
+          "streams": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/VideoStreamDto"
+            }
+          }
+        }
+      },
+      "VideoMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "joined": {
+            "type": "boolean"
+          }
+        }
+      },
+      "VideoStreamDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stoppedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         }
       },
@@ -1122,6 +1646,69 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "SendMessageToChatCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateChatSessionLastReadCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "UserCanAccessStreamQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
           "userIds": {
             "type": "array",
             "items": {
@@ -1135,20 +1722,7 @@
           }
         }
       },
-      "SendMessageToChatSessionCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "sessionId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "text": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateChatSessionCommand": {
+      "UpdateSessionCommand": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -1167,16 +1741,6 @@
           "name": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "UpdateChatSessionLastReadCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "chatSessionId": {
-            "type": "string",
-            "format": "guid"
           }
         }
       },
@@ -1500,14 +2064,28 @@
         ]
       },
       "BaseEntity": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EntityWithEvents"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "guid"
+              }
+            }
+          }
+        ]
+      },
+      "EntityWithEvents": {
         "type": "object",
         "x-abstract": true,
         "additionalProperties": false,
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
           "domainEvents": {
             "type": "array",
             "items": {
@@ -1590,6 +2168,68 @@
           },
           "hasNextPage": {
             "type": "boolean"
+          }
+        }
+      },
+      "CreateVideoSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "CreateVideoStreamCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoStreamMemberId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "StopVideoStreamCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoStreamId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "TupleOfVideoMemberDtoAndString": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "item1": {
+            "$ref": "#/components/schemas/VideoMemberDto"
+          },
+          "item2": {
+            "type": "string"
+          }
+        }
+      },
+      "JoinVideoSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoSessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "LeaveVideoSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoMemberId": {
+            "type": "string",
+            "format": "guid"
           }
         }
       },

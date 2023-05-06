@@ -1,4 +1,6 @@
-﻿namespace CoreServer.Domain.Entities.Chat;
+﻿using CoreServer.Domain.Entities.Session;
+
+namespace CoreServer.Domain.Entities.Chat;
 
 public class ChatMessage : BaseEntity
 {

@@ -14,14 +14,14 @@ public class GetChatMembersQueryValidator : AbstractValidator<GetChatMembersQuer
     {
         _context = context;
         _currentUserService = currentUserService;
-        RuleFor(x => x.SessionId).NotEmpty().WithMessage("Session Id must not be empty")
+        RuleFor(x => x.SessionId).NotEmpty().WithMessage("UserSession Id must not be empty")
             .MustAsync(UserIsChatMember).WithMessage("User is not a member of this session");
     }
 
     private async Task<bool> UserIsChatMember(Guid sessionId, CancellationToken cancellationToken)
     {
         ChatMember? chatMember = await _context.ChatMembers.FirstOrDefaultAsync(
-            x => x.SessionId == sessionId && x.UserId == _currentUserService.User!.Id,
+            x => x.SessionId == sessionId && x.BaseMember.UserId == _currentUserService.User!.Id,
             cancellationToken);
         return chatMember != null;
     }

@@ -40,9 +40,10 @@ public static class ConfigureServices
 
         services.AddScoped<ApplicationDbContextInitialiser>();
 
-        services.AddSignalR();//.AddMessagePackProtocol();
+        services.AddSignalR(options => options.MaximumReceiveMessageSize=5242880)/*.AddMessagePackProtocol()*/;
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
         services.AddSingleton<IUserConnectionStore, UserConnectionStore>();
+        services.AddSingleton(typeof(IStreamDistributorService<>), typeof(StreamDistributorService<>));
         services.AddTransient(typeof(IUserProxy<>), typeof(SignalRUserProxy<>));
 
         services.AddIdentity<AppIdentityUser, IdentityRole>(config =>

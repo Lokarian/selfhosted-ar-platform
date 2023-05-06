@@ -5,6 +5,8 @@ import {RpcUserService} from "../../services/rpc/rpc-user.service";
 import {RpcChatService} from "../../services/rpc/rpc-chat.service";
 import {CurrentUserService} from "../../services/user/current-user.service";
 import {filter, map} from "rxjs/operators";
+import {RpcVideoService} from "../../services/rpc/rpc-video.service";
+import {RpcSessionService} from "../../services/rpc/rpc-session.service";
 
 @Component({
   selector: 'app-layout',
@@ -16,6 +18,8 @@ export class LayoutComponent {
               private currentUserService: CurrentUserService,
               private notificationService: NotificationService,
               private rpcUserService: RpcUserService,
+              private rpcSessionService: RpcSessionService,
+              private rpcVideoService: RpcVideoService,
               private rpcChatService: RpcChatService) {
     this.initSignalR();
   }

@@ -33,13 +33,13 @@ public class ChatMessageCreatedEventHandler : INotificationHandler<ChatMassageCr
     {
         ChatMessage message = notification.Message;
         ChatSession? session = await _context.ChatSessions.Include(c => c.Members)
-            .FirstOrDefaultAsync(c => c.Id == message.SessionId, cancellationToken);
+            .FirstOrDefaultAsync(c => c.BaseSessionId == message.SessionId, cancellationToken);
         if (session == null)
         {
-            throw new NotFoundException(nameof(ChatSession), message.SessionId);
+            throw new NotFoundException(nameof(Session), message.SessionId);
         }
 
-        var receiverIds = session.Members.Select(m => m.UserId);
+        var receiverIds = session.Members.Select(m => m.BaseMember.UserId);
         await (await _userProxy.Clients(receiverIds)).NewChatMessage(_mapper.Map<ChatMessageDto>(message));
     }
 }

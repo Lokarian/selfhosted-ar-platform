@@ -22,7 +22,7 @@ public class ChatSessionCreatedEventHandler : INotificationHandler<ChatSessionCr
 
     public async Task Handle(ChatSessionCreatedEvent notification, CancellationToken cancellationToken)
     {
-        await (await _rpcService.Clients(notification.Session.Members.Select(m => m.UserId))).UpdateChatSession(
+        await (await _rpcService.Clients(notification.Session.Members.Select(m => m.BaseMember.UserId))).UpdateChatSession(
             _mapper.Map<ChatSessionDto>(notification.Session));
     }
 }

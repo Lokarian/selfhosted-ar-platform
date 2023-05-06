@@ -1,6 +1,11 @@
-﻿namespace CoreServer.Domain.Entities.Video;
+﻿using CoreServer.Domain.Entities.Session;
+using CoreServer.Domain.Entities.Video;
 
-public class VideoSession:BaseEntity
+namespace CoreServer.Domain.Entities.Chat;
+
+public class VideoSession:EntityWithEvents
 {
-    public DateTime ReferencePoint { get; set; }=DateTime.UtcNow;
+    public UserSession BaseSession { get; set; } = null!;
+    public Guid BaseSessionId { get; set; }
+    public IList<VideoMember> Members { get; init; } = new List<VideoMember>();
 }

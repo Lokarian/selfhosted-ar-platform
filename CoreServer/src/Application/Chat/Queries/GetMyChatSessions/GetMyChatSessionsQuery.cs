@@ -28,8 +28,11 @@ public class GetMyChatSessionsQueryHandler : IRequestHandler<GetMyChatSessionsQu
         CancellationToken cancellationToken)
     {
         Guid userId = _currentUserService.User!.Id;
-        List<ChatSessionDto> chatSessions = await _context.ChatSessions.Include(s => s.Messages)
-            .Where(x => x.Members.Any(m => m.UserId == userId))
+        List<ChatSessionDto> chatSessions = await _context.ChatSessions
+            .Include(s => s.Messages)
+            .Include(s=>s.Members)
+            .ThenInclude(m=>m.BaseMember)
+            .Where(x => x.Members.Any(m => m.BaseMember.UserId == userId))
             .ProjectTo<ChatSessionDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
         return chatSessions;

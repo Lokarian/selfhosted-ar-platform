@@ -11,10 +11,5 @@ public class ChatMessageDto : IMapFrom<ChatMessage>
     public DateTime SentAt { get; set; }
     public Guid SenderId { get; set; }
     public Guid SessionId { get; set; }
-
-    public void Mapping(Profile profile)
-    {
-        profile.CreateMap<ChatMessage, ChatMessageDto>()
-            .ForMember(d => d.SenderId, opt => opt.MapFrom(s => s.Sender.Id));
-    }
+    
 }

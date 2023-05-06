@@ -1,0 +1,59 @@
+<div class="container py-12 mx-auto">
+  <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+    <table class="w-full text-sm text-left text-white">
+      <thead class="text-xs text-text uppercase bg-background-highlight">
+      <tr>
+        <th scope="col" class="px-6 py-3">
+          Name
+        </th>
+        <th scope="col" class="px-6 py-3">
+          Members
+        </th>
+        <th scope="col" class="px-6 py-3">
+          Created
+        </th>
+        <th scope="col" class="px-6 py-3">
+          ChatSession
+        </th>
+        <th scope="col" class="px-6 py-3">
+          VideoSession
+        </th>
+      </tr>
+      </thead>
+      <tbody>
+      <ng-container *ngFor="let sessionObservable of sessions$|async">
+        <tr class="border-b" *ngIf="sessionObservable|async as session">
+          <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+            {{session.name || '-'}}
+          </th>
+          <td class="px-6 py-4">
+          <span *ngFor="let member of session.members">
+            {{(member.userId|user|async)?.userName || '-'}},
+          </span>
+          </td>
+          <td class="px-6 py-4">
+            {{session.createdAt|date:'medium'}}
+          </td>
+          <td class="px-6 py-4">
+            <ng-container *ngIf="session.chatSession; else noChatSession">
+              Y
+            </ng-container>
+            <ng-template #noChatSession>
+              N
+            </ng-template>
+          </td>
+          <td class="px-6 py-4">
+            <ng-container *ngIf="session.videoSession; else noVideoSession">
+              Y
+            </ng-container>
+            <ng-template #noVideoSession>
+              N
+            </ng-template>
+          </td>
+        </tr>
+      </ng-container>
+
+      </tbody>
+    </table>
+  </div>
+</div>

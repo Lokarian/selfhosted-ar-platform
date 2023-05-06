@@ -8,7 +8,7 @@ namespace CoreServer.Application.Chat.Commands;
 
 public class UpdateChatSessionLastReadCommand : IRequest
 {
-    public Guid ChatSessionId { get; set; }
+    public Guid SessionId { get; set; }
 }
 
 public class UpdateChatSessionLastReadCommandHandler : IRequestHandler<UpdateChatSessionLastReadCommand>
@@ -29,7 +29,7 @@ public class UpdateChatSessionLastReadCommandHandler : IRequestHandler<UpdateCha
     {
         ChatMember? chatMember =
             await _context.ChatMembers.FirstOrDefaultAsync(x =>
-                x.UserId == _currentUserService.User!.Id && x.SessionId == request.ChatSessionId,
+                x.BaseMember.UserId == _currentUserService.User!.Id && x.SessionId == request.SessionId,
                 cancellationToken);
         if (chatMember == null)
         {

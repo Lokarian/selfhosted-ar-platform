@@ -49,7 +49,6 @@ export class UserSelectComponent implements OnInit, AfterViewInit {
       this.searchForUsers();
     });
     this.userFacade.getUsers$(this.preselectedUserIds).subscribe((users) => {
-      console.log("preselected", users);
       this.selectedUsers = users;
     });
   }

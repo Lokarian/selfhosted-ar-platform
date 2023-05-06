@@ -10,7 +10,7 @@ import {ChatFacade} from "../chat-facade.service";
 })
 export class RpcChatService extends RpcService implements IRpcChatService {
 
-  constructor(private signalRService: SignalRService, private chatService: ChatFacade) {
+  constructor(private signalRService: SignalRService, private chatFacade: ChatFacade) {
     super(signalRService, "RpcChatService", {
       NewChatMessage: (chatMessage: ChatMessageDto) => this.NewChatMessage(chatMessage),
       UpdateChatSession: (chatSession: ChatSessionDto) => this.UpdateChatSession(chatSession),
@@ -19,15 +19,14 @@ export class RpcChatService extends RpcService implements IRpcChatService {
   }
 
   NewChatMessage(chatMessage: ChatMessageDto) {
-    this.chatService.addChatMessage(chatMessage);
+    this.chatFacade.addChatMessage(chatMessage);
   }
 
   UpdateChatSession(chatSession: ChatSessionDto) {
-    this.chatService.updateChatSession(chatSession);
+    this.chatFacade.addOrReplaceSession(chatSession)
   }
   UpdateChatMember(chatMember:ChatMemberDto){
-    this.chatService.updateChatMember(chatMember);
+    this.chatFacade.updateChatMember(chatMember);
   }
-  SendVideoStream
 
 }

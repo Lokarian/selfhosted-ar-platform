@@ -1,132 +1,102 @@
 <div class="w-full h-full relative">
-  <div #videoContainer class="absolute w-full h-full bg-red-700">
-    <div #ownStreamContainer class="absolute bottom-0 right-0 w-64 h-36 rounded-md overflow-hidden">
-      <video #videoElement  width="100%" height="100%" muted></video>
+  <div #videoContainer class="absolute w-full h-full bg-background-primary">
+    <div #ownStreamContainer class="absolute bottom-4 right-4 max-w-md rounded-md overflow-hidden">
+      <video #videoElement width="100%" height="100%" autoplay muted class="bg-background-tertiary"></video>
     </div>
-    <div #ownStreamContainer2 class="absolute top-0 right-0 w-64 h-36 rounded-md overflow-hidden">
-      <canvas #canvasElement></canvas>
+    <div #ownStreamContainer2 class="absolute top-4 right-4 max-w-md rounded-md overflow-hidden">
+      <video #videoElement2 width="100%" height="100%" autoplay muted class="bg-background-tertiary"></video>
     </div>
     <div *ngFor="let userStream of otherUserStreams$|async">
 
     </div>
+    <button class="absolute top-0 left-0" (click)="startStreaming()">
+      START STREAMING
+    </button>
+    <button class="absolute top-24 left-0" (click)="enableFrameDrop=true">
+      Drop
+    </button>
+    <div class="top-8 absolute">{{myUUID}}</div>
+    <input type="text" class="top-16 absolute" (keydown.enter)="getStream($event.target)">
   </div>
-  <div #controlsContainer class="absolute z-10 bottom-8 flex flex-row gap-8 w-full justify-center">
-    <div (click)="videoEnabled = !videoEnabled"
-      class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white">
-      <ng-container *ngIf="videoEnabled; else videoOff">
+  <div #controlsContainer class="absolute z-10 bottom-4 flex flex-row gap-8 w-full justify-center">
+    <div #cameraButton class="relative" [popper]="cameraSelectionPopper" [popperTrigger]="NgxPopperjsTriggers.none">
+      <div (click)="toggleCamera()"
+           class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white mask">
+        <ng-container *ngIf="cameraEnabled; else videoOff">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M140 896q-24 0-42-18t-18-42V316q0-24 18-42t42-18h520q24 0 42 18t18 42v215l160-160v410L720 621v215q0 24-18 42t-42 18H140Z"/>
+          </svg>
+        </ng-container>
+        <ng-template #videoOff>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M880 781 720 621v111L244 256h416q24 0 42 18t18 42v215l160-160v410Zm-32 248L39 220l42-42 809 809-42 42ZM159 256l561 561v19q0 24-18 42t-42 18H140q-24 0-42-18t-18-42V316q0-24 18-42t42-18h19Z"/>
+          </svg>
+        </ng-template>
+      </div>
+      <button (click)="openCameraSelection()"
+              class="absolute bottom-0.5 right-0.5 rounded-full aspect-square w-4 bg-background-secondary fill-white hover:bg-background-highlight">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
-          <path
-            d="M140 896q-24 0-42-18t-18-42V316q0-24 18-42t42-18h520q24 0 42 18t18 42v215l160-160v410L720 621v215q0 24-18 42t-42 18H140Z"/>
+          <path d="M480 711 240 471l43-43 197 198 197-197 43 43-240 239Z"/>
         </svg>
-      </ng-container>
-      <ng-template #videoOff>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960"><path d="M880 781 720 621v111L244 256h416q24 0 42 18t18 42v215l160-160v410Zm-32 248L39 220l42-42 809 809-42 42ZM159 256l561 561v19q0 24-18 42t-42 18H140q-24 0-42-18t-18-42V316q0-24 18-42t42-18h19Z"/></svg>
-      </ng-template>
+      </button>
     </div>
-    <div (click)="audioEnabled = !audioEnabled"
-      class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white">
-      <ng-container *ngIf="audioEnabled; else muted">
+    <div #microphoneButton class="relative" [popper]="microphoneSelectionPopper"
+         [popperTrigger]="NgxPopperjsTriggers.none">
+      <div (click)="toggleMicrophone()"
+           class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white mask">
+        <ng-container *ngIf="microphoneEnabled; else muted">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M480 633q-43 0-72-30.917-29-30.916-29-75.083V276q0-41.667 29.441-70.833Q437.882 176 479.941 176t71.559 29.167Q581 234.333 581 276v251q0 44.167-29 75.083Q523 633 480 633Zm-30 303V800q-106-11-178-89t-72-184h60q0 91 64.288 153t155.5 62Q571 742 635.5 680 700 618 700 527h60q0 106-72 184t-178 89v136h-60Z"/>
+          </svg>
+        </ng-container>
+        <ng-template #muted>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="m686 695-43-43q21-26 31-58.5t10-66.5h60q0 46-15 89t-43 79ZM558 567 363 372v-95q0-42 29.5-71.5T464 176q42 0 71.5 29.5T565 277v250q0 8-1.5 20t-5.5 20ZM434 936V800q-106-11-178-89t-72-184h60q0 91 64.5 153T464 742q39 0 73.5-12.5T601 695l43 43q-31 26-69 41.5T494 800v136h-60Zm397 65L36 206l38-38 795 795-38 38Z"/>
+          </svg>
+        </ng-template>
+      </div>
+      <button (click)="openMicrophoneSelection()"
+              class="absolute bottom-0.5 right-0.5 rounded-full aspect-square w-4 bg-background-secondary fill-white hover:bg-background-highlight">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
-          <path
-            d="M480 633q-43 0-72-30.917-29-30.916-29-75.083V276q0-41.667 29.441-70.833Q437.882 176 479.941 176t71.559 29.167Q581 234.333 581 276v251q0 44.167-29 75.083Q523 633 480 633Zm-30 303V800q-106-11-178-89t-72-184h60q0 91 64.288 153t155.5 62Q571 742 635.5 680 700 618 700 527h60q0 106-72 184t-178 89v136h-60Z"/>
+          <path d="M480 711 240 471l43-43 197 198 197-197 43 43-240 239Z"/>
         </svg>
-      </ng-container>
-      <ng-template #muted>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
-          <path
-            d="m686 695-43-43q21-26 31-58.5t10-66.5h60q0 46-15 89t-43 79ZM558 567 363 372v-95q0-42 29.5-71.5T464 176q42 0 71.5 29.5T565 277v250q0 8-1.5 20t-5.5 20ZM434 936V800q-106-11-178-89t-72-184h60q0 91 64.5 153T464 742q39 0 73.5-12.5T601 695l43 43q-31 26-69 41.5T494 800v136h-60Zm397 65L36 206l38-38 795 795-38 38Z"/>
-        </svg>
-      </ng-template>
+      </button>
     </div>
   </div>
 </div>
 <popper-content #cameraSelectionPopper>
-  <form #myForm="ngForm" (submit)="enableCamera(myForm.form.value)" novalidate
-        class="rounded-2xl bg-background-highlight p-2">
-    <div class="flex flex-row rounded-lg gap-2 mb-2">
-      <div class="flex flex-col">
-        <h2 class="text-center font-bold text-text pb-2">Camera</h2>
-        <ul class="max-w-4xl text-text bg-background-primary border border-background-primary  rounded-lg">
-          <li *ngFor="let device of availableCameras$|async;let i=index"
-              class="w-full px-2 last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-primary  hover:bg-background-highlight flex items-center">
-            <input id="video{{i}}" type="radio" [value]="device" name="video"
-                   class="w-4 h-4 text-info border-background-primary  focus:ring-transparent focus:ring-2" ngModel>
-            <label for="video{{i}}"
-                   class="w-full py-3 ml-2 text-sm font-medium text-text text-ellipsis whitespace-nowrap overflow-hidden">{{device.label}} </label>
-
-          </li>
-        </ul>
-      </div>
-      <div class="flex flex-col max-w-56">
-        <h2 class="text-center font-bold text-text pb-2">Microphone</h2>
-        <ul class="max-w-lg text-text bg-background-primary border border-background-primary  rounded-lg">
-          <li *ngFor="let device of availableMicrophones$|async;let i=index"
-              class="w-full last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-primary  hover:bg-background-highlight">
-            <div class="flex items-center pl-2">
-              <input id="audio{{i}}" type="radio" [value]="device" name="audio"
-                     class="w-4 h-4 text-info bg-green-600 border-background-primary  focus:ring-transparent focus:ring-2"
-                     ngModel>
-              <label for="audio{{i}}"
-                     class="w-full py-3 ml-2 text-sm font-medium text-text text-ellipsis whitespace-nowrap overflow-hidden">{{device.label}} </label>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <button
-      class="p-2 text-white bg-background-primary hover:bg-background-tertiary rounded-lg w-full disabled:bg-background-secondary"
-      [disabled]="!(myForm.form.value.video&&myForm.form.value.audio)"
-      type="submit">
-      <svg aria-hidden="true" class="aspect-square w-4 mx-auto text-white" fill="none" stroke="currentColor"
-           viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M5 13l4 4L19 7"></path>
-      </svg>
-    </button>
-  </form>
+  <div class="rounded-2xl bg-background-highlight p-2">
+    <h2 class="text-center font-bold text-text pb-2">Camera</h2>
+    <ul class="max-w-lg text-text bg-background-secondary border border-background-secondary rounded-lg">
+      <li *ngFor="let device of availableCameras$|async;let i=index"
+          (click)="setCamera(device);cameraSelectionPopper.hide()"
+          class="w-full group flex flex-row items-center gap-2 p-2 cursor-pointer last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-secondary hover:bg-background-highlight">
+        <div
+          class=" flex-shrink-0 aspect-square h-4 rounded-full bg-background-highlight group-hover:bg-background-primary"
+          [ngClass]="{'bg-primary':selectedCamera===device,'group-hover:bg-secondary':selectedCamera===device}"></div>
+        <div
+          class="text-text text-sm font-medium text-ellipsis overflow-hidden flex-1 whitespace-nowrap">{{device.label}}</div>
+      </li>
+    </ul>
+  </div>
 </popper-content>
 <popper-content #microphoneSelectionPopper>
-  <form #myForm="ngForm" (submit)="enableCamera(myForm.form.value)" novalidate
-        class="rounded-2xl bg-background-highlight p-2">
-    <div class="flex flex-row rounded-lg gap-2 mb-2">
-      <div class="flex flex-col">
-        <h2 class="text-center font-bold text-text pb-2">Camera</h2>
-        <ul class="max-w-4xl text-text bg-background-primary border border-background-primary  rounded-lg">
-          <li *ngFor="let device of availableCameras$|async;let i=index"
-              class="w-full px-2 last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-primary  hover:bg-background-highlight flex items-center">
-            <input id="video{{i}}" type="radio" [value]="device" name="video"
-                   class="w-4 h-4 text-info border-background-primary  focus:ring-transparent focus:ring-2" ngModel>
-            <label for="video{{i}}"
-                   class="w-full py-3 ml-2 text-sm font-medium text-text text-ellipsis whitespace-nowrap overflow-hidden">{{device.label}} </label>
-
-          </li>
-        </ul>
-      </div>
-      <div class="flex flex-col max-w-56">
-        <h2 class="text-center font-bold text-text pb-2">Microphone</h2>
-        <ul class="max-w-lg text-text bg-background-primary border border-background-primary  rounded-lg">
-          <li *ngFor="let device of availableMicrophones$|async;let i=index"
-              class="w-full last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-primary  hover:bg-background-highlight">
-            <div class="flex items-center pl-2">
-              <input id="audio{{i}}" type="radio" [value]="device" name="audio"
-                     class="w-4 h-4 text-info bg-green-600 border-background-primary  focus:ring-transparent focus:ring-2"
-                     ngModel>
-              <label for="audio{{i}}"
-                     class="w-full py-3 ml-2 text-sm font-medium text-text text-ellipsis whitespace-nowrap overflow-hidden">{{device.label}} </label>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <button
-      class="p-2 text-white bg-background-primary hover:bg-background-tertiary rounded-lg w-full disabled:bg-background-secondary"
-      [disabled]="!(myForm.form.value.video&&myForm.form.value.audio)"
-      type="submit">
-      <svg aria-hidden="true" class="aspect-square w-4 mx-auto text-white" fill="none" stroke="currentColor"
-           viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M5 13l4 4L19 7"></path>
-      </svg>
-    </button>
-  </form>
+  <div class="rounded-2xl bg-background-highlight p-2">
+    <h2 class="text-center font-bold text-text pb-2">Microphone</h2>
+    <ul class="max-w-lg text-text bg-background-secondary border border-background-secondary rounded-lg">
+      <li *ngFor="let device of availableMicrophones$|async;let i=index"
+          (click)="setMicrophone(device);microphoneSelectionPopper.hide()"
+          class="w-full group flex flex-row items-center gap-2 p-2 cursor-pointer last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-secondary hover:bg-background-highlight">
+        <div
+          class=" flex-shrink-0 aspect-square h-4 rounded-full bg-background-highlight group-hover:bg-background-primary"
+          [ngClass]="{'bg-primary':selectedMicrophone===device,'group-hover:bg-secondary':selectedMicrophone===device}"></div>
+        <div
+          class="text-text text-sm font-medium text-ellipsis overflow-hidden flex-1 whitespace-nowrap">{{device.label}}</div>
+      </li>
+    </ul>
+  </div>
 </popper-content>

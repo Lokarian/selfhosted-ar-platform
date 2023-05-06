@@ -39,3 +39,4 @@ services:
     ports:
       - "8888:8888" # HLS
       - "8889:8889" # WebRTC
+      - "8554:8554" # RTSP

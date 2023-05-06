@@ -4,12 +4,12 @@ import {
   AppUserDto,
   ChatClient,
   ChatSessionDto,
-  CreateChatSessionCommand,
-  UpdateChatSessionCommand
+  CreateChatSessionCommand, CreateSessionCommand, SessionClient, SessionDto, UpdateSessionCommand,
 } from "../../web-api-client";
 import {CurrentUserService} from "../../services/user/current-user.service";
 import {Observable, tap} from "rxjs";
 import {map} from "rxjs/operators";
+import {SessionFacade} from "../../services/session-facade.service";
 
 @Component({
   selector: 'app-chat-page',
@@ -17,19 +17,22 @@ import {map} from "rxjs/operators";
   styleUrls: ['./chat-page.component.css']
 })
 export class ChatPageComponent implements OnInit {
-  public sessions$: Observable<ChatSessionDto[]>
-  M
+  public sessions$: Observable<ChatSessionDto[]>;
   public selectedSession: ChatSessionDto | null = null;
   public isEdit = false;
 
-  constructor(private chatService: ChatFacade, private currentUserService: CurrentUserService, private chatClient: ChatClient) {
-    //get sessions from chatService sorted by last lastMessage?.sentAt, if date is null or undefined, put at the end
-    this.sessions$ = this.chatService.chatSessions$.pipe(tap(sessions=>{
-      const session=sessions.find(s=>s.id===this.selectedSession?.id);
-      this.selectedSession=session||null;
-    }),map(sessions => sessions.sort((a, b) => {
-      const aDate = a.lastMessage?.sentAt || a.createdAt;
-      const bDate = b.lastMessage?.sentAt || b.createdAt;
+  constructor(private chatFacade: ChatFacade,
+              private currentUserService: CurrentUserService,
+              private chatClient: ChatClient,
+              private sessionFacade: SessionFacade,
+              private sessionClient: SessionClient) {
+
+    this.sessions$ = this.chatFacade.sessions$.pipe(tap(sessions => {
+      const session = sessions.find(s => s.baseSessionId === this.selectedSession?.baseSessionId);
+      this.selectedSession = session || null;
+    }), map(sessions => sessions.sort((a, b) => {
+      const aDate = a.lastMessage?.sentAt || a.baseSession?.createdAt || new Date(0);
+      const bDate = b.lastMessage?.sentAt || b.baseSession?.createdAt || new Date(0);
       return bDate.getTime() - aDate.getTime();
     })));
   }
@@ -38,37 +41,33 @@ export class ChatPageComponent implements OnInit {
   }
 
   getRepresentingUserIdInSession(session: ChatSessionDto) {
-    return session.members.filter(m => m.userId !== this.currentUserService.user.id)[0]?.userId
+    return session.baseSession?.members.filter(m => m.userId !== this.currentUserService.user.id)[0]?.userId
       || this.currentUserService.user.id;
   }
 
   getUserIdsForNameDisplay(session: ChatSessionDto) {
-    const otherUsers = session.members.filter(m => m.userId !== this.currentUserService.user.id);
+    const otherUsers = session.baseSession?.members.filter(m => m.userId !== this.currentUserService.user.id) ?? [];
     return otherUsers.length ? otherUsers.map(m => m.userId) : [this.currentUserService.user.id];
   }
 
   createSession(users: AppUserDto[]) {
-    this.chatClient.createChatSession(new CreateChatSessionCommand({
-      userIds: users.map(u => u.id)
-    })).subscribe();
+    this.sessionFacade.createSession(new CreateSessionCommand({userIds: users.map(u => u.id)})).subscribe(session => {
+      this.chatFacade.createChatSession(new CreateChatSessionCommand({sessionId: session.id})).subscribe();
+    });
   }
 
   changeName(value: string) {
-    this.chatClient.updateChatSession(new UpdateChatSessionCommand({
-      name: value,
-      sessionId: this.selectedSession?.id
-    })).subscribe((session) => {
-      this.chatService.updateChatSession(session);
-    });
+    this.sessionClient.updateSession(new UpdateSessionCommand({
+      sessionId: this.selectedSession?.baseSessionId,
+      name: value
+    })).subscribe();
   }
 
   changeUsers(users: AppUserDto[]) {
-    this.chatClient.updateChatSession(new UpdateChatSessionCommand({
-      userIds: users.map(u => u.id),
-      sessionId: this.selectedSession?.id
-    })).subscribe((session) => {
-      this.chatService.updateChatSession(session);
-    });
+    this.sessionClient.updateSession(new UpdateSessionCommand({
+      sessionId: this.selectedSession?.baseSessionId,
+      userIds: users.map(u => u.id)
+    })).subscribe();
   }
 
   hasUnreadMessage(session: ChatSessionDto) {
@@ -83,7 +82,11 @@ export class ChatPageComponent implements OnInit {
   }
 
   get selectedSessionUserIds() {
-    return this.selectedSession?.members.map(m => m.userId) || [];
+    return this.sessionFacade.session(this.selectedSession?.baseSessionId).members.map(m => m.userId);
+  }
+
+  getBaseSession(session: ChatSessionDto) {
+    return this.sessionFacade.session(session.baseSessionId);
   }
 
 }

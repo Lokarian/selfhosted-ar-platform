@@ -2,27 +2,31 @@
   <div class="w-56 bg-background-secondary h-full p-1 overflow-y-auto flex flex-col gap-2">
     <app-user-select class="w-full" [multi]="true" (usersSelected)="createSession($event)"></app-user-select>
     <div class="w-full h-16 p-2 justify-start align-middle rounded hover:bg-background-highlight flex flex-row"
-         [class.bg-background-highlight]="session.id===selectedSession?.id" *ngFor="let session of sessions$|async"
-         (click)="selectedSession=session">
-      <app-avatar [user]="getRepresentingUserIdInSession(session)|user|async" class="w-10 h-10"></app-avatar>
-      <div *ngIf="hasUnreadMessage(session)" class="rounded-full aspect-square h-2 bg-info"></div>
+         [class.bg-background-highlight]="chatSession.baseSessionId===selectedSession?.baseSessionId"
+         *ngFor="let chatSession of sessions$|async"
+         (click)="selectedSession=chatSession">
+      <app-avatar [user]="getRepresentingUserIdInSession(chatSession)|user|async"
+                  class="w-10 h-10"></app-avatar>
+      <div *ngIf="hasUnreadMessage(chatSession)" class="rounded-full aspect-square h-2 bg-info"></div>
       <div class="flex flex-col ml-2 h-full min-w-0">
         <div class="text-sm font-medium text-white truncate">
-          <span *ngIf="session.name">{{session.name}}</span>
-          <ng-container *ngIf="!session.name"><span class="[&:not(:last-child)]:after:content-[', ']"
-                                                    *ngFor="let userId of getUserIdsForNameDisplay(session)">{{(userId|user|async)?.userName}}</span>
+          <span *ngIf="chatSession.baseSession?.name">{{chatSession.baseSession.name}}</span>
+          <ng-container *ngIf="!chatSession.baseSession?.name"><span
+            *ngFor="let userId of getUserIdsForNameDisplay(chatSession);let last=last">{{(userId|user|async)?.userName}}
+            <span *ngIf="!last">, </span></span>
           </ng-container>
         </div>
-        <div class="text-xs text-text overflow-ellipsis">{{session.lastMessage?.text}}</div>
+        <div class="text-xs text-text truncate">{{chatSession.lastMessage?.text}}</div>
       </div>
     </div>
   </div>
   <div class="flex-1 h-full flex flex-col" *ngIf="selectedSession">
     <div class="h-12 w-full bg-background-secondary flex flex-row p-2">
       <div class="text-white text-lg">
-        <span *ngIf="selectedSession.name">{{selectedSession.name}}</span>
-        <ng-container *ngIf="!selectedSession.name"><span class="[&:not(:last-child)]:after:content-[', ']"
-                                                          *ngFor="let userId of getUserIdsForNameDisplay(selectedSession)">{{(userId|user|async)?.userName}}</span>
+        <span *ngIf="selectedSession.baseSession?.name">{{selectedSession.baseSession?.name}}</span>
+        <ng-container *ngIf="!selectedSession.baseSession.name"><span
+          *ngFor="let userId of getUserIdsForNameDisplay(selectedSession.baseSession);let last=last">{{(userId|user|async)?.userName}}
+          <span *ngIf="!last">, </span></span>
         </ng-container>
       </div>
       <button class="bg-transparent border-none text-white h-1/2 ml-4 my-auto" [popper]="nameEditPopper">
@@ -36,7 +40,7 @@
         <div class="rounded-lg p-2 bg-background-highlight w-56">
           <div class="flex w-full flex-row">
             <input class="bg-background-primary p-2 rounded text-white text-lg flex-1 min-w-0"
-                   [value]="selectedSession.name" placeholder="Name" #sessionNameInput>
+                   [value]="selectedSession.baseSession.name" placeholder="Name" #sessionNameInput>
             <button class="bg-transparent border-none text-white h-1/2 ml-2 my-auto"
                     (click)="changeName(sessionNameInput.value)">
               <svg aria-hidden="true" class="aspect-square w-4 text-white" fill="none" stroke="currentColor"
@@ -49,7 +53,8 @@
           </div>
           <div class="bg-background-primary mt-2 p-2 rounded-lg">
             <app-user-select class="w-full" [multi]="true" [usePopper]="false"
-                             [preselectedUserIds]="selectedSessionUserIds" (usersSelected)="changeUsers($event)"></app-user-select>
+                             [preselectedUserIds]="selectedSessionUserIds"
+                             (usersSelected)="changeUsers($event)"></app-user-select>
           </div>
         </div>
       </popper-content>

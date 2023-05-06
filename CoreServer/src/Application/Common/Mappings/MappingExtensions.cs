@@ -14,8 +14,8 @@ public static class MappingExtensions
     }
 
     public static Task<List<TDestination>> ProjectToListAsync<TDestination>(this IQueryable queryable,
-        IConfigurationProvider configuration) where TDestination : class
+        IConfigurationProvider configuration,CancellationToken cancellationToken) where TDestination : class
     {
-        return queryable.ProjectTo<TDestination>(configuration).AsNoTracking().ToListAsync();
+        return queryable.ProjectTo<TDestination>(configuration).AsNoTracking().ToListAsync(cancellationToken);
     }
 }
