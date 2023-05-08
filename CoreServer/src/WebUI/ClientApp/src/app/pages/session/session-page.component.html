@@ -1,21 +1,29 @@
-<div class="container py-12 mx-auto">
-  <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+<div class="container py-12 mx-auto flex flex-col items-end">
+  <button [popper]="createPopper"
+    class=" mb-4 p-2 text-white bg-background-secondary hover:bg-background-highlight rounded-lg">Create
+  </button>
+  <popper-content #createPopper>
+    <div class="rounded-lg p-2 bg-background-secondary">
+      <app-user-select class="w-full" [multi]="true" (usersSelected)="createSession($event)" [usePopper]="false"></app-user-select>
+    </div>
+  </popper-content>
+  <div class="relative overflow-x-auto shadow-md sm:rounded-lg w-full">
     <table class="w-full text-sm text-left text-white">
       <thead class="text-xs text-text uppercase bg-background-highlight">
       <tr>
-        <th scope="col" class="px-6 py-3">
+        <th scope="col" class="px-6 py-3 text-center">
           Name
         </th>
-        <th scope="col" class="px-6 py-3">
+        <th scope="col" class="px-6 py-3 text-center">
           Members
         </th>
-        <th scope="col" class="px-6 py-3">
+        <th scope="col" class="px-6 py-3 text-center">
           Created
         </th>
-        <th scope="col" class="px-6 py-3">
+        <th scope="col" class="px-6 py-3 text-center">
           ChatSession
         </th>
-        <th scope="col" class="px-6 py-3">
+        <th scope="col" class="px-6 py-3 text-center">
           VideoSession
         </th>
       </tr>
@@ -23,31 +31,35 @@
       <tbody>
       <ng-container *ngFor="let sessionObservable of sessions$|async">
         <tr class="border-b" *ngIf="sessionObservable|async as session">
-          <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+          <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">
             {{session.name || '-'}}
           </th>
-          <td class="px-6 py-4">
-          <span *ngFor="let member of session.members">
-            {{(member.userId|user|async)?.userName || '-'}},
+          <td class="px-6 py-4 text-center">
+          <span *ngFor="let member of session.members;let last=last">
+            {{(member.userId|user|async)?.userName || '-'}}<span *ngIf="!last">,</span>
           </span>
           </td>
-          <td class="px-6 py-4">
+          <td class="px-6 py-4 text-center">
             {{session.createdAt|date:'medium'}}
           </td>
-          <td class="px-6 py-4">
+          <td class="px-6 py-4 text-center">
             <ng-container *ngIf="session.chatSession; else noChatSession">
               Y
             </ng-container>
             <ng-template #noChatSession>
-              N
+              <button (click)="createChatSession(session)" class="p-2 w-full text-white bg-background-secondary hover:bg-background-highlight rounded-lg">
+                Create
+              </button>
             </ng-template>
           </td>
-          <td class="px-6 py-4">
+          <td class="px-6 py-4 text-center">
             <ng-container *ngIf="session.videoSession; else noVideoSession">
               Y
             </ng-container>
             <ng-template #noVideoSession>
-              N
+              <button (click)="createVideoSession(session)" class="p-2 w-full text-white bg-background-secondary hover:bg-background-highlight rounded-lg">
+                Create
+              </button>
             </ng-template>
           </td>
         </tr>

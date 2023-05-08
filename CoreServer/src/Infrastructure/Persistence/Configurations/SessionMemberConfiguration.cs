@@ -9,7 +9,5 @@ public class SessionMemberConfiguration : IEntityTypeConfiguration<SessionMember
 {
     public void Configure(EntityTypeBuilder<SessionMember> builder)
     {
-        builder.HasKey(e => new { e.SessionId, e.UserId });
-        builder.UseTptMappingStrategy();
     }
 }

@@ -13,6 +13,7 @@ export const routes: Routes = [
     path: '', component: LayoutComponent, canActivate: [AuthorizeGuard], children: [
       {path: 'chat', component: ChatPageComponent},
       {path:'video',component: VideoComponent},
+      {path:'video/:id',component: VideoComponent},
       {path:'sessions',component: SessionPageComponent}
     ]
   },

@@ -15,12 +15,12 @@ public record UpdateSessionCommand : IRequest<UserSession>
     public string? Name { get; init; }
 }
 
-public class UpdateChatSessionCommandHandler : IRequestHandler<UpdateSessionCommand, UserSession>
+public class UpdateSessionCommandHandler : IRequestHandler<UpdateSessionCommand, UserSession>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public UpdateChatSessionCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
+    public UpdateSessionCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
     {
         _context = context;
         _currentUserService = currentUserService;
@@ -29,7 +29,9 @@ public class UpdateChatSessionCommandHandler : IRequestHandler<UpdateSessionComm
     public async Task<UserSession> Handle(UpdateSessionCommand request, CancellationToken cancellationToken)
     {
         var session = await _context.UserSessions
+            .AsTracking()
             .Include(x => x.Members)
+            .ThenInclude(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
 
         if (session == null)
@@ -49,7 +51,13 @@ public class UpdateChatSessionCommandHandler : IRequestHandler<UpdateSessionComm
             //remove all members that are not in the request
             membersToRemove.ForEach(x => session.Members.Remove(x));
             //add all users that are not in the session
-            usersToAdd.ForEach(x => session.Members.Add(new SessionMember { SessionId = session.Id, UserId = x.Id }));
+            usersToAdd.ForEach(x =>
+            {
+                var sessionMember = new SessionMember { SessionId = session.Id, UserId = x.Id };
+                sessionMember.AddDomainEvent(new SessionMemberUpdatedEvent(sessionMember));
+                session.Members.Add(sessionMember);
+                _context.SessionMembers.Add(sessionMember);
+            });
         }
 
         if (request.Name != null)

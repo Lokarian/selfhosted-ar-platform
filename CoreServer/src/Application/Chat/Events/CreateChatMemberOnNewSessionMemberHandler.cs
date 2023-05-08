@@ -23,7 +23,7 @@ public class CreateChatMemberOnNewSessionMemberHandler : INotificationHandler<Se
                 cancellationToken);
         if (chatSession != null)
         {
-            var chatMember = new ChatMember() { BaseMemberId = notification.SessionMember.Id, };
+            var chatMember = new ChatMember() { BaseMemberId = notification.SessionMember.Id,SessionId = chatSession.BaseSessionId};
             chatMember.AddDomainEvent(new ChatMemberUpdatedEvent(chatMember));
             await _context.ChatMembers.AddAsync(chatMember, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);

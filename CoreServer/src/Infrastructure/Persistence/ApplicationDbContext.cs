@@ -52,9 +52,10 @@ public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplica
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await _mediator.DispatchDomainEvents(this);
-
-        return await base.SaveChangesAsync(cancellationToken);
+        IEnumerable<BaseEvent> domainEvents = _mediator.GetDomainEvents(this);
+        var saveResult = await base.SaveChangesAsync(cancellationToken);
+        await _mediator.DispatchDomainEvents(domainEvents);
+        return saveResult;
     }
 
     protected override void OnModelCreating(ModelBuilder builder)

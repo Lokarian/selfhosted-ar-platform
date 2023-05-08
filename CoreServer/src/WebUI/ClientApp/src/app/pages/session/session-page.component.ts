@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {SessionFacade} from "../../services/session-facade.service";
 import {Observable, ReplaySubject, takeUntil} from "rxjs";
-import {ChatSessionDto, SessionDto, VideoSessionDto} from "../../web-api-client";
+import {AppUserDto, ChatSessionDto, CreateSessionCommand, SessionDto, VideoSessionDto} from "../../web-api-client";
 import {ChatFacade} from "../../services/chat-facade.service";
 import {VideoFacade} from "../../services/video-facade.service";
 import {Subject} from "@microsoft/signalr";
@@ -27,6 +27,18 @@ export class SessionPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroyed$.next(true);
     this.destroyed$.complete();
+  }
+
+  public createChatSession(session: SessionDto) {
+    this.chatFacade.createChatSession(session.id);
+  }
+
+  public createVideoSession(session: SessionDto) {
+    this.videoFacade.createVideoSession(session.id);
+  }
+
+  public createSession(users: AppUserDto[]) {
+    this.sessionFacade.createSession(new CreateSessionCommand({userIds: users.map(u => u.id)}));
   }
 
 }

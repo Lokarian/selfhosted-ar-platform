@@ -20,8 +20,6 @@ public class SessionUpdatedEventHandler : INotificationHandler<SessionUpdatedEve
 
     public async Task Handle(SessionUpdatedEvent notification, CancellationToken cancellationToken)
     {
-        await (await _rpcService.Clients(notification.Session.Members.Select(m => m.UserId))).UpdateSession(
-            _mapper.Map<SessionDto>(notification.Session));
         var userIds = notification.Session.Members.Select(m => m.UserId);
         var proxy = await _rpcService.Clients(userIds);
         await proxy.UpdateSession(_mapper.Map<SessionDto>(notification.Session));

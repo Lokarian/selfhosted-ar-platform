@@ -6,17 +6,11 @@
     <div #ownStreamContainer2 class="absolute top-4 right-4 max-w-md rounded-md overflow-hidden">
       <video #videoElement2 width="100%" height="100%" autoplay muted class="bg-background-tertiary"></video>
     </div>
-    <div *ngFor="let userStream of otherUserStreams$|async">
-
+    <div *ngFor="let userStream of videoStreams; let i = index">
+    <app-video-stream [stream]="userStream" class="w-40"></app-video-stream>
+      {{userStream.id}}
     </div>
-    <button class="absolute top-0 left-0" (click)="startStreaming()">
-      START STREAMING
-    </button>
-    <button class="absolute top-24 left-0" (click)="enableFrameDrop=true">
-      Drop
-    </button>
-    <div class="top-8 absolute">{{myUUID}}</div>
-    <input type="text" class="top-16 absolute" (keydown.enter)="getStream($event.target)">
+
   </div>
   <div #controlsContainer class="absolute z-10 bottom-4 flex flex-row gap-8 w-full justify-center">
     <div #cameraButton class="relative" [popper]="cameraSelectionPopper" [popperTrigger]="NgxPopperjsTriggers.none">

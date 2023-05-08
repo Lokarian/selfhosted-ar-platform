@@ -29,7 +29,12 @@ export class ChatComponent implements OnInit {
   @Input() set session(value: ChatSessionDto) {
     this._session = value;
     this.loadMoreMessages();
+    setTimeout(() => {
+      this.chatFacade.updateLastRead(value.baseSessionId);
+    }, 0);
+    this.messages$ = this.chatFacade.chatMessages$(value.baseSessionId);
   }
+
   get session(): ChatSessionDto {
     return this._session;
   }
@@ -40,12 +45,11 @@ export class ChatComponent implements OnInit {
   private gettingMoreMessages = false;
   private gotAllMessages = false;
 
-  constructor(private chatFacade: ChatFacade, private chatClient: ChatClient,private appRef:ApplicationRef ) {
+  constructor(private chatFacade: ChatFacade, private chatClient: ChatClient, private zone: NgZone) {
 
   }
 
   ngOnInit(): void {
-    this.chatFacade.updateLastRead(this.session.baseSessionId);
   }
 
   loadMoreMessages() {

@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, inject, Injectable} from '@angular/core';
+import {Injectable} from '@angular/core';
 import {
   ChatClient,
   ChatMemberDto,
@@ -10,7 +10,6 @@ import {BehaviorSubject, firstValueFrom, Observable, share, switchMap, tap} from
 import {CurrentUserService} from "./user/current-user.service";
 import {SessionFacade} from "./session-facade.service";
 import {filter, first, map} from "rxjs/operators";
-import {VideoFacade} from "./video-facade.service";
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +17,7 @@ import {VideoFacade} from "./video-facade.service";
 export class ChatFacade {
   private messageStore: { [key: string]: BehaviorSubject<ChatMessageDto[]> } = {};
 
-//sessionSubject: object with string key and ReplaySubject<SessionDto> value
+  //sessionSubject: object with string key and ReplaySubject<SessionDto> value
   private sessionSubjects: { [key: string]: BehaviorSubject<ChatSessionDto | undefined> } = {};
   private sessionsSubject = new BehaviorSubject<BehaviorSubject<ChatSessionDto | undefined>[]>([]);
   public sessionObservables$: Observable<Observable<ChatSessionDto | undefined>[]>;
@@ -68,8 +67,8 @@ export class ChatFacade {
   }
 
 
-  public createChatSession(command: ChatMemberDto) {
-    const obs = this.chatClient.createChatSession(command).pipe(tap(session => {
+  public createChatSession(id: string) {
+    const obs = this.chatClient.createChatSession(new CreateChatSessionCommand({sessionId:id})).pipe(tap(session => {
       this.addOrReplaceSession(session);
     }), share());
     obs.subscribe();
@@ -86,6 +85,12 @@ export class ChatFacade {
     const session = this.sessionSubjects[chatMessage.sessionId].value;
     if (!session) return;
     session.lastMessage = this.messageStore[chatMessage.sessionId].value[0];
+
+    //instantly update the last read if the session is observed
+    if (this.messageStore[chatMessage.sessionId].observed) {
+      this.updateLastRead(chatMessage.sessionId);
+    }
+
     this.sessionSubjects[chatMessage.sessionId].next(session);
   }
 
@@ -112,7 +117,13 @@ export class ChatFacade {
   updateChatMember(chatMember: ChatMemberDto) {
     //add or replace the member in the session if the session exists and update the subject
     const sessionSubject = this.sessionSubjects[chatMember.sessionId];
-    if (!sessionSubject) return;
+    if (!sessionSubject) {
+      //we probably got freshly added to an existing session, so we need to load the session
+      this.chatClient.getMyChatSessions().subscribe(sessions => {
+        sessions.forEach(session => this.addOrReplaceSession(session));
+      });
+      return;
+    }
     const session = sessionSubject.value;
     if (!session) return;
     const existingMember = session.members.find(m => m.userId === chatMember.userId);
@@ -137,6 +148,16 @@ export class ChatFacade {
       lastSeen: new Date()
     } as ChatMemberDto : m);
     sessionSubject.next(session);
+  }
+
+  public removeSession(sessionId: string) {
+    if (this.sessionSubjects[sessionId]) {
+      this.sessionSubjects[sessionId].complete();
+      delete this.sessionSubjects[sessionId];
+
+      const newSessionSubjects = Object.entries(this.sessionSubjects).filter(([key, _]) => key !== sessionId).map(([_, value]) => value);
+      this.sessionsSubject.next(newSessionSubjects);
+    }
   }
 
   /**

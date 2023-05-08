@@ -21,13 +21,11 @@ public class JoinVideoSessionCommandHandler : IRequestHandler<JoinVideoSessionCo
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IMediator _mediator;
 
-    public JoinVideoSessionCommandHandler(IApplicationDbContext context, IMediator mediator,
+    public JoinVideoSessionCommandHandler(IApplicationDbContext context,
         ICurrentUserService currentUserService)
     {
         _context = context;
-        _mediator = mediator;
         _currentUserService = currentUserService;
     }
 
@@ -51,15 +49,16 @@ public class JoinVideoSessionCommandHandler : IRequestHandler<JoinVideoSessionCo
 
         var member = new VideoMember()
         {
-            BaseMember = baseMember, Session = videoSession, AccessKey = RandomString.Generate(10),
+            BaseMember = baseMember,
+            Session = videoSession,
+            AccessKey = RandomString.Generate(10)
         };
         member.AddDomainEvent(new VideoMemberUpdatedEvent(member));
+        _context.VideoMembers.Add(member);
         await _context.SaveChangesAsync(cancellationToken);
         return member;
     }
-
 }
-
 
 static class RandomString
 {

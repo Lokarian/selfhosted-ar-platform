@@ -15,7 +15,6 @@ export class SessionFacade {
   private sessionSubjects: { [key: string]: BehaviorSubject<SessionDto | undefined> } = {};
   private sessionsSubject = new BehaviorSubject<BehaviorSubject<SessionDto | undefined>[]>([]);
   public sessions$ = this.sessionsSubject.asObservable().pipe(map(sessions => sessions.map(s => s.asObservable())));
-
   private capabilityFacadeResolvers: { [key: string]: SessionFacade } = {};
 
   public get sessions() {

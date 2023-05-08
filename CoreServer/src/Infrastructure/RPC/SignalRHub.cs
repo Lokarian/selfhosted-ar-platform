@@ -2,6 +2,8 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using CoreServer.Application.Common.Interfaces;
+using CoreServer.Application.Video.Commands.StopVideoStream;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -14,13 +16,20 @@ public class SignalRHub : Hub
     private readonly ILogger<SignalRHub> _logger;
     private readonly IUserConnectionStore _userConnectionStore;
     private readonly IStreamDistributorService<object> _streamDistributorService;
+    private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly IApplicationDbContext _context;
 
     public SignalRHub(ILogger<SignalRHub> logger, IUserConnectionStore userConnectionStore,
-        IStreamDistributorService<object> streamDistributorService)
+        IStreamDistributorService<object> streamDistributorService, IMediator mediator,
+        ICurrentUserService currentUserService, IApplicationDbContext context)
     {
         _logger = logger;
         _userConnectionStore = userConnectionStore;
         _streamDistributorService = streamDistributorService;
+        _mediator = mediator;
+        _currentUserService = currentUserService;
+        _context = context;
     }
 
     public override Task OnConnectedAsync()
@@ -79,7 +88,7 @@ public class SignalRHub : Hub
     }
 
     //upload VideoStream to server
-    public async Task UploadVideoStream(ChannelReader<byte[]> stream, Guid id,string streamPW)
+    public async Task UploadVideoStream(ChannelReader<byte[]> stream, Guid id, string streamPW)
     {
         Process? ffmpeg = null;
         try
@@ -92,6 +101,8 @@ public class SignalRHub : Hub
                     FileName = "ffmpeg",
                     Arguments =
                         $"-i - -c:v libx264 -preset veryfast -tune zerolatency -profile:v baseline -level 3.0 -pix_fmt yuv420p -c:a copy -f rtsp -rtsp_transport tcp rtsp://{Context.UserIdentifier}:{streamPW}@localhost:8554/{id}",
+                    //$"-f webm -i - -c:v libx264 -preset ultrafast -tune zerolatency -f rtsp rtsp://{Context.UserIdentifier}:{streamPW}@localhost:8554/{id}",
+
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = false,
@@ -107,13 +118,22 @@ public class SignalRHub : Hub
                 {
                     break;
                 }
+
                 await ffmpeg.StandardInput.BaseStream.WriteAsync(item, 0, item.Length);
             }
+        }
+        catch (Exception _)
+        {
+            //ignore
         }
         finally
         {
             //stop ffmpeg process
             ffmpeg?.Kill();
+            //mark videostream as stopped
+            this._currentUserService.User =
+                await this._context.AppUsers.FindAsync(Guid.Parse(this.Context.UserIdentifier));
+            await this._mediator.Send(new StopVideoStreamCommand { VideoStreamId = id });
         }
     }
 }

@@ -25,7 +25,7 @@ public class VideoController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<VideoSessionDto>> GetMyVideoSessions()
+    public async Task<ActionResult<List<VideoSessionDto>>> GetMyVideoSessions()
     {
         return Ok(await Mediator.Send(new GetMyVideoSessionsQuery()));
     }

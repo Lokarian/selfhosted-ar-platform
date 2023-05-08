@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoreServer.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230505133813_Change_Structure")]
-    partial class ChangeStructure
+    [Migration("20230508171440_Fix_Member_Id")]
+    partial class FixMemberId
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -57,13 +57,6 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatMember", b =>
                 {
                     b.Property<Guid>("BaseMemberId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BaseMemberSessionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BaseMemberUserId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("LastSeen")
@@ -75,8 +68,6 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.HasKey("BaseMemberId");
 
                     b.HasIndex("SessionId");
-
-                    b.HasIndex("BaseMemberSessionId", "BaseMemberUserId");
 
                     b.ToTable("ChatMembers");
                 });
@@ -132,26 +123,27 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Session.SessionMember", b =>
                 {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.HasKey("Id");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("uuid_generate_v4()");
-
-                    b.HasKey("SessionId", "UserId");
+                    b.HasIndex("SessionId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("SessionMembers");
-
-                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Session.UserSession", b =>
@@ -303,12 +295,6 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("BaseMemberId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BaseMemberSessionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BaseMemberUserId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -317,9 +303,9 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SessionId");
+                    b.HasIndex("BaseMemberId");
 
-                    b.HasIndex("BaseMemberSessionId", "BaseMemberUserId");
+                    b.HasIndex("SessionId");
 
                     b.ToTable("VideoMembers");
                 });
@@ -559,15 +545,15 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatMember", b =>
                 {
-                    b.HasOne("CoreServer.Domain.Entities.Chat.ChatSession", "Session")
-                        .WithMany("Members")
-                        .HasForeignKey("SessionId")
+                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
+                        .WithOne()
+                        .HasForeignKey("CoreServer.Domain.Entities.Chat.ChatMember", "BaseMemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
-                        .WithMany()
-                        .HasForeignKey("BaseMemberSessionId", "BaseMemberUserId")
+                    b.HasOne("CoreServer.Domain.Entities.Chat.ChatSession", "Session")
+                        .WithMany("Members")
+                        .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -712,15 +698,15 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoMember", b =>
                 {
-                    b.HasOne("CoreServer.Domain.Entities.Chat.VideoSession", "Session")
-                        .WithMany("Members")
-                        .HasForeignKey("SessionId")
+                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
+                        .WithMany()
+                        .HasForeignKey("BaseMemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
-                        .WithMany()
-                        .HasForeignKey("BaseMemberSessionId", "BaseMemberUserId")
+                    b.HasOne("CoreServer.Domain.Entities.Chat.VideoSession", "Session")
+                        .WithMany("Members")
+                        .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

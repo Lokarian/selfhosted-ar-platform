@@ -19,6 +19,7 @@ import {SessionFacade} from "../../services/session-facade.service";
 export class ChatPageComponent implements OnInit {
   public sessions$: Observable<ChatSessionDto[]>;
   public selectedSession: ChatSessionDto | null = null;
+  public selectedSessionUserIds: string[] = [];
   public isEdit = false;
 
   constructor(private chatFacade: ChatFacade,
@@ -52,7 +53,7 @@ export class ChatPageComponent implements OnInit {
 
   createSession(users: AppUserDto[]) {
     this.sessionFacade.createSession(new CreateSessionCommand({userIds: users.map(u => u.id)})).subscribe(session => {
-      this.chatFacade.createChatSession(new CreateChatSessionCommand({sessionId: session.id})).subscribe();
+      this.chatFacade.createChatSession(session.id).subscribe();
     });
   }
 
@@ -78,15 +79,13 @@ export class ChatPageComponent implements OnInit {
     if (session.lastMessage.senderId === this.currentUserService.user.id) {
       return false;
     }
-    return session.lastMessage.sentAt > myMember?.lastSeen;
+    return session.lastMessage.sentAt > (myMember?.lastSeen??new Date(0));
   }
 
-  get selectedSessionUserIds() {
-    return this.sessionFacade.session(this.selectedSession?.baseSessionId).members.map(m => m.userId);
+  public selectSession(session: ChatSessionDto) {
+    this.selectedSession = session;
+    this.selectedSessionUserIds= this.sessionFacade.session(this.selectedSession?.baseSessionId).members.map(m => m.userId);
   }
 
-  getBaseSession(session: ChatSessionDto) {
-    return this.sessionFacade.session(session.baseSessionId);
-  }
 
 }

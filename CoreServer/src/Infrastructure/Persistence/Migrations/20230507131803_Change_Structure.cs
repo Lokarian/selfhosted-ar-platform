@@ -109,7 +109,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
             migrationBuilder.RenameColumn(
                 name: "UserId",
                 table: "ChatMembers",
-                newName: "BaseMemberUserId");
+                newName: "BaseMemberId");
 
             migrationBuilder.AddColumn<Guid>(
                 name: "BaseSessionId",
@@ -121,20 +121,6 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
             migrationBuilder.AddColumn<Guid>(
                 name: "BaseSessionId",
                 table: "ChatSessions",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "BaseMemberId",
-                table: "ChatMembers",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "BaseMemberSessionId",
-                table: "ChatMembers",
                 type: "uuid",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
@@ -184,14 +170,14 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 name: "SessionMembers",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "uuid_generate_v4()"),
                     SessionId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "uuid_generate_v4()")
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SessionMembers", x => new { x.SessionId, x.UserId });
+                    table.PrimaryKey("PK_SessionMembers", x => x.Id);
                     table.ForeignKey(
                         name: "FK_SessionMembers_AppUsers_UserId",
                         column: x => x.UserId,
@@ -210,22 +196,20 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 name: "VideoMembers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    BaseMemberSessionId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BaseMemberUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     BaseMemberId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SessionId = table.Column<Guid>(type: "uuid", nullable: false),
                     AccessKey = table.Column<string>(type: "text", nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_VideoMembers", x => x.Id);
+                    table.PrimaryKey("PK_VideoMembers", x => x.BaseMemberId);
                     table.ForeignKey(
-                        name: "FK_VideoMembers_SessionMembers_BaseMemberSessionId_BaseMemberU~",
-                        columns: x => new { x.BaseMemberSessionId, x.BaseMemberUserId },
+                        name: "FK_VideoMembers_SessionMembers_BaseMemberId",
+                        column: x => x.BaseMemberId,
                         principalTable: "SessionMembers",
-                        principalColumns: new[] { "SessionId", "UserId" },
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_VideoMembers_VideoSessions_SessionId",
@@ -236,13 +220,13 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChatMembers_BaseMemberSessionId_BaseMemberUserId",
-                table: "ChatMembers",
-                columns: new[] { "BaseMemberSessionId", "BaseMemberUserId" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ChatMembers_SessionId",
                 table: "ChatMembers",
+                column: "SessionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SessionMembers_SessionId",
+                table: "SessionMembers",
                 column: "SessionId");
 
             migrationBuilder.CreateIndex(
@@ -261,11 +245,6 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 column: "LastModifiedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_VideoMembers_BaseMemberSessionId_BaseMemberUserId",
-                table: "VideoMembers",
-                columns: new[] { "BaseMemberSessionId", "BaseMemberUserId" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_VideoMembers_SessionId",
                 table: "VideoMembers",
                 column: "SessionId");
@@ -279,11 +258,11 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_ChatMembers_SessionMembers_BaseMemberSessionId_BaseMemberUs~",
+                name: "FK_ChatMembers_SessionMembers_BaseMemberId",
                 table: "ChatMembers",
-                columns: new[] { "BaseMemberSessionId", "BaseMemberUserId" },
+                column: "BaseMemberId",
                 principalTable: "SessionMembers",
-                principalColumns: new[] { "SessionId", "UserId" },
+                principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
@@ -315,7 +294,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 table: "VideoStreams",
                 column: "OwnerId",
                 principalTable: "VideoMembers",
-                principalColumn: "Id",
+                principalColumn: "BaseMemberId",
                 onDelete: ReferentialAction.Cascade);
         }
 
@@ -327,7 +306,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 table: "ChatMembers");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_ChatMembers_SessionMembers_BaseMemberSessionId_BaseMemberUs~",
+                name: "FK_ChatMembers_SessionMembers_BaseMemberId",
                 table: "ChatMembers");
 
             migrationBuilder.DropForeignKey(
@@ -368,10 +347,6 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 table: "ChatMembers");
 
             migrationBuilder.DropIndex(
-                name: "IX_ChatMembers_BaseMemberSessionId_BaseMemberUserId",
-                table: "ChatMembers");
-
-            migrationBuilder.DropIndex(
                 name: "IX_ChatMembers_SessionId",
                 table: "ChatMembers");
 
@@ -383,16 +358,8 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                 name: "BaseSessionId",
                 table: "ChatSessions");
 
-            migrationBuilder.DropColumn(
-                name: "BaseMemberId",
-                table: "ChatMembers");
-
-            migrationBuilder.DropColumn(
-                name: "BaseMemberSessionId",
-                table: "ChatMembers");
-
             migrationBuilder.RenameColumn(
-                name: "BaseMemberUserId",
+                name: "BaseMemberId",
                 table: "ChatMembers",
                 newName: "UserId");
 
@@ -476,7 +443,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "uuid_generate_v4()"),
                     SessionId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AccessKey = table.Column<string>(type: "text", nullable: true),
+                    AccessKey = table.Column<string>(type: "text", nullable: false),
                     Joined = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>

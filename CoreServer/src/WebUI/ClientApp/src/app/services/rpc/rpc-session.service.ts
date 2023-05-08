@@ -6,13 +6,14 @@ import {SignalRService} from "../signalr.service";
 import {ChatFacade} from "../chat-facade.service";
 import {IRpcSessionService} from "../../models/interfaces/RpcSessionService";
 import {SessionFacade} from "../session-facade.service";
+import {VideoFacade} from "../video-facade.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class RpcSessionService extends RpcService implements IRpcSessionService {
 
-  constructor(private signalRService: SignalRService, private sessionFacade: SessionFacade) {
+  constructor(private signalRService: SignalRService, private sessionFacade: SessionFacade,private chatFacade: ChatFacade,private videoFacade: VideoFacade) {
     super(signalRService, "RpcSessionService", {
       UpdateSession: (session: SessionDto) => this.UpdateSession(session),
       UpdateSessionMember: (sessionMember: SessionMemberDto) => this.UpdateSessionMember(sessionMember),
@@ -33,6 +34,7 @@ export class RpcSessionService extends RpcService implements IRpcSessionService 
   RemoveSession(id: string) {
     console.log("RemoveSession", id);
     this.sessionFacade.removeSession(id);
+    this.chatFacade.removeSession(id);
   }
 
 }

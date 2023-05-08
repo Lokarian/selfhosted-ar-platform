@@ -62,4 +62,5 @@ export class AvatarComponent {
     }
     return text.toUpperCase();
   }
+
 }

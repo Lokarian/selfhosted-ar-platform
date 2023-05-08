@@ -1751,7 +1751,7 @@ export class UserFilesClient implements IUserFilesClient {
 }
 
 export interface IVideoClient {
-    getMyVideoSessions(): Observable<VideoSessionDto>;
+    getMyVideoSessions(): Observable<VideoSessionDto[]>;
     getVideoSessionMembers(sessionId: string | undefined): Observable<VideoMemberDto[]>;
     getVideoStreams(sessionId: string | undefined): Observable<VideoStreamDto[]>;
     createVideoSession(command: CreateVideoSessionCommand): Observable<VideoSessionDto>;
@@ -1774,7 +1774,7 @@ export class VideoClient implements IVideoClient {
         this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
     }
 
-    getMyVideoSessions(): Observable<VideoSessionDto> {
+    getMyVideoSessions(): Observable<VideoSessionDto[]> {
         let url_ = this.baseUrl + "/api/Video/GetMyVideoSessions";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1793,14 +1793,14 @@ export class VideoClient implements IVideoClient {
                 try {
                     return this.processGetMyVideoSessions(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<VideoSessionDto>;
+                    return _observableThrow(e) as any as Observable<VideoSessionDto[]>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<VideoSessionDto>;
+                return _observableThrow(response_) as any as Observable<VideoSessionDto[]>;
         }));
     }
 
-    protected processGetMyVideoSessions(response: HttpResponseBase): Observable<VideoSessionDto> {
+    protected processGetMyVideoSessions(response: HttpResponseBase): Observable<VideoSessionDto[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1811,7 +1811,14 @@ export class VideoClient implements IVideoClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = VideoSessionDto.fromJS(resultData200);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(VideoSessionDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -2512,6 +2519,7 @@ export interface IVideoSessionDto {
 
 export class VideoMemberDto implements IVideoMemberDto {
     id?: string;
+    baseMemberId?: string;
     userId?: string;
     sessionId?: string;
     joined?: boolean;
@@ -2528,6 +2536,7 @@ export class VideoMemberDto implements IVideoMemberDto {
     init(_data?: any) {
         if (_data) {
             this.id = _data["id"];
+            this.baseMemberId = _data["baseMemberId"];
             this.userId = _data["userId"];
             this.sessionId = _data["sessionId"];
             this.joined = _data["joined"];
@@ -2544,6 +2553,7 @@ export class VideoMemberDto implements IVideoMemberDto {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["id"] = this.id;
+        data["baseMemberId"] = this.baseMemberId;
         data["userId"] = this.userId;
         data["sessionId"] = this.sessionId;
         data["joined"] = this.joined;
@@ -2553,6 +2563,7 @@ export class VideoMemberDto implements IVideoMemberDto {
 
 export interface IVideoMemberDto {
     id?: string;
+    baseMemberId?: string;
     userId?: string;
     sessionId?: string;
     joined?: boolean;

@@ -26,7 +26,7 @@ export class SignalRService {
             return await firstValueFrom(this.authorizeService.getAccessToken().pipe(filter(token => token !== null)));
           }
         })
-      //.withHubProtocol(new MessagePackHubProtocol())
+      .withHubProtocol(new MessagePackHubProtocol())
       .build();
     this._hubConnection.onreconnecting((error) => this.onReconnecting(error));
     this._hubConnection.onreconnected((error) => this.onReconnected(error));
@@ -46,7 +46,7 @@ export class SignalRService {
   public on<T>(methodName: string, callback: (data: T) => void) {
 
     this._hubConnection.on(methodName, (data: any) => {
-      //data = this.renameAllKeysToCamelCase(data);
+      data = this.renameAllKeysToCamelCase(data);
       data = this.parseAllDates(data);
       callback(data);
     });

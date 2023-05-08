@@ -1127,7 +1127,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VideoSessionDto"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoSessionDto"
+                  }
                 }
               }
             }
@@ -1559,6 +1562,10 @@
         "additionalProperties": false,
         "properties": {
           "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseMemberId": {
             "type": "string",
             "format": "guid"
           },

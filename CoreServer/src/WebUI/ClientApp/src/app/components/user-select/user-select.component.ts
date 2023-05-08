@@ -5,9 +5,9 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  Input,
+  Input, OnChanges,
   OnInit,
-  Output,
+  Output, SimpleChanges,
   ViewChild
 } from '@angular/core';
 import {AppUserDto, PaginatedListOfAppUserDto, UserClient} from "../../web-api-client";
@@ -22,7 +22,8 @@ import {UserFacade} from "../../services/user/user-facade.service";
   templateUrl: './user-select.component.html',
   styleUrls: ['./user-select.component.css']
 })
-export class UserSelectComponent implements OnInit, AfterViewInit {
+export class UserSelectComponent implements OnInit, AfterViewInit,OnChanges {
+
   public ngxPopperjsPlacements = NgxPopperjsPlacements;
   public popperTrigger = NgxPopperjsTriggers;
 
@@ -40,6 +41,7 @@ export class UserSelectComponent implements OnInit, AfterViewInit {
   public pageSize = 5;
   public selectedUsers: AppUserDto[] = [];
   public popperWidth = 0;
+
   constructor(private userClient: UserClient, private userFacade: UserFacade, private cdr: ChangeDetectorRef) {
   }
 
@@ -48,15 +50,21 @@ export class UserSelectComponent implements OnInit, AfterViewInit {
     this.searchTextSubject.asObservable().pipe(debounceTime(500), filter(a => a != undefined)).subscribe((searchText) => {
       this.searchForUsers();
     });
-    this.userFacade.getUsers$(this.preselectedUserIds).subscribe((users) => {
-      this.selectedUsers = users;
-    });
   }
 
   ngAfterViewInit(): void {
     this.popperWidth = this.container.nativeElement.offsetWidth;
     this.cdr.detectChanges();
   }
+  ngOnChanges(changes: SimpleChanges) {
+    //if preselectedUserIds changes, and is not the same as before, then we need to update the selectedUsers
+    if (changes.preselectedUserIds) {
+      this.userFacade.getUsers$(changes.preselectedUserIds.currentValue).subscribe((users) => {
+        this.selectedUsers = users;
+      });
+    }
+  }
+
   searchForUsers() {
     this.userClient.getAppUsersByPartialName(this.searchTextSubject.value, this.pageNumber, this.pageSize).subscribe((users) => {
       this.popper.show();

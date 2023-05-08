@@ -14,6 +14,7 @@ public class MediaServerController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult> AuthenticateUser([FromBody]UserCanAccessStreamQuery query)
     {
+    return Ok(await Mediator.Send(query));
         var canAccess = await Mediator.Send(query);
         if (canAccess)
         {

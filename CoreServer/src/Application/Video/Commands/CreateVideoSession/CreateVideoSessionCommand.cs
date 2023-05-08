@@ -3,6 +3,7 @@ using CoreServer.Domain.Entities.Chat;
 using CoreServer.Domain.Entities.Video;
 using CoreServer.Domain.Events.Video;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreServer.Application.Video.Commands.CreateVideoSession;
 
@@ -24,11 +25,16 @@ public class CreateVideoSessionCommandHandler : IRequestHandler<CreateVideoSessi
 
     public async Task<VideoSession> Handle(CreateVideoSessionCommand request, CancellationToken cancellationToken)
     {
-        
-        var videoSession = new VideoSession
+        var baseSessionMembers = _context.SessionMembers.AsTracking().Where(x => x.SessionId == request.SessionId)
+            .ToList();
+        var videoSession = new VideoSession { BaseSessionId = request.SessionId, };
+        foreach (var baseSessionMember in baseSessionMembers)
         {
-            BaseSessionId = request.SessionId,
-        };
+            var videoMember = new VideoMember() { Session = videoSession, BaseMember = baseSessionMember };
+            _context.VideoMembers.Add(videoMember);
+            videoSession.Members.Add(videoMember);
+        }
+
         videoSession.AddDomainEvent(new VideoSessionCreatedEvent(videoSession));
         await _context.VideoSessions.AddAsync(videoSession, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);

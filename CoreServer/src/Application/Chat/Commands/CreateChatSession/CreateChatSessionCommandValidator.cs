@@ -1,10 +1,11 @@
-﻿using CoreServer.Application.Common.Interfaces;
+﻿using CoreServer.Application.Chat.Commands.CreateChatSession;
+using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Validators;
 using FluentValidation;
 
 namespace CoreServer.Application.Video.Commands.CreateVideoSession;
 
-public class CreateChatSessionCommandValidator : SessionContextValidator<CreateVideoSessionCommand>
+public class CreateChatSessionCommandValidator : SessionContextValidator<CreateChatSessionCommand>
 {
     public CreateChatSessionCommandValidator(IApplicationDbContext context, ICurrentUserService currentUserService) :
         base(context, currentUserService)

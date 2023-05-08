@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>WebRTC Demo</title>
+  <style>
+    #localVideo, #remoteVideo {
+      width: 320px;
+      height: 240px;
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+<h1>WebRTC Demo</h1>
+<div>
+  <label for="remoteDesc">Remote Descriptor:</label>
+  <textarea id="remoteDesc"></textarea>
+</div>
+<div>
+  <button id="connectButton">Connect</button>
+</div>
+<div>
+  <h2>Local Video:</h2>
+  <video id="localVideo" autoplay muted></video>
+</div>
+<div>
+  <h2>Remote Video:</h2>
+  <video id="remoteVideo" autoplay></video>
+</div>
+<script>
+  // Get references to the video elements and the button
+  const localVideo = document.getElementById('localVideo');
+  const remoteVideo = document.getElementById('remoteVideo');
+  const connectButton = document.getElementById('connectButton');
+
+  // Set up the PeerConnection object and the local stream
+  const pc = new RTCPeerConnection();
+  navigator.mediaDevices.getUserMedia({video: true, audio: false})
+    .then(stream => {
+      localVideo.srcObject = stream;
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
+      });
+    })
+    .catch(error => {
+      console.log('Error getting user media:', error);
+    });
+
+  // Handle the click event on the Connect button
+  connectButton.addEventListener('click', async () => {
+    try {
+      // Parse the remote descriptor from the text area
+      const remoteDesc = JSON.parse(document.getElementById('remoteDesc').value);
+
+      // Set the remote description
+      await pc.setRemoteDescription(new RTCSessionDescription(remoteDesc));
+
+      // Create the answer and set the local description
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      // Send the answer to the remote peer
+      sendMessage(JSON.stringify(pc.localDescription));
+    } catch (error) {
+      console.log('Error connecting:', error);
+    }
+  });
+
+  // Handle incoming signaling messages
+  function handleMessage(message) {
+    if (message.type === 'answer') {
+      // Set the remote description
+      pc.setRemoteDescription(new RTCSessionDescription(message));
+    }
+  }
+
+  // Send a signaling message to the remote peer
+  function sendMessage(message) {
+    // In a real application, this would use a signaling server
+    // For simplicity, we're just logging the message to the console
+    console.log('Signaling message:', message);
+    handleMessage(JSON.parse(message));
+  }
+
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-﻿using CoreServer.Domain.Common;
+﻿using System.Collections;
+using CoreServer.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,7 +7,15 @@ namespace CoreServer.Infrastructure.Common;
 
 public static class MediatorExtensions
 {
-    public static async Task DispatchDomainEvents(this IMediator mediator, DbContext context)
+    public static async Task DispatchDomainEvents(this IMediator mediator, IEnumerable<BaseEvent> events)
+    {
+        foreach (BaseEvent domainEvent in events)
+        {
+            await mediator.Publish(domainEvent);
+        }
+    }
+
+    public static IEnumerable<BaseEvent> GetDomainEvents(this IMediator mediator, DbContext context)
     {
         IEnumerable<EntityWithEvents> entities = context.ChangeTracker
             .Entries<EntityWithEvents>()
@@ -19,10 +28,6 @@ public static class MediatorExtensions
             .ToList();
 
         entityWithEventsEnumerable.ForEach(e => e.ClearDomainEvents());
-
-        foreach (BaseEvent domainEvent in domainEvents)
-        {
-            await mediator.Publish(domainEvent);
-        }
+        return domainEvents;
     }
 }

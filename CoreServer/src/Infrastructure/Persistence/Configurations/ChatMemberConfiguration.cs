@@ -11,6 +11,7 @@ public class ChatMemberConfiguration : IEntityTypeConfiguration<ChatMember>
     public void Configure(EntityTypeBuilder<ChatMember> builder)
     {
         builder.HasKey(x=>x.BaseMemberId);
+        builder.HasOne(x=>x.BaseMember).WithOne().HasForeignKey<ChatMember>(x=>x.BaseMemberId);
         builder.Navigation(x=>x.BaseMember).AutoInclude();
     }
 }

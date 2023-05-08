@@ -18,9 +18,9 @@ export class RpcVideoService extends RpcService implements IRpcVideoService {
 
   constructor(private signalRService: SignalRService, private videoFacade: VideoFacade) {
     super(signalRService, "RpcVideoService", {
-      /*UpdateVideoSession: (videoSession: VideoSessionDto) => this.UpdateVideoSession(videoSession),
-      UpdateVideoSessionMember: (videoSessionMember: VideoSessionMemberDto) => this.UpdateVideoSessionMember(videoSessionMember),
-      UpdateVideoStream: (videoStream: VideoStreamDto) => this.UpdateVideoStream(videoStream)*/
+      UpdateVideoSession: (videoSession: VideoSessionDto) => this.UpdateVideoSession(videoSession),
+      UpdateVideoSessionMember: (videoSessionMember: VideoMemberDto) => this.UpdateVideoMember(videoSessionMember),
+      UpdateVideoStream: (videoStream: VideoStreamDto) => this.UpdateVideoStream(videoStream)
     });
   }
 
@@ -38,18 +38,18 @@ export class RpcVideoService extends RpcService implements IRpcVideoService {
   }
 
   UpdateVideoSession(videoSession: VideoSessionDto) {
-    //this.videoFacade.updateVideoSession(videoSession);
+    this.videoFacade.addOrReplaceSession(videoSession)
     console.log("UpdateVideoSession", videoSession);
   }
 
   UpdateVideoMember(videoSessionMember: VideoMemberDto) {
-    //this.videoFacade.updateVideoSessionMember(videoSessionMember);
+    this.videoFacade.updateVideoMember(videoSessionMember);
     console.log("UpdateVideoSessionMember", videoSessionMember);
   }
 
   UpdateVideoStream(videoStream: VideoStreamDto) {
-    //this.videoFacade.updateVideoStream(videoStream);
     console.log("UpdateVideoStream", videoStream);
+    this.videoFacade.updateVideoStream(videoStream);
   }
 
 }

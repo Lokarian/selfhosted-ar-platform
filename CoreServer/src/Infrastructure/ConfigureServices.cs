@@ -9,6 +9,8 @@ using CoreServer.Infrastructure.RPC;
 using CoreServer.Infrastructure.Services;
 using MediatR;
 using MessagePack;
+using MessagePack.Formatters;
+using MessagePack.Resolvers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +42,14 @@ public static class ConfigureServices
 
         services.AddScoped<ApplicationDbContextInitialiser>();
 
-        services.AddSignalR(options => options.MaximumReceiveMessageSize=5242880)/*.AddMessagePackProtocol()*/;
+        services.AddSignalR(options => options.MaximumReceiveMessageSize = 5242880).AddMessagePackProtocol(
+            options =>
+            {
+                //the standard signalR resolver serializes enums as string, but we work with int
+                options.SerializerOptions =
+                    MessagePackSerializerOptions.Standard.WithResolver(ContractlessStandardResolver.Instance);
+            }
+        );
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
         services.AddSingleton<IUserConnectionStore, UserConnectionStore>();
         services.AddSingleton(typeof(IStreamDistributorService<>), typeof(StreamDistributorService<>));

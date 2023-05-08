@@ -27,6 +27,8 @@ import {API_BASE_URL} from "./web-api-client";
 import { UserSelectComponent } from './components/user-select/user-select.component';
 import { VideoComponent } from './components/video/video.component';
 import { SessionPageComponent } from './pages/session/session-page.component';
+import { VideoSessionPreviewComponent } from './components/video-session-preview/video-session-preview.component';
+import { VideoStreamComponent } from './components/video-stream/video-stream.component';
 
 function baseUrlFactory() {
   if(environment.production){
@@ -61,6 +63,8 @@ function baseUrlFactory() {
     UserSelectComponent,
     VideoComponent,
     SessionPageComponent,
+    VideoSessionPreviewComponent,
+    VideoStreamComponent,
   ],
     imports: [
         BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

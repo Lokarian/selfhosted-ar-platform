@@ -10,6 +10,9 @@ public class VideoMemberConfiguration : IEntityTypeConfiguration<VideoMember>
     
     public void Configure(EntityTypeBuilder<VideoMember> builder)
     {
+        builder.HasKey(x=>x.Id);
+        builder.HasOne(x=>x.BaseMember).WithMany().HasForeignKey(x=>x.BaseMemberId);
         builder.Navigation(x=>x.BaseMember).AutoInclude();
+        
     }
 }

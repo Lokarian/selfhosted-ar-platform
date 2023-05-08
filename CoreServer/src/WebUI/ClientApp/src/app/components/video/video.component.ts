@@ -1,21 +1,33 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {Subject} from "@microsoft/signalr";
-import {BehaviorSubject, Observable, ReplaySubject} from "rxjs";
-import {first, map} from "rxjs/operators";
+import {ChangeDetectorRef, Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
+import {BehaviorSubject, Observable, ReplaySubject, switchMap} from "rxjs";
+import {map} from "rxjs/operators";
 import {FormBuilder} from "@angular/forms";
-import {NgxPopperjsDirective, NgxPopperjsTriggers} from 'ngx-popperjs';
+import {NgxPopperjsDirective, NgxPopperjsPlacements, NgxPopperjsTriggers} from 'ngx-popperjs';
 import {NotificationService} from "../../services/notification.service";
 import {RpcVideoService} from "../../services/rpc/rpc-video.service";
+import {ActivatedRoute} from "@angular/router";
+import {VideoMemberDto, VideoSessionDto, VideoStreamDto} from "../../web-api-client";
+import {VideoFacade} from "../../services/video-facade.service";
+import {CurrentUserService} from "../../services/user/current-user.service";
+import {DomSanitizer} from "@angular/platform-browser";
 
 @Component({
   selector: 'app-video',
   templateUrl: './video.component.html',
   styleUrls: ['./video.component.css']
 })
-export class VideoComponent implements OnInit, AfterViewInit, OnDestroy {
-  private mediaRecorder?: MediaRecorder;
-  private requestAnimation?: number;
-  private nameRef = '';
+export class VideoComponent implements OnInit {
+
+
+  private videoSession: VideoSessionDto;
+  public videoStreams: VideoStreamDto[] = [];
+  private myMember: VideoMemberDto;
+
+  @Input("session") set sessionIn(value: VideoSessionDto) {
+    this.sessionIdReplaySubject.next(value.baseSessionId);
+  }
+
+  private sessionIdReplaySubject = new ReplaySubject<string>(1);
 
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
   @ViewChild('videoElement2') videoElement2?: ElementRef<HTMLVideoElement>;
@@ -27,38 +39,69 @@ export class VideoComponent implements OnInit, AfterViewInit, OnDestroy {
   public availableCameras$ = this.availableMediaDevicesSubject.pipe(map(devices => devices.filter(d => d.kind === 'videoinput')));
   public availableMicrophones$ = this.availableMediaDevicesSubject.pipe(map(devices => devices.filter(d => d.kind === 'audioinput')));
 
-  public otherUserStreams$ = new BehaviorSubject<MediaStream[]>([]);
   public selectedCamera?: MediaDeviceInfo;
   public selectedMicrophone?: MediaDeviceInfo;
   public cameraEnabled = false;
   public microphoneEnabled = false;
 
+  private mediaRecorder: MediaRecorder;
   private outputStream: MediaStream;
   private blobSubject: ReplaySubject<Blob> | null = null;
 
   private microphoneStream: MediaStream | null = null;
   private cameraStream: MediaStream | null = null;
-  public myUUID = crypto.randomUUID();
   public enableFrameDrop: Boolean;
 
-  constructor(private formBuilder: FormBuilder, private rpcVideoService: RpcVideoService, private cdr: ChangeDetectorRef, private notificationService: NotificationService) {
+  constructor(private formBuilder: FormBuilder, private sanitizer: DomSanitizer, private currentUserService: CurrentUserService, private videoFacade: VideoFacade, private activatedRoute: ActivatedRoute, private rpcVideoService: RpcVideoService, private cdr: ChangeDetectorRef, private notificationService: NotificationService) {
   }
 
   ngOnInit(): void {
-    this.getMediaDevices().then(async () => {
-      await this.setCameraStream();
-      await this.setMicrophoneStream();
+    //initialy load available cameras and microphones
+    //check there is an id in the url
+    this.activatedRoute.params.subscribe(params => {
+      this.sessionIdReplaySubject.next(params.id);
     });
+    //listen for session changes
+
+    this.getMediaDevices().then(_ => {
+      this.sessionIdReplaySubject
+        .pipe(switchMap(sessionId =>
+          this.videoFacade.session$(sessionId))
+        )
+        .subscribe(session => {
+          this.onSessionChange(session);
+        });
+    });
+
   }
 
-  ngAfterViewInit() {
-    this.createOutputStream()
-  }
 
-  ngOnDestroy(): void {
-    if (this.requestAnimation) {
-      cancelAnimationFrame(this.requestAnimation);
+  onSessionChange(session: VideoSessionDto) {
+    const oldSession = this.videoSession;
+    if (!oldSession || oldSession.baseSessionId !== session.baseSessionId) {
+      this.videoSession = session;
+      //changed video session, startup process
+      this.videoFacade.joinVideoSession(session.baseSessionId).subscribe((tuple) => {
+        this.myMember = tuple.item1;
+        // create a output stream
+        this.createOutputStream().then(async () => {
+          //enable camera and microphone
+          await this.setCameraStream();
+          await this.setMicrophoneStream();
+          //request a video stream from the server
+          this.videoFacade.requestVideoStream(this.myMember.id).subscribe(stream => {
+            //send the output stream to the requested stream
+            this.startStreaming(stream);
+          })
+        });
+      });
     }
+    //get removed and added streams by dateStopped property
+    console.log(session.streams)
+    const newActiveStreams = session.streams.filter(s => !s.stoppedAt);
+    this.videoStreams = newActiveStreams;
+
+
   }
 
   toggleCamera() {
@@ -103,16 +146,19 @@ export class VideoComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
   openCameraSelection() {
+    this.cameraButtonElement.placement = NgxPopperjsPlacements.TOP;
     this.cameraButtonElement.scheduledShow(0);
   }
 
   openMicrophoneSelection() {
+    this.microphoneButtonElement.placement = NgxPopperjsPlacements.TOP;
     this.microphoneButtonElement.scheduledShow(0);
   }
 
 
   public getMediaDevices() {
     return navigator.mediaDevices.enumerateDevices().then(devices => {
+      console.log(devices);
       this.availableMediaDevicesSubject.next(devices);
       const defaultCamera = devices.find(d => d.deviceId === localStorage.getItem("defaultCamera"));
       const defaultMicrophone = devices.find(d => d.deviceId === localStorage.getItem("defaultMicrophone"));
@@ -191,11 +237,11 @@ export class VideoComponent implements OnInit, AfterViewInit, OnDestroy {
     this.videoElement.nativeElement.srcObject = this.outputStream;
   }
 
-  startStreaming() {
+  startStreaming(stream: VideoStreamDto) {
     console.log("start streaming");
     this.blobSubject = new ReplaySubject(1);
     this.createMediaRecorder();
-    this.rpcVideoService.SendVideoStream(this.blobSubject.asObservable(), this.myUUID,"whoo");
+    this.rpcVideoService.SendVideoStream(this.blobSubject.asObservable(), stream.id, this.videoFacade.getAccessKey(this.videoSession.baseSessionId));
   }
 
   createMediaRecorder() {
@@ -215,37 +261,42 @@ export class VideoComponent implements OnInit, AfterViewInit, OnDestroy {
     this.mediaRecorder.addEventListener("dataavailable", (event) => {
       console.log("data available");
       //have a 10% chance to drop the frame
-      if (Math.random() < 0.1&&this.enableFrameDrop) {
+      if (Math.random() < 0.1 && this.enableFrameDrop) {
         return;
       }
       this.blobSubject.next(event.data);
     });
     console.log("start media recorder");
-    this.mediaRecorder.start(1000);
+    this.mediaRecorder.start(100);
   }
 
   displayBlobStream(blobs: Observable<Uint8Array>) {
     const mediaSource = new MediaSource();
     this.videoElement2.nativeElement.src = URL.createObjectURL(mediaSource);
     let sourceBuffer: SourceBuffer;
-    for (let i = 0; i <mediaSource.activeSourceBuffers.length; i++) {
+    for (let i = 0; i < mediaSource.activeSourceBuffers.length; i++) {
       let buffer = mediaSource.activeSourceBuffers[i];
-      console.log("before",buffer);
+      console.log("before", buffer);
     }
     mediaSource.addEventListener('sourceopen', () => {
-      for (let i = 0; i <mediaSource.activeSourceBuffers.length; i++) {
+      for (let i = 0; i < mediaSource.activeSourceBuffers.length; i++) {
         let buffer = mediaSource.activeSourceBuffers[i];
-        console.log("before2",buffer);
+        console.log("before2", buffer);
       }
       sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp8,opus"');
       blobs.subscribe(blob => {
-        for (let i = 0; i <mediaSource.activeSourceBuffers.length; i++) {
+        for (let i = 0; i < mediaSource.activeSourceBuffers.length; i++) {
           let buffer = mediaSource.activeSourceBuffers[i];
-          console.log("during",buffer);
+          console.log("during", buffer);
         }
         sourceBuffer.appendBuffer(blob);
       });
     });
+  }
+
+  public getStreamUrl(stream: VideoStreamDto) {
+    // in form http://localhost:8889/{{userStream.id}}/
+    return this.sanitizer.bypassSecurityTrustResourceUrl(`http://localhost:8889/${stream.id}/`);
   }
 
   stopStreaming() {
