@@ -1,10 +1,10 @@
 import {Component} from '@angular/core';
-import {SignalRService} from "../../services/signalr.service";
+import {SignalRConnectionState, SignalRService} from "../../services/signalr.service";
 import {NotificationService} from "../../services/notification.service";
 import {RpcUserService} from "../../services/rpc/rpc-user.service";
 import {RpcChatService} from "../../services/rpc/rpc-chat.service";
 import {CurrentUserService} from "../../services/user/current-user.service";
-import {filter, map} from "rxjs/operators";
+import {filter, map, switchMap} from "rxjs/operators";
 import {RpcVideoService} from "../../services/rpc/rpc-video.service";
 import {RpcSessionService} from "../../services/rpc/rpc-session.service";
 
@@ -29,7 +29,7 @@ export class LayoutComponent {
   }
 
   public get loaded$() {
-    return this.currentUserService.user$.pipe(filter(user => !!user), map(user => true));
+    return this.currentUserService.user$.pipe(filter(user => !!user), switchMap(() => this.signalrService.connectionState$), filter(state=>state==SignalRConnectionState.Connected), map(() => true));
   }
 
 }

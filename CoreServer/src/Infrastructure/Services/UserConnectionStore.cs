@@ -27,12 +27,6 @@ public class UserConnectionStore : IUserConnectionStore
         {
             _connections.TryAdd(userId, new HashSet<string> { connectionId });
         }
-
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Publish(new NewUserConnectionEvent(userId, connectionId));
-        }
     }
 
     public async Task RemoveConnection(Guid userId, string connectionId)
@@ -42,10 +36,6 @@ public class UserConnectionStore : IUserConnectionStore
             connections.Remove(connectionId);
         }
         _services.TryRemove(connectionId, out _);
-
-        using var scope = _serviceProvider.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        await mediator.Publish(new UserConnectionDisconnectedEvent(userId, connectionId));
     }
 
     public Task<IEnumerable<string>> GetConnections(Guid userId)

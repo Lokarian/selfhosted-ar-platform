@@ -8,7 +8,6 @@ using CoreServer.Domain.Events.Chat;
 using CoreServer.Domain.Events.Video;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Application.Video.EventHandlers;
 
@@ -18,8 +17,7 @@ public class VideoMemberUpdatedEventHandler : INotificationHandler<VideoMemberUp
     private readonly IMapper _mapper;
     private readonly IApplicationDbContext _context;
 
-    public VideoMemberUpdatedEventHandler(IUserProxy<IRpcVideoService> userProxy,
-        ILogger<VideoMemberUpdatedEventHandler> logger, IApplicationDbContext context, IMapper mapper)
+    public VideoMemberUpdatedEventHandler(IUserProxy<IRpcVideoService> userProxy, IApplicationDbContext context, IMapper mapper)
     {
         _userProxy = userProxy;
         _context = context;

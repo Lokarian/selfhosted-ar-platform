@@ -19,43 +19,60 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
     private readonly IDictionary<Guid, ChannelReader<T>> _streams =
         new ConcurrentDictionary<Guid, ChannelReader<T>>();
 
-    private readonly IDictionary<Guid, List<Guid>> _clientToStream = new ConcurrentDictionary<Guid, List<Guid>>();
+    private readonly IDictionary<Guid, List<Guid>> _clientToStreams = new ConcurrentDictionary<Guid, List<Guid>>();
 
     private readonly IDictionary<Guid, Guid>
-        _streamToClient = new ConcurrentDictionary<Guid, Guid>(); //reverse lookup for _clientToStream
+        _streamToClient = new ConcurrentDictionary<Guid, Guid>(); //reverse lookup for _clientToStreams
+
+    //storage for topics and linking with streams
+    private readonly IDictionary<string, List<Guid>> _topicToStreams = new ConcurrentDictionary<string, List<Guid>>();
+    private readonly IDictionary<Guid, string> _streamToTopic = new ConcurrentDictionary<Guid, string>();
 
 
     //storage for subscriptions and linking with clientIds
     private readonly IDictionary<Guid, Tuple<ChannelWriter<T>, CancellationToken>> _subscriptions =
         new ConcurrentDictionary<Guid, Tuple<ChannelWriter<T>, CancellationToken>>();
 
-    private readonly IDictionary<Guid, List<Guid>> _clientToSubscription = new ConcurrentDictionary<Guid, List<Guid>>();
+    private readonly IDictionary<Guid, List<Guid>>
+        _clientToSubscriptions = new ConcurrentDictionary<Guid, List<Guid>>();
 
     private readonly IDictionary<Guid, Guid>
-        _subscriptionToClient = new ConcurrentDictionary<Guid, Guid>(); //reverse lookup for _clientToSubscription
+        _subscriptionToClient = new ConcurrentDictionary<Guid, Guid>(); //reverse lookup for _clientToSubscriptions
 
 
-    //linking streams with subscriptions
-    private readonly IDictionary<Guid, List<Guid>> _streamToSubscription = new ConcurrentDictionary<Guid, List<Guid>>();
-    private readonly IDictionary<Guid, Guid> _subscriptionToStream = new ConcurrentDictionary<Guid, Guid>();
+    //linking topics with subscriptions
+    private readonly IDictionary<string, List<Guid>> _topicToSubscription =
+        new ConcurrentDictionary<string, List<Guid>>();
+
+    private readonly IDictionary<Guid, string> _subscriptionToTopic = new ConcurrentDictionary<Guid, string>();
 
 
     public async Task<Guid> RegisterStream(Guid clientId, ChannelReader<T> stream,
-        Guid? streamId = null)
+        string topic)
     {
-        streamId ??= Guid.NewGuid();
-        _streams.Add(streamId.Value, stream);
-        if (!_clientToStream.ContainsKey(clientId))
+        var streamId = Guid.NewGuid();
+        _streams.Add(streamId, stream);
+        Console.WriteLine($"Registering stream {streamId} for client {clientId} on topic {topic}");
+
+        if (!_clientToStreams.ContainsKey(clientId))
         {
-            _clientToStream.Add(clientId, new List<Guid>());
+            _clientToStreams.Add(clientId, new List<Guid>());
         }
 
-        _clientToStream[clientId].Add(streamId.Value);
-        _streamToClient.Add(streamId.Value, clientId);
+        _clientToStreams[clientId].Add(streamId);
+        _streamToClient[streamId] = clientId;
 
-        StreamReader(stream, streamId.Value);
+        if (!_topicToStreams.ContainsKey(topic))
+        {
+            _topicToStreams.Add(topic, new List<Guid>());
+        }
 
-        return streamId.Value;
+        _topicToStreams[topic].Add(streamId);
+        _streamToTopic[streamId] = topic;
+
+        StreamReader(stream, streamId);
+
+        return streamId;
     }
 
     /**
@@ -63,19 +80,36 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
      * instantly stops all subscriptions
      * tells the client to stop streaming, which will then remove the stream from the client
      */
-    public async Task RemoveStream(Guid streamId)
+    public async Task StopStream(Guid streamId)
     {
+        Console.WriteLine($"Removing stream {streamId}");
         if (!_streamToClient.ContainsKey(streamId) || !_streams.ContainsKey(streamId))
         {
             Console.WriteLine($"Cannot remove stream {streamId}, it does not exist");
             return;
         }
 
-        //cancel all subscriptions
-        foreach (var subscriptionId in _streamToSubscription[streamId])
+        //get topic, check if this stream was the only one streaming to it and remove it if so
+        var topic = _streamToTopic[streamId];
+        var allTopicStreams = _topicToStreams[topic];
+        if (allTopicStreams.Count > 1)
         {
-            CloseAndDeleteSubscription(subscriptionId);
+            //there are still other streams streaming to this topic, so just remove this stream
+            allTopicStreams.Remove(streamId);
+            _streamToTopic.Remove(streamId);
         }
+        else
+        {
+            //this is the only stream streaming to this topic, so remove the topic and all subscriptions to it
+            _topicToStreams.Remove(topic);
+            _streamToTopic.Remove(streamId);
+
+            foreach (var subscriptionId in _topicToSubscription[topic].ToList())
+            {
+                CloseAndDeleteSubscription(subscriptionId);
+            }
+        }
+
 
         //tell client to cancel streaming
         var senderId = _streamToClient[streamId];
@@ -85,27 +119,46 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
         // the stream will automatically be removed once the client stops streaming
     }
 
-    public async Task<Guid> Subscribe(Guid streamId, Guid clientId, ChannelWriter<T> observer,
+    /**
+     * close a stream absolutely
+     * DO NOT call when stream could still send messages
+     */
+    public Task RemoveStream(Guid streamId)
+    {
+        return this.CloseStream(streamId);
+    }
+
+    public async Task StopTopic(string topic)
+    {
+        var streams = _topicToStreams[topic];
+        foreach (var streamId in streams)
+        {
+            await StopStream(streamId);
+        }
+    }
+
+    public async Task<Guid> Subscribe(string topic, Guid clientId, ChannelWriter<T> observer,
         CancellationToken cancellationToken)
     {
         var subscriptionId = Guid.NewGuid();
+        Console.WriteLine($"Subscribing {clientId} to {topic} with id {subscriptionId}");
         _subscriptions.Add(subscriptionId, Tuple.Create(observer, cancellationToken));
 
-        if (!_clientToSubscription.ContainsKey(clientId))
+        if (!_clientToSubscriptions.ContainsKey(clientId))
         {
-            _clientToSubscription.Add(clientId, new List<Guid>());
+            _clientToSubscriptions.Add(clientId, new List<Guid>());
         }
 
-        _clientToSubscription[clientId].Add(subscriptionId);
+        _clientToSubscriptions[clientId].Add(subscriptionId);
         _subscriptionToClient.Add(subscriptionId, clientId);
 
-        if (!_streamToSubscription.ContainsKey(streamId))
+        if (!_topicToSubscription.ContainsKey(topic))
         {
-            _streamToSubscription.Add(streamId, new List<Guid>());
+            _topicToSubscription.Add(topic, new List<Guid>());
         }
 
-        _streamToSubscription[streamId].Add(subscriptionId);
-        _subscriptionToStream.Add(subscriptionId, streamId);
+        _topicToSubscription[topic].Add(subscriptionId);
+        _subscriptionToTopic.Add(subscriptionId, topic);
 
         //we dont need to do any manual linking between reader and writer, as that is done in the OnStreamValue method
 
@@ -114,6 +167,7 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
 
     public void Unsubscribe(Guid subscriptionId)
     {
+        Console.WriteLine($"Unsubscribing {subscriptionId}");
         if (!_subscriptions.ContainsKey(subscriptionId))
         {
             Console.WriteLine($"Cannot unsubscribe {subscriptionId}, it does not exist");
@@ -123,24 +177,34 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
         CloseAndDeleteSubscription(subscriptionId);
     }
 
-    public void Unsubscribe(Guid streamId, Guid clientId)
+    public void Unsubscribe(string topic, Guid clientId)
     {
-        if (!_clientToSubscription.ContainsKey(clientId))
+        Console.WriteLine($"Unsubscribing {clientId} from {topic}");
+        if (!_clientToSubscriptions.ContainsKey(clientId))
         {
-            Console.WriteLine($"Cannot unsubscribe {clientId} from Stream {streamId}, he is not subscribed");
+            Console.WriteLine($"Cannot unsubscribe {clientId} from Topic {topic}, he is not subscribed");
             return;
         }
-        Guid? subscriptionId =_clientToSubscription[clientId].Select(g=>(Guid?)g).FirstOrDefault(g=>_subscriptionToStream[g.Value]==streamId);
+
+        //try getting the subscriptionId given the topic and clientId
+        Guid? subscriptionId = null;
+        foreach (Guid id in _clientToSubscriptions[clientId].Where(id => _subscriptionToTopic[id] == topic))
+        {
+            subscriptionId = id;
+            break;
+        }
+
         if (subscriptionId == null)
         {
-            Console.WriteLine($"Cannot unsubscribe {clientId} from Stream {streamId}, he is not subscribed");
+            Console.WriteLine($"Cannot unsubscribe {clientId} from Topic {topic}, he is not subscribed");
             return;
         }
+
         CloseAndDeleteSubscription(subscriptionId.Value);
     }
 
     /**
-     * asynchroniously wait for values from the stream and call OnStreamValue, handle stream faults and completion
+     * asynchronously wait for values from the stream and call OnStreamValue, handle stream faults and completion
      */
     private async Task StreamReader(ChannelReader<T> reader, Guid streamId)
     {
@@ -153,18 +217,19 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
                 {
                     await OnStreamValue(value, streamId);
                 }
+
                 val = await reader.WaitToReadAsync();
             }
         }
         catch (Exception ex)
         {
-            await OnStreamFaulted(streamId, ex);
+            await CloseStream(streamId, ex);
             return;
         }
 
-        //await OnStreamCompleted(streamId);
+        await CloseStream(streamId);
     }
-    
+
     /**
      * this method is called when a stream receives a value
      * it will send the value to all subscriptions
@@ -175,6 +240,7 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
 
         async Task SendToReceiver(Guid subscriptionId)
         {
+            Console.WriteLine($"Sending value to subscription {subscriptionId}");
             var writer = _subscriptions[subscriptionId].Item1;
             var cancellationToken = _subscriptions[subscriptionId].Item2;
             //check for cancellation and remove subscription
@@ -188,24 +254,17 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
             await writer.WriteAsync(value, cancellationToken);
         }
 
-        //write to all subscriptions
-        if (_streamToSubscription.ContainsKey(streamId))
+        if (_streamToTopic.ContainsKey(streamId))
         {
-            var tasks = _streamToSubscription[streamId].Select(SendToReceiver);
-            await Task.WhenAll(tasks);
+            var topic = _streamToTopic[streamId];
+            //write to all subscriptions
+            if (_topicToSubscription.ContainsKey(topic))
+            {
+                Console.WriteLine($"Valie on topic {topic} will be sent to {string.Join(", ", _topicToSubscription[topic])}");
+                var tasks = _topicToSubscription[topic].ToList().Select(SendToReceiver);
+                await Task.WhenAll(tasks);
+            }
         }
-    }
-    
-    private async Task OnStreamCompleted(Guid streamId)
-    {
-        Console.WriteLine($"Stream {streamId} completed gracefully");
-        //close all subscriptions
-        _streamToSubscription[streamId].ForEach(subscriptionId => CloseAndDeleteSubscription(subscriptionId));
-        //remove stream
-        _streams.Remove(streamId);
-        _clientToStream[_streamToClient[streamId]].Remove(streamId);
-        _streamToClient.Remove(streamId);
-        await Task.CompletedTask;
     }
 
     private void CloseAndDeleteSubscription(Guid subscriptionId, Exception? exception = null)
@@ -214,7 +273,7 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
         //if there is an exception complete with exception, else complete normally
         if (exception != null)
         {
-            var completed=writer.TryComplete(exception);
+            var completed = writer.TryComplete(exception);
             if (!completed)
             {
                 Console.WriteLine($"Could not complete subscription {subscriptionId} with exception {exception}");
@@ -222,7 +281,7 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
         }
         else
         {
-            var completed=writer.TryComplete();
+            var completed = writer.TryComplete();
             if (!completed)
             {
                 Console.WriteLine($"Could not complete subscription {subscriptionId}");
@@ -231,22 +290,50 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
 
         //remove all references to subscription
         _subscriptions.Remove(subscriptionId);
-        _clientToSubscription[_subscriptionToClient[subscriptionId]].Remove(subscriptionId);
+        _clientToSubscriptions[_subscriptionToClient[subscriptionId]].Remove(subscriptionId);
         _subscriptionToClient.Remove(subscriptionId);
-        _streamToSubscription[_subscriptionToStream[subscriptionId]].Remove(subscriptionId);
-        _subscriptionToStream.Remove(subscriptionId);
+        _topicToSubscription[_subscriptionToTopic[subscriptionId]].Remove(subscriptionId);
+        _subscriptionToTopic.Remove(subscriptionId);
     }
 
-    private async Task OnStreamFaulted(Guid streamId, Exception exception)
+    private async Task CloseStream(Guid streamId, Exception? exception = null)
     {
-        Console.WriteLine($"Stream {streamId} faulted: {exception}");
-        //close all subscriptions
-        _streamToSubscription[streamId]
-            .ForEach(subscriptionId => CloseAndDeleteSubscription(subscriptionId, exception));
-        //remove stream
-        _streams.Remove(streamId);
-        _clientToStream[_streamToClient[streamId]].Remove(streamId);
+        if (exception != null)
+        {
+            Console.WriteLine($"Stream {streamId} faulted: {exception}");
+        }
+        else
+        {
+            Console.WriteLine($"Stream {streamId} completed gracefully");
+        }
+
+        //if the stream is still associated with a topic, remove it
+        if (_streamToTopic.ContainsKey(streamId))
+        {
+            //if this is the last stream to a topic, remove the topic
+            var topic = _streamToTopic[streamId];
+            _streamToTopic.Remove(streamId);
+            var allTopicStreams = _topicToStreams[topic];
+            if (allTopicStreams.Count > 1)
+            {
+                Console.WriteLine($"Removing stream {streamId} from topic {topic}");
+                allTopicStreams.Remove(streamId);
+            }
+            else
+            {
+                Console.WriteLine($"Removing topic {topic}");
+                _topicToStreams.Remove(topic);
+
+                foreach (var subscriptionId in _topicToSubscription[topic].ToList())
+                {
+                    CloseAndDeleteSubscription(subscriptionId, exception);
+                }
+            }
+        }
+
+        //remove association with client
+        _clientToStreams.Remove(_streamToClient[streamId]);
         _streamToClient.Remove(streamId);
-        await Task.CompletedTask;
+        _streams.Remove(streamId);
     }
 }

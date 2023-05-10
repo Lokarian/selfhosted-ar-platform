@@ -1,11 +1,15 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
+using CoreServer.Application.User.Commands.CreateUserConnection;
+using CoreServer.Application.User.Commands.UpdateUserConnection;
 using CoreServer.Application.Video.Commands.StopVideoStream;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Infrastructure.RPC;
@@ -32,27 +36,56 @@ public class SignalRHub : Hub
         _context = context;
     }
 
-    public override Task OnConnectedAsync()
+    public override async Task OnConnectedAsync()
     {
         _logger.LogInformation($"User ${Context.UserIdentifier} on Client {Context.ConnectionId} connected");
-        _userConnectionStore.AddConnection(Guid.Parse(Context.UserIdentifier!), Context.ConnectionId);
-
-        return base.OnConnectedAsync();
     }
 
-    public override Task OnDisconnectedAsync(Exception exception)
+    public override async Task OnDisconnectedAsync(Exception exception)
     {
         _logger.LogInformation($"User ${Context.UserIdentifier} on Client {Context.ConnectionId} disconnected");
-        _userConnectionStore.RemoveConnection(Guid.Parse(Context.UserIdentifier!), Context.ConnectionId);
-        return base.OnDisconnectedAsync(exception);
+        var userId = Guid.Parse(Context.UserIdentifier!);
+        var user = await _context.AppUsers.FirstOrDefaultAsync(x => x.Id == userId);
+        if (user == null)
+        {
+            throw new NotFoundException(Context.UserIdentifier);
+        }
+
+        this._currentUserService.User = user;
+        await _mediator.Send(new DisconnectUserConnectionCommand() { ConnectionId = Context.ConnectionId });
+        await base.OnDisconnectedAsync(exception);
     }
 
     public Task RegisterService(string serviceName)
     {
         _logger.LogInformation(
             $"User ${Context.UserIdentifier} on Client {Context.ConnectionId} registered service {serviceName}");
-        _userConnectionStore.AddServiceToConnection(Context.ConnectionId, serviceName);
-        return Task.CompletedTask;
+        return _userConnectionStore.AddServiceToConnection(Context.ConnectionId, serviceName);
+    }
+
+    public async Task<Guid> InitializeConnection(List<string> services)
+    {
+        foreach (var service in services)
+        {
+            _logger.LogInformation(
+                $"User {Context.UserIdentifier} on Client {Context.ConnectionId} registered service {service}");
+            await _userConnectionStore.AddServiceToConnection(Context.ConnectionId, service);
+        }
+
+        _logger.LogInformation($"User {Context.UserIdentifier} on Client {Context.ConnectionId} connected");
+        var userId = Guid.Parse(Context.UserIdentifier!);
+        var user = await _context.AppUsers.FirstOrDefaultAsync(x => x.Id == userId);
+        if (user == null)
+        {
+            throw new NotFoundException(Context.UserIdentifier);
+        }
+
+        this._currentUserService.User = user;
+        var connection = await _mediator.Send(new CreateUserConnectionCommand()
+        {
+            UserId = Guid.Parse(Context.UserIdentifier!), ConnectionId = Context.ConnectionId
+        });
+        return connection.Id;
     }
 
     public async Task ReceiveVideoStream(ChannelReader<byte[]> stream)
@@ -67,23 +100,39 @@ public class SignalRHub : Hub
         }
     }
 
-    public async Task PublishStream(IAsyncEnumerable<object> stream, Guid id)
+    public async Task PublishStream(IAsyncEnumerable<object> stream, string topic)
     {
         //create channelreader from stream
         var channel = Channel.CreateUnbounded<object>();
-        await _streamDistributorService.RegisterStream(Guid.Parse(Context.UserIdentifier!), channel.Reader, id);
-        await foreach (var item in stream)
+        var streamId=await _streamDistributorService.RegisterStream(Guid.Parse(Context.UserIdentifier!), channel.Reader, topic);
+        try
         {
-            await channel.Writer.WriteAsync(item);
+            await foreach (var item in stream)
+            {
+                await channel.Writer.WriteAsync(item);
+            }
         }
+        catch (Exception e)
+        {
+            if (e.GetType() != typeof(OperationCanceledException))
+            {
+                throw;
+            }
+        }
+        finally
+        {
+            await _streamDistributorService.RemoveStream(streamId);
+        }
+        
     }
 
-    public ChannelReader<object> SubscribeToStream(
-        Guid id,
+    public ChannelReader<object> SubscribeToTopic(
+        string topic,
         CancellationToken cancellationToken)
     {
         var channel = Channel.CreateUnbounded<object>();
-        _streamDistributorService.Subscribe(id, Guid.Parse(Context.UserIdentifier!), channel.Writer, cancellationToken);
+        _streamDistributorService.Subscribe(topic, Guid.Parse(Context.UserIdentifier!), channel.Writer,
+            cancellationToken);
         return channel.Reader;
     }
 

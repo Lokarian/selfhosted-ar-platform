@@ -18,13 +18,7 @@ export class VideoSessionPreviewComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  public joinSession() {
-    this.videoFacade.joinVideoSession(this.session.baseSessionId);
-  }
-
   joinCall() {
-    this.videoFacade.joinVideoSession(this.session.baseSessionId).subscribe(_=>{
-      this.router.navigate(['/video', this.session.baseSessionId]);
-    })
+    this.router.navigate(['/video', this.session.baseSessionId]);
   }
 }

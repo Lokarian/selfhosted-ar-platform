@@ -10,7 +10,7 @@
     <app-video-stream [stream]="userStream" class="w-40"></app-video-stream>
       {{userStream.id}}
     </div>
-
+  {{myMember?.id}}
   </div>
   <div #controlsContainer class="absolute z-10 bottom-4 flex flex-row gap-8 w-full justify-center">
     <div #cameraButton class="relative" [popper]="cameraSelectionPopper" [popperTrigger]="NgxPopperjsTriggers.none">
@@ -67,7 +67,7 @@
     <h2 class="text-center font-bold text-text pb-2">Camera</h2>
     <ul class="max-w-lg text-text bg-background-secondary border border-background-secondary rounded-lg">
       <li *ngFor="let device of availableCameras$|async;let i=index"
-          (click)="setCamera(device);cameraSelectionPopper.hide()"
+          (click)="selectCamera(device);cameraSelectionPopper.hide()"
           class="w-full group flex flex-row items-center gap-2 p-2 cursor-pointer last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-secondary hover:bg-background-highlight">
         <div
           class=" flex-shrink-0 aspect-square h-4 rounded-full bg-background-highlight group-hover:bg-background-primary"
@@ -83,7 +83,7 @@
     <h2 class="text-center font-bold text-text pb-2">Microphone</h2>
     <ul class="max-w-lg text-text bg-background-secondary border border-background-secondary rounded-lg">
       <li *ngFor="let device of availableMicrophones$|async;let i=index"
-          (click)="setMicrophone(device);microphoneSelectionPopper.hide()"
+          (click)="selectMicrophone(device);microphoneSelectionPopper.hide()"
           class="w-full group flex flex-row items-center gap-2 p-2 cursor-pointer last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-secondary hover:bg-background-highlight">
         <div
           class=" flex-shrink-0 aspect-square h-4 rounded-full bg-background-highlight group-hover:bg-background-primary"

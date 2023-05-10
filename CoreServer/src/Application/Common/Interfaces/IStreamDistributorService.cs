@@ -4,9 +4,11 @@ namespace CoreServer.Application.Common.Interfaces;
 
 public interface IStreamDistributorService<T>
 {
-    Task<Guid> RegisterStream(Guid clientId, ChannelReader<T> stream, Guid? streamId = null);
+    Task<Guid> RegisterStream(Guid clientId, ChannelReader<T> stream, string topic);
     Task RemoveStream(Guid streamId);
-    Task<Guid> Subscribe(Guid streamId, Guid clientId, ChannelWriter<T> observer, CancellationToken cancellationToken);
+    Task StopStream(Guid streamId);
+    Task StopTopic(string topic);
+    Task<Guid> Subscribe(string topic, Guid clientId, ChannelWriter<T> observer, CancellationToken cancellationToken);
     void Unsubscribe(Guid subscriptionId);
-    void Unsubscribe(Guid streamId, Guid clientId);
+    void Unsubscribe(string topic, Guid clientId);
 }

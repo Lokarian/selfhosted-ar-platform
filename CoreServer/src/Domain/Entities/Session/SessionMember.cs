@@ -2,7 +2,7 @@
 
 public class SessionMember : BaseEntity
 {
-    public SessionMember(AppUser user, UserSession session)
+    public SessionMember(AppUser user, BaseSession session)
     {
         User = user;
         Session = session;
@@ -12,7 +12,7 @@ public class SessionMember : BaseEntity
     {
     }
 
-    public UserSession Session { get; set; } = null!;
+    public BaseSession Session { get; set; } = null!;
     public Guid SessionId { get; set; }
     public AppUser User { get; set; } = null!;
     public Guid UserId { get; set; }

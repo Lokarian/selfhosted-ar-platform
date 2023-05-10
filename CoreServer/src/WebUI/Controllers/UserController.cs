@@ -52,9 +52,8 @@ public class UserController : ApiControllerBase
     [HttpPut]
     public async Task<ActionResult<AppUserDto>> Update(UpdateAppUserCommand command)
     {
-        await Mediator.Send(command);
-        AppUser? appUser = await Mediator.Send(new GetAppUserByIdQuery { Id = command.Id });
-        return _mapper.Map<AppUserDto>(appUser);
+        var user=await Mediator.Send(command);
+        return Ok(_mapper.Map<AppUserDto>(user));
     }
 
     [Authorize]

@@ -7,7 +7,6 @@ import {filter, map} from 'rxjs/operators';
 })
 export class AuthorizeService {
   private tokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
-
   constructor() {
     this.tokenSubject.next(this._getAccessToken());
   }

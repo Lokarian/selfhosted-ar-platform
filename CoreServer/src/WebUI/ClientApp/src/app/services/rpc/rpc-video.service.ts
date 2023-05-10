@@ -19,8 +19,8 @@ export class RpcVideoService extends RpcService implements IRpcVideoService {
   constructor(private signalRService: SignalRService, private videoFacade: VideoFacade) {
     super(signalRService, "RpcVideoService", {
       UpdateVideoSession: (videoSession: VideoSessionDto) => this.UpdateVideoSession(videoSession),
-      UpdateVideoSessionMember: (videoSessionMember: VideoMemberDto) => this.UpdateVideoMember(videoSessionMember),
-      UpdateVideoStream: (videoStream: VideoStreamDto) => this.UpdateVideoStream(videoStream)
+      UpdateVideoMember: (videoSessionMember: VideoMemberDto) => this.UpdateVideoMember(videoSessionMember),
+      UpdateVideoStream: (videoStream: VideoStreamDto) => this.UpdateVideoStream(videoStream),
     });
   }
 
@@ -31,6 +31,7 @@ export class RpcVideoService extends RpcService implements IRpcVideoService {
     }
     const uint8Stream = observable.pipe(mergeMap(value => from(blobToUint8Array(value))));
     return this.signalRService.stream("UploadVideoStream", uint8Stream, id, accessKey);
+    //return this.signalRService.dataStream(id,observable);
   }
 
   public getVideoStream(id: string): Observable<Uint8Array> {
@@ -51,5 +52,6 @@ export class RpcVideoService extends RpcService implements IRpcVideoService {
     console.log("UpdateVideoStream", videoStream);
     this.videoFacade.updateVideoStream(videoStream);
   }
+
 
 }

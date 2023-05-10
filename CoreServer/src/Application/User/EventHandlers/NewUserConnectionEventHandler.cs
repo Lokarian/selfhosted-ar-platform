@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.RPC;
 using CoreServer.Application.RPC.common;
@@ -6,6 +7,7 @@ using CoreServer.Application.User.Queries;
 using CoreServer.Domain.Entities;
 using CoreServer.Domain.Events.User;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreServer.Application.User.EventHandlers;
 
@@ -28,13 +30,18 @@ public class NewUserConnectionEventHandler : INotificationHandler<NewUserConnect
 
     public async Task Handle(NewUserConnectionEvent notification, CancellationToken cancellationToken)
     {
-        var connections = await _userConnectionStore.GetConnections(notification.UserId);
-        if (connections.Count() == 1)
+        // set online status and add connectionId to IUserConnectionStore
+        var user = await _context.AppUsers.AsTracking()
+            .FirstOrDefaultAsync(u => u.Id == notification.UserConnection.UserId, cancellationToken);
+        if (user is null)
         {
-            var user = await _context.AppUsers.FindAsync(notification.UserId);
-            user.OnlineStatus = OnlineStatus.Online;
-            await _context.SaveChangesAsync(cancellationToken);
-            await (await _userProxy.All()).UpdateUser(_mapper.Map<AppUserDto>(user));
+            throw new NotFoundException(nameof(AppUser));
         }
+
+        user.OnlineStatus = OnlineStatus.Online;
+        await _userConnectionStore.AddConnection(notification.UserConnection.UserId,
+            notification.UserConnection.ConnectionId);
+        await _context.SaveChangesAsync(cancellationToken);
+        await (await _userProxy.All()).UpdateUser(_mapper.Map<AppUserDto>(user));
     }
 }

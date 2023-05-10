@@ -18,7 +18,7 @@ public class SessionContextValidator<T> : UserContextValidator<T>
             return false;
         }
 
-        return await _context.UserSessions.AnyAsync(x =>
+        return await _context.BaseSessions.AnyAsync(x =>
             x.Id == sessionId && x.Members.Any(y => y.UserId == userId && y.DeletedAt == null), cancellationToken: arg3);
     }
 }

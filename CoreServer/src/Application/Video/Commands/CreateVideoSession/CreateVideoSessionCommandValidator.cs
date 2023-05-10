@@ -8,7 +8,7 @@ public class CreateVideoSessionCommandValidator : SessionContextValidator<Create
 {
     public CreateVideoSessionCommandValidator(IApplicationDbContext context, ICurrentUserService currentUserService) : base(context, currentUserService)
     {
-        RuleFor(x => x.SessionId).NotEmpty().WithMessage("UserSession Id must not be empty")
+        RuleFor(x => x.SessionId).NotEmpty().WithMessage("BaseSession Id must not be empty")
             .MustAsync(MustBeMemberOfSession).WithMessage("User is not a member of this session").MustAsync(NoExistingVideoSession).WithMessage("Video session already exists");
     }
     

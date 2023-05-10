@@ -8,7 +8,7 @@ import {AuthorizeService} from "../auth/authorize.service";
 })
 export class CurrentUserService {
   private userSubject: BehaviorSubject<AppUserDto> = new BehaviorSubject<AppUserDto>(null);
-
+  private userConnectionIdSubject: BehaviorSubject<string> = new BehaviorSubject<string>(null);
   constructor(private userClient: UserClient, private authService: AuthorizeService) {
     this.authService.getAccessToken().subscribe(token => {
       if (token) {
@@ -27,6 +27,15 @@ export class CurrentUserService {
     return this.userSubject.value;
   }
 
+  public get userConnectionId$() {
+    return this.userConnectionIdSubject.asObservable();
+  }
+
+  public get userConnectionId(): string {
+    return this.userConnectionIdSubject.value;
+  }
+
+
   public async loadUser() {
     try {
       const user = await firstValueFrom(await this.userClient.current());
@@ -43,6 +52,10 @@ export class CurrentUserService {
 
   public setUser(user: AppUserDto) {
     this.userSubject.next(user);
+  }
+
+  public setConnectionId(connectionId: string) {
+    this.userConnectionIdSubject.next(connectionId);
   }
 
 }

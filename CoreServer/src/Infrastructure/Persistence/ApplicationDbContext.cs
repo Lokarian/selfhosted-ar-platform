@@ -36,10 +36,11 @@ public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplica
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<UserConnection> UserConnections => Set<UserConnection>();
 
     public DbSet<UserFile> UserFiles => Set<UserFile>();
 
-    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<BaseSession> BaseSessions => Set<BaseSession>();
     public DbSet<SessionMember> SessionMembers => Set<SessionMember>();
 
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();

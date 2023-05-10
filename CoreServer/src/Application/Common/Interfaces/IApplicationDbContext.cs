@@ -13,9 +13,10 @@ public interface IApplicationDbContext
     DbSet<TodoItem> TodoItems { get; }
 
     DbSet<AppUser> AppUsers { get; }
+    DbSet<UserConnection> UserConnections { get; }
     DbSet<UserFile> UserFiles { get; }
 
-    DbSet<UserSession> UserSessions { get; }
+    DbSet<BaseSession> BaseSessions { get; }
     DbSet<SessionMember> SessionMembers { get; }
     
     DbSet<ChatSession> ChatSessions { get; }

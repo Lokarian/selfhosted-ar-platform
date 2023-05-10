@@ -13,6 +13,7 @@ public class VideoMemberConfiguration : IEntityTypeConfiguration<VideoMember>
         builder.HasKey(x=>x.Id);
         builder.HasOne(x=>x.BaseMember).WithMany().HasForeignKey(x=>x.BaseMemberId);
         builder.Navigation(x=>x.BaseMember).AutoInclude();
+        builder.HasOne(x=>x.UserConnection).WithMany().HasForeignKey(x=>x.UserConnectionId);
         
     }
 }

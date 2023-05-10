@@ -1,11 +1,9 @@
-﻿using AutoMapper;
-using CoreServer.Application.Common.Exceptions;
+﻿using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
-using CoreServer.Application.Video.Queries.GetMyVideoSessions;
+using CoreServer.Domain.Entities;
 using CoreServer.Domain.Entities.Chat;
 using CoreServer.Domain.Entities.Session;
 using CoreServer.Domain.Entities.Video;
-using CoreServer.Domain.Events.Chat;
 using CoreServer.Domain.Events.Video;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -47,12 +45,18 @@ public class JoinVideoSessionCommandHandler : IRequestHandler<JoinVideoSessionCo
             throw new NotFoundException(nameof(SessionMember), _currentUserService.User!.Id);
         }
 
+        if (_currentUserService.Connection == null)
+        {
+            throw new NotFoundException(nameof(UserConnection), _currentUserService.User!.Id);
+        }
         var member = new VideoMember()
         {
             BaseMember = baseMember,
             Session = videoSession,
-            AccessKey = RandomString.Generate(10)
+            AccessKey = RandomString.Generate(10),
+            UserConnectionId = _currentUserService.Connection.Id,
         };
+        videoSession.Members.Add(member);
         member.AddDomainEvent(new VideoMemberUpdatedEvent(member));
         _context.VideoMembers.Add(member);
         await _context.SaveChangesAsync(cancellationToken);

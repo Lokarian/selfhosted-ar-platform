@@ -1,11 +1,10 @@
-import {inject, Injectable} from '@angular/core';
-import {BehaviorSubject, ReplaySubject, share, switchMap, tap} from "rxjs";
-import {ChatSessionDto, CreateSessionCommand, SessionClient, SessionDto, SessionMemberDto} from "../web-api-client";
+import {Injectable} from '@angular/core';
+import {BehaviorSubject, share, switchMap, tap} from "rxjs";
+import {CreateSessionCommand, SessionClient, SessionDto, SessionMemberDto} from "../web-api-client";
 import {CurrentUserService} from "./user/current-user.service";
 import {filter, first, map} from "rxjs/operators";
-import {ChatFacade} from "./chat-facade.service";
-import {VideoFacade} from "./video-facade.service";
 import {UserFacade} from "./user/user-facade.service";
+import {SignalRConnectionState, SignalRService} from "./signalr.service";
 
 @Injectable({
   providedIn: 'root'
@@ -33,11 +32,15 @@ export class SessionFacade {
     return observable.pipe(first(), switchMap(s => s.asObservable()));
   }
 
-  public session(sessionId: string):SessionDto | undefined{
+  public session(sessionId: string): SessionDto | undefined {
     return this.sessionSubjects[sessionId]?.value;
   }
 
-  constructor(private sessionClient: SessionClient, private userFacade: UserFacade, private currentUserService: CurrentUserService) {
+  constructor(private sessionClient: SessionClient, private userFacade: UserFacade, private currentUserService: CurrentUserService, private signalrService: SignalRService) {
+    this.signalrService.connectionState$.pipe(filter(state => state === SignalRConnectionState.Connected)).subscribe(() => this.init());
+  }
+
+  init() {
     this.sessionClient.getMySessions().subscribe(sessions => {
       sessions.forEach(session => this.addOrReplaceSession(session));
     });
@@ -106,14 +109,6 @@ export class SessionFacade {
       get: (target, prop) => {
         if (Object.keys(this.capabilityFacadeResolvers).includes(prop as string)) {
           return this.capabilityFacadeResolvers[prop as string].session(target.id);
-        }
-        if (prop === 'name') {
-          //if name is explicitly set, return that, use Reflect to avoid infinite loop
-          if (Reflect.has(target, 'name')) {
-            const name = Reflect.get(target, 'name');
-            return name ? name : this.subjectiveSessionName(target.id)
-          }
-          return this.subjectiveSessionName(target.id);
         }
         return Reflect.get(target, prop);
       }

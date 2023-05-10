@@ -9,13 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreServer.Application.Session.Commands.CreateSession;
 
-public class CreateSessionCommand : IRequest<UserSession>
+public class CreateSessionCommand : IRequest<BaseSession>
 {
     public List<Guid> UserIds { get; set; } = null!;
     public string? Name { get; set; }
 }
 
-public class CreateSessionCommandHandler : IRequestHandler<CreateSessionCommand, UserSession>
+public class CreateSessionCommandHandler : IRequestHandler<CreateSessionCommand, BaseSession>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -26,7 +26,7 @@ public class CreateSessionCommandHandler : IRequestHandler<CreateSessionCommand,
         _currentUserService = currentUserService;
     }
 
-    public async Task<UserSession> Handle(CreateSessionCommand request, CancellationToken cancellationToken)
+    public async Task<BaseSession> Handle(CreateSessionCommand request, CancellationToken cancellationToken)
     {
         List<AppUser> users = await _context.AppUsers.AsTracking().Where(u => request.UserIds.Contains(u.Id))
             .ToListAsync(cancellationToken);
@@ -36,10 +36,10 @@ public class CreateSessionCommandHandler : IRequestHandler<CreateSessionCommand,
             users.Add(_currentUserService.User!);
         }
 
-        var session = new UserSession() { Name = request.Name };
+        var session = new BaseSession() { Name = request.Name };
         List<SessionMember> members = users.Select(u => new SessionMember(u, session)).ToList();
 
-        _context.UserSessions.Add(session);
+        _context.BaseSessions.Add(session);
         _context.SessionMembers.AddRange(members);
         session.AddDomainEvent(new SessionCreatedEvent(session));
         await _context.SaveChangesAsync(cancellationToken);

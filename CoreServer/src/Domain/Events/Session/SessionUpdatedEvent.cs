@@ -4,12 +4,12 @@ namespace CoreServer.Domain.Events.Session;
 
 public class SessionUpdatedEvent : BaseEvent
 {
-    public SessionUpdatedEvent(UserSession session, IList<AppUser> removedUsers)
+    public SessionUpdatedEvent(BaseSession session, IList<AppUser> removedUsers)
     {
         Session = session;
         RemovedUsers = removedUsers;
     }
 
-    public UserSession Session { get; }
+    public BaseSession Session { get; }
     public IList<AppUser>? RemovedUsers { get; }
 }

@@ -26,7 +26,7 @@ public class CreateChatSessionCommandHandler : IRequestHandler<CreateChatSession
 
     public async Task<ChatSessionDto> Handle(CreateChatSessionCommand request, CancellationToken cancellationToken)
     {
-        var baseSession = await _context.UserSessions.Include(x => x.Members)
+        var baseSession = await _context.BaseSessions.Include(x => x.Members)
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
         var session = new ChatSession() { BaseSession = baseSession! };
         var members = baseSession!.Members.Select(x => new ChatMember() { Session = session, BaseMember = x });

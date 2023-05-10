@@ -6,13 +6,14 @@ import {SignalRService} from "../signalr.service";
 import {UserFacade} from "../user/user-facade.service";
 import {CurrentUserService} from "../user/current-user.service";
 import {filter, first} from "rxjs/operators";
+import {AuthorizeService} from "../auth/authorize.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class RpcUserService extends RpcService implements IRpcUserService {
 
-  constructor(private signalRService: SignalRService, private userFacade: UserFacade, private currentUserService: CurrentUserService) {
+  constructor(private signalRService: SignalRService, private userFacade: UserFacade, private currentUserService: CurrentUserService,private authorize:AuthorizeService) {
     super(signalRService, "RpcUserService", {UpdateUser: (user: AppUserDto) => this.UpdateUser(user)});
   }
 
@@ -26,4 +27,5 @@ export class RpcUserService extends RpcService implements IRpcUserService {
     });
     this.userFacade.updateUser(user);
   }
+
 }

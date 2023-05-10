@@ -2,7 +2,7 @@
 
 namespace CoreServer.Domain.Entities.Session;
 
-public class UserSession : BaseAuditableEntity
+public class BaseSession : BaseAuditableEntity
 {
     public IList<SessionMember> Members { get; init; } = new List<SessionMember>();
     public string? Name { get; set; }

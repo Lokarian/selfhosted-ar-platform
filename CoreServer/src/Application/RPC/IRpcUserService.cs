@@ -6,4 +6,5 @@ namespace CoreServer.Application.RPC;
 public interface IRpcUserService : IRpcService
 {
     Task UpdateUser(AppUserDto user);
+    Task UpdateConnectionToken(string token);
 }

@@ -5,7 +5,7 @@ namespace CoreServer.Domain.Entities.Chat;
 
 public class VideoSession:EntityWithEvents
 {
-    public UserSession BaseSession { get; set; } = null!;
+    public BaseSession BaseSession { get; set; } = null!;
     public Guid BaseSessionId { get; set; }
     public IList<VideoMember> Members { get; init; } = new List<VideoMember>();
 }

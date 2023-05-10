@@ -3,12 +3,13 @@ import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/c
 import {Observable, take} from 'rxjs';
 import { AuthorizeService } from './authorize.service';
 import { mergeMap } from 'rxjs/operators';
+import {CurrentUserService} from "../user/current-user.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthorizeInterceptor implements HttpInterceptor {
-  constructor(private authorize: AuthorizeService) { }
+  constructor(private authorize: AuthorizeService,private currentUserService:CurrentUserService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return this.authorize.getAccessToken()
@@ -21,9 +22,7 @@ export class AuthorizeInterceptor implements HttpInterceptor {
   private processRequestWithToken(token: string | null, req: HttpRequest<any>, next: HttpHandler) {
     if (!!token && this.isSameOriginUrl(req)) {
       req = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
+        setHeaders: this.currentUserService.userConnectionId ? { Authorization: `Bearer ${token}`, "UserConnectionId": this.currentUserService.userConnectionId } : { Authorization: `Bearer ${token}` }
       });
     }
 

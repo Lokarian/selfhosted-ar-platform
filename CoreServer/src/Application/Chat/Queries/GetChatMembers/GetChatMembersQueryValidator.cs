@@ -14,7 +14,7 @@ public class GetChatMembersQueryValidator : AbstractValidator<GetChatMembersQuer
     {
         _context = context;
         _currentUserService = currentUserService;
-        RuleFor(x => x.SessionId).NotEmpty().WithMessage("UserSession Id must not be empty")
+        RuleFor(x => x.SessionId).NotEmpty().WithMessage("BaseSession Id must not be empty")
             .MustAsync(UserIsChatMember).WithMessage("User is not a member of this session");
     }
 

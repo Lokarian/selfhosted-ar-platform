@@ -10,5 +10,5 @@ public interface IRpcVideoService : IRpcService
     Task UpdateVideoSession(VideoSessionDto videoSession);
     Task UpdateVideoStream(VideoStreamDto videoStream);
     Task UpdateVideoMember(VideoMemberDto videoSessionMember);
-    
+
 }

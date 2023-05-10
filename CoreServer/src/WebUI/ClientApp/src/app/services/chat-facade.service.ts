@@ -10,6 +10,7 @@ import {BehaviorSubject, firstValueFrom, Observable, share, switchMap, tap} from
 import {CurrentUserService} from "./user/current-user.service";
 import {SessionFacade} from "./session-facade.service";
 import {filter, first, map} from "rxjs/operators";
+import {SignalRConnectionState, SignalRService} from "./signalr.service";
 
 @Injectable({
   providedIn: 'root'
@@ -24,12 +25,15 @@ export class ChatFacade {
   public sessions$: Observable<ChatSessionDto[]>;
 
 
-  constructor(private chatClient: ChatClient, private sessionFacade: SessionFacade, private currentUserService: CurrentUserService) {
+  constructor(private chatClient: ChatClient, private sessionFacade: SessionFacade, private currentUserService: CurrentUserService,private signalRService: SignalRService) {
     sessionFacade.registerCapabilityFacadeResolver('chatSession', (this as any as SessionFacade));
     this.sessionObservables$ = this.sessionsSubject.asObservable().pipe(map(sessions => sessions.map(s => s.asObservable())));
 
     this.sessions$ = this.sessionsSubject.asObservable().pipe(map(sessions => sessions.map(s => s.value)));
+    this.signalRService.connectionState$.pipe(filter(state => state === SignalRConnectionState.Connected)).subscribe(() => this.init());
 
+  }
+  init(){
     this.chatClient.getMyChatSessions().subscribe(sessions => {
       sessions.forEach(session => this.addOrReplaceSession(session));
     });

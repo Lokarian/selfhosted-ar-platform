@@ -2,20 +2,36 @@ import {Inject, Injectable} from '@angular/core';
 import {API_BASE_URL} from "../web-api-client";
 import {HubConnection, HubConnectionBuilder, Subject} from "@microsoft/signalr";
 import {AuthorizeService} from "./auth/authorize.service";
-import {BehaviorSubject, firstValueFrom, Observable, share} from "rxjs";
+import {BehaviorSubject, firstValueFrom, Observable, ReplaySubject, share, tap} from "rxjs";
 import {NotificationService} from "./notification.service";
 import {filter} from "rxjs/operators";
 import {MessagePackHubProtocol} from "@microsoft/signalr-protocol-msgpack";
+import {CurrentUserService} from "./user/current-user.service";
+
+export enum SignalRConnectionState {
+  Disconnected = 0,
+  Connecting = 1,
+  Connected = 2,
+}
+
+export interface TopicProxy<T> {
+  stream: Observable<T>;
+  subject: ReplaySubject<T>;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class SignalRService {
   private _hubConnection: HubConnection;
-  private ready = new BehaviorSubject(false);
-  public ready$ = this.ready.asObservable();
+  private connectionStateSubject = new BehaviorSubject(SignalRConnectionState.Disconnected);
+  public connectionState$ = this.connectionStateSubject.asObservable();
+  private services: string[] = [];
 
-  constructor(private authorizeService: AuthorizeService, private notificationService: NotificationService, @Inject(API_BASE_URL) private baseUrl?: string) {
+  constructor(private authorizeService: AuthorizeService,
+              private notificationService: NotificationService,
+              private currentUserService: CurrentUserService,
+              @Inject(API_BASE_URL) private baseUrl?: string) {
   }
 
   public async init() {
@@ -31,17 +47,23 @@ export class SignalRService {
     this._hubConnection.onreconnecting((error) => this.onReconnecting(error));
     this._hubConnection.onreconnected((error) => this.onReconnected(error));
     this._hubConnection.onclose((error: any) => this.onClose(error));
-    this._hubConnection.on("IRpcUserClient/UpdateUser", console.log);
-    this._hubConnection.start().then(() => {
-      this.ready.next(true);
+    this._hubConnection.start().then(async () => {
+      this.connectionStateSubject.next(SignalRConnectionState.Connecting);
+      const connectionId: string = await this._hubConnection.invoke("InitializeConnection", this.services);
+      this.currentUserService.setConnectionId(connectionId);
+      this.connectionStateSubject.next(SignalRConnectionState.Connected);
       console.log('SignalR Connected!');
     });
   }
 
-  public notifyServerOfServiceRegistration(serviceName: string) {
+  public registerService(serviceName: string) {
     console.log('Registering service ' + serviceName);
-    this._hubConnection.invoke('RegisterService', serviceName);
+    if (this.connectionStateSubject.value === SignalRConnectionState.Connected) {
+      this._hubConnection.invoke('RegisterService', serviceName);
+    }
+    this.services.push(serviceName);
   }
+
 
   public on<T>(methodName: string, callback: (data: T) => void) {
 
@@ -51,7 +73,8 @@ export class SignalRService {
       callback(data);
     });
   }
-  public stream(method:string, observable: Observable<any>,...args: any[]) {
+
+  public stream(method: string, observable: Observable<any>, ...args: any[]) {
     const subject = new Subject();
     observable.subscribe({
       next: async (v) => {
@@ -67,19 +90,36 @@ export class SignalRService {
     console.log("Publishing stream", subject, ...args);
     return this._hubConnection.send(method, subject, ...args);
   }
-  public dataStream(id:string,observable:Observable<any>) {
-    return this.stream("PublishStream",observable,id);
+
+  public dataStream(topic: string, observable: Observable<any>) {
+    return this.stream("PublishStream", observable, topic);
   }
 
-  public getStream<T extends any>( id:string) {
+  public getStream<T extends any>(topic: string) {
     return new Observable<T>(
       observer => {
-        const stream = this._hubConnection.stream("SubscribeToStream", id)
+        const stream = this._hubConnection.stream("SubscribeToTopic", topic)
         const subscription = stream.subscribe(observer);
         return () => subscription.dispose();
       }
     ).pipe(share());
   };
+
+  public topicProxy<T>(topic: string): TopicProxy<T> {
+    const publishSubject = new ReplaySubject<T>(1);
+    /*publishSubject.subscribe({
+          next: async (v) => {
+            console.log("Publishing to Topic", topic, v);
+          }
+        });*/
+
+    this.dataStream(topic, publishSubject);
+    return {
+      stream: this.getStream<T>(topic)/*.pipe(tap(data=>console.log("Receiving from Topic",topic,data)))*/,
+      subject: publishSubject,
+    }
+  }
+
 
   private onReconnecting(error: any) {
     console.log('Reconnecting', error);

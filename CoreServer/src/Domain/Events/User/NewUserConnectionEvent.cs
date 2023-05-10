@@ -2,12 +2,10 @@
 
 public class NewUserConnectionEvent : BaseEvent
 {
-    public NewUserConnectionEvent(Guid userId, string connectionId)
+    public NewUserConnectionEvent(UserConnection userConnection)
     {
-        UserId = userId;
-        ConnectionId = connectionId;
+        UserConnection = userConnection;
     }
 
-    public Guid UserId { get; }
-    public string ConnectionId { get; }
+    public UserConnection UserConnection { get; set; } = null!;
 }

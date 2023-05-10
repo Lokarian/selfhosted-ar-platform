@@ -9,7 +9,7 @@ using CoreServer.Domain.Entities.Session;
 
 namespace CoreServer.Application.Session.Queries.GetMySessions;
 
-public class SessionDto : IMapFrom<UserSession>
+public class SessionDto : IMapFrom<BaseSession>
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;

@@ -1,17 +1,19 @@
 import {Injectable} from '@angular/core';
-import {BehaviorSubject, Observable, share, switchMap, tap} from "rxjs";
+import {BehaviorSubject, firstValueFrom, Observable, ReplaySubject, share, skip, switchMap, tap} from "rxjs";
 import {NotificationService} from "./notification.service";
-import {CurrentUserService} from "./user/current-user.service";
 import {
-  ChatMemberDto, ChatSessionDto,
-  CreateChatSessionCommand, CreateVideoSessionCommand, CreateVideoStreamCommand,
+  ChatMemberDto,
+  ChatSessionDto,
+  CreateVideoSessionCommand,
+  CreateVideoStreamCommand,
   JoinVideoSessionCommand,
-  VideoClient,
+  VideoClient, VideoMemberDto,
   VideoSessionDto,
   VideoStreamDto
 } from "../web-api-client";
 import {SessionFacade} from "./session-facade.service";
 import {filter, first, map} from "rxjs/operators";
+import {SignalRConnectionState, SignalRService} from "./signalr.service";
 
 @Injectable({
   providedIn: 'root'
@@ -21,6 +23,7 @@ export class VideoFacade {
   private sessionsSubject = new BehaviorSubject<BehaviorSubject<VideoSessionDto | undefined>[]>([]);
   public sessionObservables$: Observable<Observable<VideoSessionDto | undefined>[]>;
   public sessions$: Observable<VideoSessionDto[]>;
+
   private accessKeyStore: { [key: string]: string } = {};
 
   public session$(sessionId: string): Observable<VideoSessionDto> {
@@ -39,23 +42,24 @@ export class VideoFacade {
     return this.sessionSubjects[sessionId]?.value;
   }
 
-  constructor(private notificationService: NotificationService, private sessionFacade: SessionFacade, private videoClient: VideoClient, private currentUserService: CurrentUserService) {
+  constructor(private notificationService: NotificationService, private sessionFacade: SessionFacade, private videoClient: VideoClient, private signalRService: SignalRService) {
     sessionFacade.registerCapabilityFacadeResolver('videoSession', (this as any as SessionFacade));
     this.sessionObservables$ = this.sessionsSubject.asObservable().pipe(map(sessions => sessions.map(s => s.asObservable())))
     this.sessions$ = this.sessionsSubject.asObservable().pipe(map(sessions => sessions.map(s => s.value)));
+    this.signalRService.connectionState$.pipe(filter(state => state === SignalRConnectionState.Connected)).subscribe(() => this.init());
+  }
+  init(){
     this.videoClient.getMyVideoSessions().subscribe(sessions => {
       sessions.forEach(session => this.addOrReplaceSession(session));
     });
   }
-
   public addOrReplaceSession(session: VideoSessionDto) {
     let changedToActive = false;
 
     if (this.sessionSubjects[session.baseSessionId]) {
-      let existingSession = this.sessionSubjects[session.baseSessionId].value;
-      changedToActive = session.active && !existingSession?.active;
-      existingSession = Object.assign(existingSession, session);
-      this.sessionSubjects[session.baseSessionId].next(existingSession);
+      changedToActive = session.active && !this.sessionSubjects[session.baseSessionId].value?.active;
+      session=this.wrapInProxy(session);
+      this.sessionSubjects[session.baseSessionId].next(session);
     } else {
       session = this.wrapInProxy(session);
       this.sessionSubjects[session.baseSessionId] = new BehaviorSubject<ChatSessionDto>(session);
@@ -64,7 +68,7 @@ export class VideoFacade {
     }
 
     if (changedToActive) {
-      this.notificationService.add({severity: 'info', message: `Incoming call`});
+      this.notificationService.add({severity: 'info', message: `Incoming call`,autoClose:true});
     }
   }
 
@@ -76,9 +80,9 @@ export class VideoFacade {
     return this.accessKeyStore[sessionId];
   }
 
-  updateVideoMember(chatMember: ChatMemberDto) {
+  updateVideoMember(videoMember: VideoMemberDto) {
     //add or replace the member in the session if the session exists and update the subject
-    const sessionSubject = this.sessionSubjects[chatMember.sessionId];
+    const sessionSubject = this.sessionSubjects[videoMember.sessionId];
     if (!sessionSubject) {
       //we probably got freshly added to an existing session, so we need to load the session
       this.videoClient.getMyVideoSessions().subscribe(sessions => {
@@ -88,12 +92,17 @@ export class VideoFacade {
     }
     const session = sessionSubject.value;
     if (!session) return;
-    const existingMember = session.members.find(m => m.userId === chatMember.userId);
+
+    if(videoMember.deletedAt){
+      session.members = session.members.filter(m => m.userId !== videoMember.userId);
+      sessionSubject.next(session);
+      return;
+    }
+    const existingMember = session.members.find(m => m.userId === videoMember.userId);
     if (!existingMember) {
-      session.members.push(chatMember);
+      session.members.push(videoMember);
     } else {
-      let newMember = Object.assign(existingMember, chatMember);
-      session.members = session.members.map(m => m.userId === newMember.userId ? newMember : m);
+      session.members = session.members.map(m => m.userId === videoMember.userId ? videoMember : m);
     }
     sessionSubject.next(session);
   }
@@ -138,6 +147,8 @@ export class VideoFacade {
     obs.subscribe();
     return obs;
   }
+
+
   private wrapInProxy(chatSession: ChatSessionDto) {
     return new Proxy(chatSession, {
       get: (target, prop) => {
@@ -148,5 +159,4 @@ export class VideoFacade {
       }
     })
   }
-
 }

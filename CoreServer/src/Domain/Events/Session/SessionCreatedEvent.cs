@@ -5,10 +5,10 @@ namespace CoreServer.Domain.Events.Session;
 
 public class SessionCreatedEvent : BaseEvent
 {
-    public SessionCreatedEvent(UserSession session)
+    public SessionCreatedEvent(BaseSession session)
     {
         Session = session;
     }
 
-    public UserSession Session { get; }
+    public BaseSession Session { get; }
 }

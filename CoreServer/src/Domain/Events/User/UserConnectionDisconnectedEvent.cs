@@ -2,12 +2,10 @@
 
 public class UserConnectionDisconnectedEvent : BaseEvent
 {
-    public UserConnectionDisconnectedEvent(Guid userId, string connectionId)
+    public UserConnectionDisconnectedEvent(UserConnection userConnection)
     {
-        UserId = userId;
-        ConnectionId = connectionId;
+        UserConnection = userConnection;
     }
-
-    public Guid UserId { get; }
-    public string ConnectionId { get; }
+    
+    public UserConnection UserConnection { get; set; } = null!;
 }

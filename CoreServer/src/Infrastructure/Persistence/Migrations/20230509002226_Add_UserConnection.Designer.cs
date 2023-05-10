@@ -3,6 +3,7 @@ using System;
 using CoreServer.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoreServer.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230509002226_Add_UserConnection")]
+    partial class AddUserConnection
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,7 +149,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("LastModifiedById");
 
-                    b.ToTable("BaseSessions");
+                    b.ToTable("UserSessions");
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Session.SessionMember", b =>
@@ -322,16 +325,11 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("UserConnectionId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BaseMemberId");
 
                     b.HasIndex("SessionId");
-
-                    b.HasIndex("UserConnectionId");
 
                     b.ToTable("VideoMembers");
                 });
@@ -747,17 +745,9 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CoreServer.Domain.Entities.UserConnection", "UserConnection")
-                        .WithMany()
-                        .HasForeignKey("UserConnectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("BaseMember");
 
                     b.Navigation("Session");
-
-                    b.Navigation("UserConnection");
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoStream", b =>

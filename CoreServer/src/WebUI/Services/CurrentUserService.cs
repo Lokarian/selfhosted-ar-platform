@@ -16,4 +16,5 @@ public class CurrentUserService : ICurrentUserService
     }
 
     public AppUser? User { get; set; }
+    public UserConnection? Connection { get; set; }
 }

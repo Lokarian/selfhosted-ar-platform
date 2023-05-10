@@ -2522,7 +2522,7 @@ export class VideoMemberDto implements IVideoMemberDto {
     baseMemberId?: string;
     userId?: string;
     sessionId?: string;
-    joined?: boolean;
+    deletedAt?: Date | undefined;
 
     constructor(data?: IVideoMemberDto) {
         if (data) {
@@ -2539,7 +2539,7 @@ export class VideoMemberDto implements IVideoMemberDto {
             this.baseMemberId = _data["baseMemberId"];
             this.userId = _data["userId"];
             this.sessionId = _data["sessionId"];
-            this.joined = _data["joined"];
+            this.deletedAt = _data["deletedAt"] ? new Date(_data["deletedAt"].toString()) : <any>undefined;
         }
     }
 
@@ -2556,7 +2556,7 @@ export class VideoMemberDto implements IVideoMemberDto {
         data["baseMemberId"] = this.baseMemberId;
         data["userId"] = this.userId;
         data["sessionId"] = this.sessionId;
-        data["joined"] = this.joined;
+        data["deletedAt"] = this.deletedAt ? this.deletedAt.toISOString() : <any>undefined;
         return data;
     }
 }
@@ -2566,7 +2566,7 @@ export interface IVideoMemberDto {
     baseMemberId?: string;
     userId?: string;
     sessionId?: string;
-    joined?: boolean;
+    deletedAt?: Date | undefined;
 }
 
 export class VideoStreamDto implements IVideoStreamDto {

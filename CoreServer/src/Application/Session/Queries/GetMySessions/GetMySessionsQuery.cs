@@ -27,7 +27,7 @@ public class GetMySessionsQueryHandler : IRequestHandler<GetMySessionsQuery, IEn
         CancellationToken cancellationToken)
     {
         Guid userId = _currentUserService.User!.Id;
-        return await _context.UserSessions
+        return await _context.BaseSessions
             .Where(x => x.Members.Any(m => m.UserId == userId&&m.DeletedAt==null))
             .ProjectTo<SessionDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);

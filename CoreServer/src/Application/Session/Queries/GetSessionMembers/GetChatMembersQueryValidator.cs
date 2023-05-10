@@ -11,7 +11,7 @@ public class GetSessionMembersQueryValidator : SessionContextValidator<GetSessio
     public GetSessionMembersQueryValidator(ICurrentUserService currentUserService, IApplicationDbContext context) :
         base(context,currentUserService)
     {
-        RuleFor(x => x.SessionId).NotEmpty().WithMessage("UserSession Id must not be empty")
+        RuleFor(x => x.SessionId).NotEmpty().WithMessage("BaseSession Id must not be empty")
             .MustAsync(MustBeMemberOfSession).WithMessage("User is not a member of this session");
     }
 }

@@ -8,14 +8,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreServer.Application.Session.Commands.UpdateSession;
 
-public record UpdateSessionCommand : IRequest<UserSession>
+public record UpdateSessionCommand : IRequest<BaseSession>
 {
     public Guid SessionId { get; init; }
     public List<Guid>? UserIds { get; init; }
     public string? Name { get; init; }
 }
 
-public class UpdateSessionCommandHandler : IRequestHandler<UpdateSessionCommand, UserSession>
+public class UpdateSessionCommandHandler : IRequestHandler<UpdateSessionCommand, BaseSession>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -26,9 +26,9 @@ public class UpdateSessionCommandHandler : IRequestHandler<UpdateSessionCommand,
         _currentUserService = currentUserService;
     }
 
-    public async Task<UserSession> Handle(UpdateSessionCommand request, CancellationToken cancellationToken)
+    public async Task<BaseSession> Handle(UpdateSessionCommand request, CancellationToken cancellationToken)
     {
-        var session = await _context.UserSessions
+        var session = await _context.BaseSessions
             .AsTracking()
             .Include(x => x.Members)
             .ThenInclude(x => x.User)

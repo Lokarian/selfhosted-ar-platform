@@ -12,7 +12,7 @@ public class VideoMemberDto : IMapFrom<VideoMember>
     public Guid BaseMemberId { get; set; }
     public Guid UserId { get; set; }
     public Guid SessionId { get; set; }
-    public bool Joined { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
     public void Mapping(Profile profile)
     {

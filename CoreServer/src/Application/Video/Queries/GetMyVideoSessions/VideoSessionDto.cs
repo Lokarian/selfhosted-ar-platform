@@ -22,7 +22,7 @@ public class VideoSessionDto : IMapFrom<VideoSession>
     {
         profile.CreateMap<VideoSession, VideoSessionDto>()
             .ForMember(d => d.Active, opt => opt.MapFrom(s => s.Members.Any(x => x.DeletedAt == null)))
-            .ForMember(d => d.Members, opt => opt.MapFrom(s => s.Members))
+            .ForMember(d => d.Members, opt => opt.MapFrom(s => s.Members.Where(x=>x.DeletedAt==null)))
             .ForMember(x => x.Streams, opt => opt.MapFrom(s => s.Members.SelectMany(x => x.Streams)))
             .ForMember(x => x.BaseSession, opt => opt.Ignore());
     }
