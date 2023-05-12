@@ -1,7 +1,7 @@
 import {BrowserModule} from '@angular/platform-browser';
-import { NgModule} from '@angular/core';
+import {NgModule} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {HttpClientModule, HTTP_INTERCEPTORS} from '@angular/common/http';
+import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
 
 import {AppRoutingModule} from './app-routing.module';
 import {AppComponent} from './app.component';
@@ -24,14 +24,16 @@ import {UserPipe} from './services/user/user.pipe';
 import {ChatPageComponent} from "./pages/chat/chat-page.component";
 import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
-import { UserSelectComponent } from './components/user-select/user-select.component';
-import { VideoComponent } from './components/video/video.component';
-import { SessionPageComponent } from './pages/session/session-page.component';
-import { VideoSessionPreviewComponent } from './components/video-session-preview/video-session-preview.component';
-import { VideoStreamComponent } from './components/video-stream/video-stream.component';
+import {UserSelectComponent} from './components/user-select/user-select.component';
+import {SessionPageComponent} from './pages/session/session-page.component';
+import {VideoSessionPreviewComponent} from './components/video-session-preview/video-session-preview.component';
+import {VideoStreamComponent} from './components/video-stream/video-stream.component';
+import {VideoSessionComponent} from './components/video-session/video-session.component';
+import {ResizeDirective} from './services/common/resize.directive';
+import {AngularSplitModule} from "angular-split";
 
 function baseUrlFactory() {
-  if(environment.production){
+  if (environment.production) {
     const href = document.getElementsByTagName('base')[0].href;
     // get the hostname with this regex: ^((?>\w+:\/\/)?[^\/]+)
     return href.match(/^((\w+:\/\/)?[^\/]+)/)[0];
@@ -61,20 +63,22 @@ function baseUrlFactory() {
     SecurePipe,
     UserPipe,
     UserSelectComponent,
-    VideoComponent,
     SessionPageComponent,
     VideoSessionPreviewComponent,
     VideoStreamComponent,
+    VideoSessionComponent,
+    ResizeDirective,
   ],
-    imports: [
-        BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),
-        HttpClientModule,
-        FormsModule,
-        AppRoutingModule,
-        NgxPopperjsModule.forRoot({applyArrowClass: 'invisible'}),
-        BrowserAnimationsModule,
-        ReactiveFormsModule
-    ],
+  imports: [
+    BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),
+    HttpClientModule,
+    FormsModule,
+    AppRoutingModule,
+    NgxPopperjsModule.forRoot({applyArrowClass: 'invisible'}),
+    BrowserAnimationsModule,
+    AngularSplitModule,
+    ReactiveFormsModule
+  ],
   providers: [
     {provide: API_BASE_URL, useFactory: baseUrlFactory, deps: []},
     {provide: HTTP_INTERCEPTORS, useClass: AuthorizeInterceptor, multi: true},

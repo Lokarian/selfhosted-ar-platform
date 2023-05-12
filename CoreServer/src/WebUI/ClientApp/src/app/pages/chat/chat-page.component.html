@@ -61,9 +61,21 @@
         </popper-content>
       </div>
       <div class="my-auto">
-        <app-video-session-preview *ngIf="selectedSession.baseSession?.videoSession" [session]="selectedSession.baseSession.videoSession"></app-video-session-preview>
+        <app-video-session-preview *ngIf="selectedSession.baseSession?.videoSession"
+                                   [session]="selectedSession.baseSession.videoSession"
+        (join)="joinVideoSession(selectedSession.baseSession.videoSession)"></app-video-session-preview>
       </div>
     </div>
-    <app-chat class="flex-1 w-full min-h-0" [session]="selectedSession"></app-chat>
+    <as-split direction="vertical" class="flex-1 w-full min-h-0" [useTransition]="true">
+      <as-split-area *ngIf="videoSession" [size]="65" [order]="0">
+        <app-video-session [session]="videoSession"></app-video-session>
+      </as-split-area>
+      <as-split-area [size]="35" [order]="1">
+        <app-chat #rightElement [session]="selectedSession"></app-chat>
+      </as-split-area>
+
+    </as-split>
+
+
   </div>
 </div>

@@ -4,12 +4,13 @@ import {
   AppUserDto,
   ChatClient,
   ChatSessionDto,
-  CreateChatSessionCommand, CreateSessionCommand, SessionClient, SessionDto, UpdateSessionCommand,
+  CreateChatSessionCommand, CreateSessionCommand, SessionClient, SessionDto, UpdateSessionCommand, VideoSessionDto,
 } from "../../web-api-client";
 import {CurrentUserService} from "../../services/user/current-user.service";
-import {Observable, tap} from "rxjs";
-import {map} from "rxjs/operators";
+import {BehaviorSubject, Observable, switchMap, tap} from "rxjs";
+import {filter, map} from "rxjs/operators";
 import {SessionFacade} from "../../services/session-facade.service";
+import {VideoFacade} from "../../services/video-facade.service";
 
 @Component({
   selector: 'app-chat-page',
@@ -18,7 +19,15 @@ import {SessionFacade} from "../../services/session-facade.service";
 })
 export class ChatPageComponent implements OnInit {
   public sessions$: Observable<ChatSessionDto[]>;
-  public selectedSession: ChatSessionDto | null = null;
+  public selectedSessionSubject= new BehaviorSubject<ChatSessionDto>(null);
+  public selectedSession$=this.selectedSessionSubject.asObservable().pipe(filter(s=>!!s));
+  public videoSession:VideoSessionDto|undefined;
+  public get selectedSession(){
+    return this.selectedSessionSubject.value;
+  }
+  public set selectedSession(value){
+    this.selectedSessionSubject.next(value);
+  }
   public selectedSessionUserIds: string[] = [];
   public isEdit = false;
 
@@ -26,6 +35,7 @@ export class ChatPageComponent implements OnInit {
               private currentUserService: CurrentUserService,
               private chatClient: ChatClient,
               private sessionFacade: SessionFacade,
+              private videoFacade: VideoFacade,
               private sessionClient: SessionClient) {
 
     this.sessions$ = this.chatFacade.sessions$.pipe(tap(sessions => {
@@ -88,4 +98,7 @@ export class ChatPageComponent implements OnInit {
   }
 
 
+  joinVideoSession(videoSession: VideoSessionDto) {
+    this.videoSession = videoSession;
+  }
 }

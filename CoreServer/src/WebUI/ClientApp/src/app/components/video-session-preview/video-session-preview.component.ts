@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {JoinVideoSessionCommand, VideoClient, VideoSessionDto} from "../../web-api-client";
 import {VideoFacade} from "../../services/video-facade.service";
 import {Router} from "@angular/router";
@@ -11,7 +11,7 @@ import {Router} from "@angular/router";
 export class VideoSessionPreviewComponent implements OnInit {
 
   @Input() session: VideoSessionDto;
-
+  @Output() join:EventEmitter<VideoSessionDto>=new EventEmitter();
   constructor(private videoFacade: VideoFacade, private router: Router) {
   }
 
@@ -19,6 +19,6 @@ export class VideoSessionPreviewComponent implements OnInit {
   }
 
   joinCall() {
-    this.router.navigate(['/video', this.session.baseSessionId]);
+    this.join.emit();
   }
 }

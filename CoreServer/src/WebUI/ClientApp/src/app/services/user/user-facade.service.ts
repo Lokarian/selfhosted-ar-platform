@@ -24,6 +24,10 @@ export class UserFacade {
   }
 
   public getUser$(id: string): Observable<AppUserDto> {
+    if(!id){
+      return new Observable<AppUserDto>(subscriber => {
+      });
+    }
     this.initUser(id);
     return this.userCache[id].asObservable();
   }

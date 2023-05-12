@@ -1,1 +1,13 @@
-<video #video muted controls autoplay playsinline class="w-full h-full object-contain"></video>
+<div class="w-full h-full relative rounded-md overflow-hidden bg-gradient-radial from-background-primary via-background-secondary to-background-tertiary">
+  <video *ngIf="hasVideo" class="w-full h-full object-contain" [srcObject]="stream"
+         autoplay [muted]="muted"></video>
+  <div class="absolute h-full aspect-video z-0 flex justify-center items-center">
+    <div>
+      <app-avatar [user]="user" class="h-12 w-12 mx-auto"></app-avatar>
+      <p class="text-center text-sm text-text">
+        {{user?.userName}}
+      </p>
+    </div>
+  </div>
+
+</div>

@@ -5,6 +5,13 @@
 export const environment = {
   production: false,
   backendPort: 5001,
+  iceConfiguration: {
+    iceServers: [
+      {
+        urls: 'stun:stun.l.google.com:19302'
+      }
+    ]
+  }
 };
 
 /*
