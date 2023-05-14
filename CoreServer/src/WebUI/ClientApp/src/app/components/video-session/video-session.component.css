@@ -1,0 +1,11 @@
+.normal-list-view>app-video-stream{
+  @apply h-64;
+}
+.focused-list-view>app-video-stream{
+  @apply w-64;
+}
+.focused-view>app-video-stream{
+  @apply max-h-full;
+}
+
+

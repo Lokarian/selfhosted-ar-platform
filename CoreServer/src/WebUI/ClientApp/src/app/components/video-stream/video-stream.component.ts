@@ -1,4 +1,14 @@
-import {AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  ViewChild,
+  ViewEncapsulation
+} from '@angular/core';
 import {AppUserDto, VideoStreamDto} from "../../web-api-client";
 
 @Component({
@@ -8,8 +18,9 @@ import {AppUserDto, VideoStreamDto} from "../../web-api-client";
 })
 export class VideoStreamComponent implements OnInit,AfterViewInit {
   @Input() stream: MediaStream;
-  @Input() user?: AppUserDto;
+  @Input() userId?: string;
   @Input() muted: boolean = false;
+  @Output() clicked: EventEmitter<MediaStream> = new EventEmitter<MediaStream>();
   @ViewChild('video') video:ElementRef;
 
 

@@ -1,9 +1,20 @@
-<div class="w-full h-full relative">
-  <div #videoContainer class="absolute w-full h-full bg-background-primary">
+<div class="w-full h-full relative group">
+  <div #videoContainer class="absolute w-full h-full bg-background-primary p-2">
 
+    <div class="flex-row h-full w-full gap-2" [ngClass]="focusedStream?'flex':'hidden'">
+      <div class="focused-view flex-1 min-w-0 flex flex-col items-center justify-center">
+        <ng-container #focusedView></ng-container>
+      </div>
+      <div class="focused-list-view flex flex-col flex-nowrap overflow-y-auto shrink-0 justify-center gap-2">
+        <ng-container #focusedListView></ng-container>
+      </div>
+    </div>
+    <div class="flex-row flex-wrap h-full normal-list-view gap-4 overflow-y-auto" [ngClass]="focusedStream?'hidden':'flex'">
+      <ng-container #normalListView></ng-container>
+    </div>
   </div>
   <div #controlsContainer
-       class="absolute z-10 bottom-4 flex flex-row gap-8 w-fit left-0 right-0 mx-auto justify-center">
+       class="absolute z-10 bottom-4 flex flex-row gap-8 w-fit left-0 right-0 mx-auto justify-center opacity-0 group-hover:opacity-100 transition-all">
     <div #cameraButton class="relative" [popper]="cameraSelectionPopper" [popperTrigger]="NgxPopperjsTriggers.none">
       <div (click)="toggleCamera()"
            class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white mask">
