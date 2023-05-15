@@ -107,7 +107,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   }
 
   async onNewSession(session: VideoSessionDto) {
-    this.createUserMediaStream();
+    await this.createUserMediaStream();
     this.joinSignalingSession();
     console.log("announcing myself");
     this.signalingChannel.subject.next({joinId: this.myMember.id});
@@ -129,8 +129,14 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
       ignoreOffer: false,
     };
     try {
-      this.userMediaStream.getTracks().forEach(track => pc.addTrack(track, this.userMediaStream));
-      this.screenShareStream?.getTracks().forEach(track => pc.addTrack(track, this.screenShareStream));
+      this.userMediaStream.getTracks().forEach(track => {
+        const sender = pc.addTrack(track, this.userMediaStream);
+        this.webRtcConnectionDetails[memberId].trackMap.set(track, sender);
+      });
+      this.screenShareStream?.getTracks().forEach(track => {
+        const sender = pc.addTrack(track, this.screenShareStream);
+        this.webRtcConnectionDetails[memberId].trackMap.set(track, sender);
+      });
     } catch (err) {
       console.error(err);
     }
@@ -278,7 +284,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     const componentRef = this.mediaStreamComponentMap.get(stream.id);
     if (componentRef) {
       if (stream.id === this.focusedStream) {
-        this.focusedStream = null;
+        this.focusStream(stream);
       }
       //destroy the component and remove it from the map
       componentRef.destroy();
@@ -300,19 +306,18 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   }
 
   focusStream(stream: MediaStream) {
-    if(stream.id===this.focusedStream){
-      Array.from(this.mediaStreamComponentMap.values()).forEach(c=>{
+    if (stream.id === this.focusedStream) {
+      Array.from(this.mediaStreamComponentMap.values()).forEach(c => {
         //if the element is not inside normalListView, move it there
-        if(!this.normalListView.element.nativeElement.contains(c.location.nativeElement)){
+        if (!this.normalListView.element.nativeElement.contains(c.location.nativeElement)) {
           this.normalListView.insert(c.hostView);
         }
       });
-      this.focusedStream=null;
-    }
-    else{
+      this.focusedStream = null;
+    } else {
       //move all elements that are not inside focusedListView to focusedListView
-      Array.from(this.mediaStreamComponentMap.values()).forEach(c=>{
-        if(!this.focusedListView.element.nativeElement.contains(c.location.nativeElement)){
+      Array.from(this.mediaStreamComponentMap.values()).forEach(c => {
+        if (!this.focusedListView.element.nativeElement.contains(c.location.nativeElement)) {
           this.focusedListView.insert(c.hostView);
         }
       });
@@ -323,88 +328,10 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
         return;
       }
       this.focusedView.insert(componentRef.hostView);
-      this.focusedStream=stream.id;
+      this.focusedStream = stream.id;
     }
     this.cdr.detectChanges();
   }
-/*
-  focusStream(stream?: MediaStream) {
-    if (stream) {
-      const componentRef = this.mediaStreamComponentMap.get(stream.id);
-      if (!componentRef) {
-        console.warn("stream not found in map", stream);
-        return;
-      }
-      if (stream.id === this.focusedStream) {
-        //focused stream clicked, unfocus
-        this.focusStream();
-        return;
-      }
-      if (this.focusedStream) {
-        //move the current focused stream to focusedListView and move this stream to focusedView
-        const focusedRef = this.focusedView.detach();
-        if (!focusedRef) {
-          console.warn("focused stream not found in focusedView", this.focusedStream);
-          return;
-        }
-        //move to focusedListView
-
-        this.focusedListView.insert(focusedRef);
-
-        const newFocusedRef = this.mediaStreamComponentMap.get(stream.id);
-        if (!newFocusedRef) {
-          console.warn("new focused stream not found in map", stream.id);
-          return;
-        }
-        //move to focusedView
-        const index=this.focusedListView.indexOf(newFocusedRef.hostView);
-        const detachedRef=this.focusedListView.detach(index);
-        this.focusedView.insert(detachedRef);
-        this.focusedStream = stream.id;
-      } else {
-        const newFocusedRef = this.mediaStreamComponentMap.get(stream.id);
-        if (!newFocusedRef) {
-          console.warn("new focused stream not found in map", stream.id);
-          return;
-        }
-        //move to focusedView
-        const index=this.normalListView.indexOf(newFocusedRef.hostView);
-        const detachedRef=this.focusedListView.detach(index);
-        this.focusedView.insert(detachedRef);
-
-        //move all other streams on normalListView to focusedListView
-        const viewRefs: ViewRef[] = [];
-        while (true) {
-          const ref = this.normalListView.detach();
-          if (!ref) {
-            break;
-          }
-          viewRefs.push(ref);
-        }
-        viewRefs.forEach(ref => this.focusedListView.insert(ref));//todo does this revert the order?
-
-      }
-    } else {
-      if (!this.focusedStream) {
-        console.warn("cannot unfocus, no stream focused")
-        return;
-      }
-      //to unfocus, move all streams on focusedListView and focusedView to normalListView
-      const viewRefs: ViewRef[] = [];
-      viewRefs.push(this.focusedView.detach());
-      while (true) {
-        const ref = this.focusedListView.detach();
-        if (!ref) {
-          break;
-        }
-        viewRefs.push(ref);
-      }
-      viewRefs.forEach(ref => this.normalListView.insert(ref));//todo does this revert the order?
-      this.focusedStream = null;
-    }
-    this.cdr.detectChanges();
-  }
-*/
 
   addLocalTrack(track: MediaStreamTrack, stream: MediaStream) {
     console.log("adding local track", track, stream);
@@ -430,13 +357,12 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     }
   }
 
-  createUserMediaStream() {
+  async createUserMediaStream() {
     //create dummy stream with a silent audio track to pass to the media switcher
     this.userMediaStream = new MediaStream();
     const audioContext = new AudioContext();
     const destination = audioContext.createMediaStreamDestination();
     this.addLocalTrack(destination.stream.getAudioTracks()[0], this.userMediaStream);
-    //bind the stream to my video preview
     this.addStreamToUi(this.userMediaStream, this.myMember.id);
   }
 
@@ -507,7 +433,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     if (this.screenShareStream) {
       this.stopScreenShare();
     } else {
-      navigator.mediaDevices.getDisplayMedia({video: true,audio:true}).then(stream => {
+      navigator.mediaDevices.getDisplayMedia({video: true, audio: true}).then(stream => {
         this.screenShareStream = stream;
         stream.getTracks().forEach(t => this.addLocalTrack(t, this.screenShareStream));
         //listen to outside stream stop
@@ -554,7 +480,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
         this.removeLocalTrack(t, this.userMediaStream);
       });
       //add new camera track
-      navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId},audio:false}).then(stream => {
+      navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false}).then(stream => {
         if (stream.getVideoTracks().length !== 1) {
           console.warn("unexpected number of video tracks when setting camera", stream.getVideoTracks());
         }

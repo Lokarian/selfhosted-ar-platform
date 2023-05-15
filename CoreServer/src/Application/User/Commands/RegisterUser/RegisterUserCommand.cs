@@ -35,7 +35,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, s
         if (!result.Succeeded)
         {
             _context.AppUsers.Remove(appUser);
-            throw new BusinessRuleException(string.Join(",",result.Errors));
+            throw new BusinessRuleException(string.Join(";",result.Errors));
         }
 
         return await _tokenService.CreateTokenAsync(appUser);

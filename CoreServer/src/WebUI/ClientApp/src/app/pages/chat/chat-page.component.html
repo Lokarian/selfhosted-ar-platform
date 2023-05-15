@@ -53,7 +53,7 @@
 
             </div>
             <div class="bg-background-primary mt-2 p-2 rounded-lg">
-              <app-user-select class="w-full" [multi]="true" [usePopper]="false"
+              <app-user-select class="w-full" [multi]="true" [usePopper]="false" [clearOnSubmit]="true"
                                [preselectedUserIds]="selectedSessionUserIds"
                                (usersSelected)="changeUsers($event)"></app-user-select>
             </div>

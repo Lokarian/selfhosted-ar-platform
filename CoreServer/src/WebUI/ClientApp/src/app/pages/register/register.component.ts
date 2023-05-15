@@ -41,10 +41,10 @@ export class RegisterComponent implements OnInit {
       this.notificationService.add({severity: "error", message: "Passwords do not match"});
       return;
     }
-    var registerCommand = new RegisterUserCommand(this.registerForm.value);
+    const registerCommand = new RegisterUserCommand(this.registerForm.value);
     this.userClient.register(registerCommand).subscribe(result => {
       this.authService.saveAccessToken(result);
-      var redirectUrl = this.route.snapshot.queryParams['redirectUrl'] || '/';
+      const redirectUrl = this.route.snapshot.queryParams['redirectUrl'] || '/';
       this.router.navigate([redirectUrl]);
     });
   }

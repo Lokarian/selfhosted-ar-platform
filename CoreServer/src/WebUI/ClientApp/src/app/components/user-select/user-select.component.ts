@@ -22,7 +22,7 @@ import {UserFacade} from "../../services/user/user-facade.service";
   templateUrl: './user-select.component.html',
   styleUrls: ['./user-select.component.css']
 })
-export class UserSelectComponent implements OnInit, AfterViewInit,OnChanges {
+export class UserSelectComponent implements OnInit, AfterViewInit, OnChanges {
 
   public ngxPopperjsPlacements = NgxPopperjsPlacements;
   public popperTrigger = NgxPopperjsTriggers;
@@ -32,6 +32,7 @@ export class UserSelectComponent implements OnInit, AfterViewInit,OnChanges {
   @Input() usePopper = true;
   @Input() popperStyle = "";
   @Input() preselectedUserIds: string[] = [];
+  @Input() clearOnSubmit = false;
   @Output() usersSelected = new EventEmitter<AppUserDto[]>();
   @ViewChild("searchResultPopup") popper: NgxPopperjsContentComponent;
   @ViewChild("container") container: ElementRef;
@@ -56,6 +57,7 @@ export class UserSelectComponent implements OnInit, AfterViewInit,OnChanges {
     this.popperWidth = this.container.nativeElement.offsetWidth;
     this.cdr.detectChanges();
   }
+
   ngOnChanges(changes: SimpleChanges) {
     //if preselectedUserIds changes, and is not the same as before, then we need to update the selectedUsers
     if (changes.preselectedUserIds) {
@@ -90,7 +92,9 @@ export class UserSelectComponent implements OnInit, AfterViewInit,OnChanges {
   confirm() {
     this.usersSelected.next(this.selectedUsers);
     this.popper.hide();
-    this.selectedUsers = [];
+    if (this.clearOnSubmit) {
+      this.selectedUsers = [];
+    }
   }
 
 }
