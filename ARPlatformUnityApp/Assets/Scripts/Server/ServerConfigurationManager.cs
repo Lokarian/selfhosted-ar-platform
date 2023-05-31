@@ -15,7 +15,8 @@ public class ServerConfigurationManager : MonoBehaviour
             Debug.Log("Starting Server");
             NetworkManager.Singleton.StartServer();
         }
-        DontDestroyOnLoad(gameObject);
+        //DontDestroyOnLoad(gameObject);
+        StartRemoteAssist();
     }
 
     // Update is called once per frame
