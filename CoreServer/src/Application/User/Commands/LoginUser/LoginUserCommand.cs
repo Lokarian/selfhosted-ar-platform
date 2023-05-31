@@ -30,6 +30,11 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, String>
             throw new Exception(result.Errors.First());
         }
 
+        if (user.AccountType != AppUserAccountType.User)
+        {
+            throw new UnauthorizedAccessException("Only users can login");
+        }
+
         return await _tokenService.CreateTokenAsync(user!);
     }
 }

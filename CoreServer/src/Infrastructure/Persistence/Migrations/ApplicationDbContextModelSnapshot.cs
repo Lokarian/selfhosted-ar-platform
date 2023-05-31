@@ -23,12 +23,66 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "uuid-ossp");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessKey")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("BaseMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BaseMemberId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("UserConnectionId");
+
+                    b.ToTable("ArMembers");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArSession", b =>
+                {
+                    b.Property<Guid>("BaseSessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SessionType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("StoppedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("BaseSessionId");
+
+                    b.ToTable("ArSessions");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<int>("AccountType")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -560,6 +614,44 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArMember", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
+                        .WithMany()
+                        .HasForeignKey("BaseMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.AR.ArSession", "Session")
+                        .WithMany("Members")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.UserConnection", "UserConnection")
+                        .WithMany()
+                        .HasForeignKey("UserConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseMember");
+
+                    b.Navigation("Session");
+
+                    b.Navigation("UserConnection");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArSession", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.BaseSession", "BaseSession")
+                        .WithOne("ArSession")
+                        .HasForeignKey("CoreServer.Domain.Entities.AR.ArSession", "BaseSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseSession");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.AppUser", b =>
                 {
                     b.HasOne("CoreServer.Domain.Entities.UserFile", "Image")
@@ -831,6 +923,11 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArSession", b =>
+                {
+                    b.Navigation("Members");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatSession", b =>
                 {
                     b.Navigation("Members");
@@ -845,6 +942,8 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Session.BaseSession", b =>
                 {
+                    b.Navigation("ArSession");
+
                     b.Navigation("ChatSession");
 
                     b.Navigation("Members");

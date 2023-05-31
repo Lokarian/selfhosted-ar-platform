@@ -29,7 +29,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, s
 
     public async Task<string> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        AppUser appUser = new() { UserName = request.UserName, Email = request.Email };
+        AppUser appUser = new() { UserName = request.UserName, Email = request.Email,AccountType = AppUserAccountType.User};
         _context.AppUsers.Add(appUser);
         (Result result, string user) = await _identityService.CreateUserAsync(appUser, request.Password);
         if (!result.Succeeded)

@@ -2,6 +2,7 @@
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Common;
 using CoreServer.Domain.Entities;
+using CoreServer.Domain.Entities.AR;
 using CoreServer.Domain.Entities.Chat;
 using CoreServer.Domain.Entities.Session;
 using CoreServer.Domain.Entities.Video;
@@ -50,6 +51,9 @@ public class ApplicationDbContext : IdentityDbContext<AppIdentityUser>, IApplica
     public DbSet<VideoSession> VideoSessions => Set<VideoSession>();
     public DbSet<VideoStream> VideoStreams => Set<VideoStream>();
     public DbSet<VideoMember> VideoMembers => Set<VideoMember>();
+    
+    public DbSet<ArSession> ArSessions => Set<ArSession>();
+    public DbSet<ArMember> ArMembers => Set<ArMember>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

@@ -6,6 +6,185 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/Ar/GetMyArSessions": {
+      "get": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_GetMyArSessions",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArSessionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/GetArSessionMembers": {
+      "get": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_GetArSessionMembers",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArMemberDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/CreateArSession": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_CreateArSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/JoinArSession": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_JoinArSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinArSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArMemberDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/LeaveArSession": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_LeaveArSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveArSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Chat/GetMyChatSessions": {
       "get": {
         "tags": [
@@ -771,6 +950,39 @@
         }
       }
     },
+    "/api/UnityServer/AuthenticateUser": {
+      "post": {
+        "tags": [
+          "UnityServer"
+        ],
+        "operationId": "UnityServer_AuthenticateUser",
+        "requestBody": {
+          "x-name": "query",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCanAccessUnityServerQuery"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/User/Login": {
       "post": {
         "tags": [
@@ -1433,7 +1645,7 @@
   },
   "components": {
     "schemas": {
-      "ChatSessionDto": {
+      "ArSessionDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -1449,18 +1661,10 @@
               }
             ]
           },
-          "lastMessage": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ChatMessageDto"
-              }
-            ]
-          },
           "members": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ChatMemberDto"
+              "$ref": "#/components/schemas/ArMemberDto"
             }
           }
         }
@@ -1511,6 +1715,82 @@
           "userId": {
             "type": "string",
             "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "ChatSessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDto"
+              }
+            ]
+          },
+          "lastMessage": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatMessageDto"
+              }
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMemberDto"
+            }
+          }
+        }
+      },
+      "ChatMessageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "ChatMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "lastSeen": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "sessionId": {
             "type": "string",
@@ -1607,7 +1887,7 @@
           }
         }
       },
-      "ChatMessageDto": {
+      "ArMemberDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -1615,37 +1895,50 @@
             "type": "string",
             "format": "guid"
           },
-          "text": {
-            "type": "string"
-          },
-          "sentAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "senderId": {
+          "baseMemberId": {
             "type": "string",
             "format": "guid"
           },
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "CreateArSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
           "sessionId": {
             "type": "string",
             "format": "guid"
           }
         }
       },
-      "ChatMemberDto": {
+      "JoinArSessionCommand": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "userId": {
+          "arSessionId": {
             "type": "string",
             "format": "guid"
-          },
-          "lastSeen": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "sessionId": {
+          }
+        }
+      },
+      "LeaveArSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arMemberId": {
             "type": "string",
             "format": "guid"
           }
@@ -1980,6 +2273,37 @@
             "nullable": true
           }
         }
+      },
+      "UserCanAccessUnityServerQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "memberId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ArUserRole"
+          }
+        }
+      },
+      "ArUserRole": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "ArUser",
+          "Spectator",
+          "Server"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
       },
       "LoginUserCommand": {
         "type": "object",

@@ -1,9 +1,34 @@
-﻿using Unity.Netcode;
+﻿using System;
+using Unity.Netcode;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class DebugStartManager: MonoBehaviour
 {
+    public bool DetectBuildTarget = true;
+
+    private void Start()
+    {
+        if (DetectBuildTarget)
+        {
+            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WSAPlayer)
+            {
+                StartHololens();
+                //StartWebXR();
+            }
+            else if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
+            {
+                StartWebXR();
+            }
+            else
+            {
+                StartServer();
+            }
+        }
+    }
+
+
     void OnGUI()
     {
         GUILayout.BeginArea(new Rect(10, 10, 300, 300));
@@ -43,7 +68,7 @@ public class DebugStartManager: MonoBehaviour
     
     void StartWebXR()
     {
-        //todo
+        SceneManager.LoadScene("Scenes/WebXR/Connecting", LoadSceneMode.Single);
     }
     
     void StartServer()

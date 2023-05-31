@@ -7,6 +7,7 @@ public class AppUser : BaseEntity
     public Guid? ImageId { get; set; }
     public UserFile? Image { get; set; }
     public OnlineStatus OnlineStatus { get; set; }
+    public AppUserAccountType AccountType { get; set; }
 }
 
 public enum OnlineStatus
@@ -15,4 +16,10 @@ public enum OnlineStatus
     Offline,
     Busy,
     Away
+}
+
+public enum AppUserAccountType
+{
+    User,
+    Service,
 }

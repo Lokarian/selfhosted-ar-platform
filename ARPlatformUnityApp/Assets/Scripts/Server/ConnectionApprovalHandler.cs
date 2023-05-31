@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class ConnectionApprovalHandler : MonoBehaviour
 {
-    public bool currentlyLocked = true;
+    public bool currentlyLocked = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -34,10 +34,19 @@ public class ConnectionApprovalHandler : MonoBehaviour
 
         // Your approval logic determines the following values
         response.Approved = true;
+        Debug.Log("Connection Data: " + System.Text.Encoding.ASCII.GetString(connectionData));
         response.CreatePlayerObject = true;
-
-        // The Prefab hash value of the NetworkPrefab, if null the default NetworkManager player Prefab is used
-        response.PlayerPrefabHash = null;
+        if (System.Text.Encoding.ASCII.GetString(connectionData)=="Hololens")
+        {
+            response.CreatePlayerObject = true;
+            response.PlayerPrefabHash=919149416;
+        }
+        else
+        {
+            response.CreatePlayerObject = true;
+            // The Prefab hash value of the NetworkPrefab, if null the default NetworkManager player Prefab is used
+            response.PlayerPrefabHash = 1937961416;
+        }
 
         // Position to spawn the player object (if null it uses default of Vector3.zero)
         response.Position = Vector3.zero;

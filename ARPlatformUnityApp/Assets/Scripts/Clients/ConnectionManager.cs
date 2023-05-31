@@ -28,6 +28,7 @@ public class ConnectionManager : MonoBehaviour
 
     void ConnectLocalhost()
     {
+        NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.ASCII.GetBytes("Hololens");
         NetworkManager.Singleton.StartClient();
     }
 }

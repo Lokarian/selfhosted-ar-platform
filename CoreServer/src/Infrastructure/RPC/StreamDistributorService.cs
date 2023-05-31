@@ -260,7 +260,8 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
             //write to all subscriptions
             if (_topicToSubscription.ContainsKey(topic))
             {
-                Console.WriteLine($"Valie on topic {topic} will be sent to {string.Join(", ", _topicToSubscription[topic])}");
+                Console.WriteLine(
+                    $"Valie on topic {topic} will be sent to {string.Join(", ", _topicToSubscription[topic])}");
                 var tasks = _topicToSubscription[topic].ToList().Select(SendToReceiver);
                 await Task.WhenAll(tasks);
             }
@@ -269,6 +270,8 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
 
     private void CloseAndDeleteSubscription(Guid subscriptionId, Exception? exception = null)
     {
+        Console.WriteLine(
+            $"Closing subscription {subscriptionId} on topic {_subscriptionToTopic[subscriptionId]} for client {_subscriptionToClient[subscriptionId]}");
         var writer = _subscriptions[subscriptionId].Item1;
         //if there is an exception complete with exception, else complete normally
         if (exception != null)

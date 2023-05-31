@@ -7,6 +7,7 @@ using CoreServer.Infrastructure.Persistence;
 using CoreServer.Infrastructure.Persistence.Interceptors;
 using CoreServer.Infrastructure.RPC;
 using CoreServer.Infrastructure.Services;
+using CoreServer.Infrastructure.Unity;
 using MediatR;
 using MessagePack;
 using MessagePack.Formatters;
@@ -52,6 +53,7 @@ public static class ConfigureServices
         );
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
         services.AddSingleton<IUserConnectionStore, UserConnectionStore>();
+        services.AddScoped<IUnityServerService, UnityServerService>();
         services.AddSingleton(typeof(IStreamDistributorService<>), typeof(StreamDistributorService<>));
         services.AddTransient(typeof(IUserProxy<>), typeof(SignalRUserProxy<>));
 

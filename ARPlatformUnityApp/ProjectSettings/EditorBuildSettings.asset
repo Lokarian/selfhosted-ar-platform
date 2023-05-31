@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Server/Idle.unity
     guid: f755976953a3f0148885da0a05587e66
+  - enabled: 1
+    path: Assets/Scenes/WebXR/Connecting.unity
+    guid: 812b2097cbd638a4aadaaf9be9070652
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: eb3d47dcc40641e449228f6c91c2288c, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: f7cd1a9e11b27f348a3cb8e29af49c59, type: 2}

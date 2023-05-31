@@ -1,4 +1,5 @@
 ﻿using CoreServer.Domain.Entities;
+using CoreServer.Domain.Entities.AR;
 using CoreServer.Domain.Entities.Chat;
 using CoreServer.Domain.Entities.Session;
 using CoreServer.Domain.Entities.Video;
@@ -26,6 +27,9 @@ public interface IApplicationDbContext
     DbSet<VideoSession> VideoSessions { get; }
     DbSet<VideoMember> VideoMembers { get; }
     DbSet<VideoStream> VideoStreams { get; }
+    
+    DbSet<ArSession> ArSessions { get; }
+    DbSet<ArMember> ArMembers { get; }
 
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
