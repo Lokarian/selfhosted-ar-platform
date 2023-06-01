@@ -2714,6 +2714,7 @@ export class SessionDto implements ISessionDto {
     members?: SessionMemberDto[];
     chatSession?: ChatSessionDto | undefined;
     videoSession?: VideoSessionDto | undefined;
+    arSession?: ArSessionDto | undefined;
 
     constructor(data?: ISessionDto) {
         if (data) {
@@ -2736,6 +2737,7 @@ export class SessionDto implements ISessionDto {
             }
             this.chatSession = _data["chatSession"] ? ChatSessionDto.fromJS(_data["chatSession"]) : <any>undefined;
             this.videoSession = _data["videoSession"] ? VideoSessionDto.fromJS(_data["videoSession"]) : <any>undefined;
+            this.arSession = _data["arSession"] ? ArSessionDto.fromJS(_data["arSession"]) : <any>undefined;
         }
     }
 
@@ -2758,6 +2760,7 @@ export class SessionDto implements ISessionDto {
         }
         data["chatSession"] = this.chatSession ? this.chatSession.toJSON() : <any>undefined;
         data["videoSession"] = this.videoSession ? this.videoSession.toJSON() : <any>undefined;
+        data["arSession"] = this.arSession ? this.arSession.toJSON() : <any>undefined;
         return data;
     }
 }
@@ -2769,9 +2772,11 @@ export interface ISessionDto {
     members?: SessionMemberDto[];
     chatSession?: ChatSessionDto | undefined;
     videoSession?: VideoSessionDto | undefined;
+    arSession?: ArSessionDto | undefined;
 }
 
 export class SessionMemberDto implements ISessionMemberDto {
+    id?: string;
     userId?: string;
     sessionId?: string;
 
@@ -2786,6 +2791,7 @@ export class SessionMemberDto implements ISessionMemberDto {
 
     init(_data?: any) {
         if (_data) {
+            this.id = _data["id"];
             this.userId = _data["userId"];
             this.sessionId = _data["sessionId"];
         }
@@ -2800,6 +2806,7 @@ export class SessionMemberDto implements ISessionMemberDto {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
         data["userId"] = this.userId;
         data["sessionId"] = this.sessionId;
         return data;
@@ -2807,6 +2814,7 @@ export class SessionMemberDto implements ISessionMemberDto {
 }
 
 export interface ISessionMemberDto {
+    id?: string;
     userId?: string;
     sessionId?: string;
 }
@@ -3141,6 +3149,7 @@ export class ArMemberDto implements IArMemberDto {
     userId?: string;
     sessionId?: string;
     deletedAt?: Date | undefined;
+    role?: ArUserRole;
 
     constructor(data?: IArMemberDto) {
         if (data) {
@@ -3158,6 +3167,7 @@ export class ArMemberDto implements IArMemberDto {
             this.userId = _data["userId"];
             this.sessionId = _data["sessionId"];
             this.deletedAt = _data["deletedAt"] ? new Date(_data["deletedAt"].toString()) : <any>undefined;
+            this.role = _data["role"];
         }
     }
 
@@ -3175,6 +3185,7 @@ export class ArMemberDto implements IArMemberDto {
         data["userId"] = this.userId;
         data["sessionId"] = this.sessionId;
         data["deletedAt"] = this.deletedAt ? this.deletedAt.toISOString() : <any>undefined;
+        data["role"] = this.role;
         return data;
     }
 }
@@ -3185,6 +3196,13 @@ export interface IArMemberDto {
     userId?: string;
     sessionId?: string;
     deletedAt?: Date | undefined;
+    role?: ArUserRole;
+}
+
+export enum ArUserRole {
+    ArUser = 0,
+    Spectator = 1,
+    Server = 2,
 }
 
 export class CreateArSessionCommand implements ICreateArSessionCommand {
@@ -4148,12 +4166,6 @@ export interface IUserCanAccessUnityServerQuery {
     arSessionId?: string;
     memberId?: string;
     role?: ArUserRole;
-}
-
-export enum ArUserRole {
-    ArUser = 0,
-    Spectator = 1,
-    Server = 2,
 }
 
 export class LoginUserCommand implements ILoginUserCommand {

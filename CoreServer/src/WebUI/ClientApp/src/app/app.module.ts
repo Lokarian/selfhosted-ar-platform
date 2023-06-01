@@ -25,12 +25,15 @@ import {ChatPageComponent} from "./pages/chat/chat-page.component";
 import {environment} from '../environments/environment';
 import {API_BASE_URL} from "./web-api-client";
 import {UserSelectComponent} from './components/user-select/user-select.component';
-import {SessionPageComponent} from './pages/session/session-page.component';
 import {VideoSessionPreviewComponent} from './components/video-session-preview/video-session-preview.component';
 import {VideoStreamComponent} from './components/video-stream/video-stream.component';
 import {VideoSessionComponent} from './components/video-session/video-session.component';
 import {ResizeDirective} from './services/common/resize.directive';
 import {AngularSplitModule} from "angular-split";
+import { SessionListPageComponent } from './pages/session-list/session-list.component';
+import { MultiSessionComponent } from './components/multi-session/multi-session.component';
+import { ArSessionPreviewComponent } from './components/ar-session-preview/ar-session-preview.component';
+import { CallComponent } from './pages/call/call.component';
 
 function baseUrlFactory() {
   if (environment.production) {
@@ -63,11 +66,14 @@ function baseUrlFactory() {
     SecurePipe,
     UserPipe,
     UserSelectComponent,
-    SessionPageComponent,
     VideoSessionPreviewComponent,
     VideoStreamComponent,
     VideoSessionComponent,
     ResizeDirective,
+    SessionListPageComponent,
+    MultiSessionComponent,
+    ArSessionPreviewComponent,
+    CallComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({appId: 'ng-cli-universal'}),

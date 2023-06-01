@@ -1705,6 +1705,14 @@
                 "$ref": "#/components/schemas/VideoSessionDto"
               }
             ]
+          },
+          "arSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArSessionDto"
+              }
+            ]
           }
         }
       },
@@ -1712,6 +1720,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
           "userId": {
             "type": "string",
             "format": "guid"
@@ -1911,8 +1923,25 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/ArUserRole"
           }
         }
+      },
+      "ArUserRole": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "ArUser",
+          "Spectator",
+          "Server"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
       },
       "CreateArSessionCommand": {
         "type": "object",
@@ -2290,20 +2319,6 @@
             "$ref": "#/components/schemas/ArUserRole"
           }
         }
-      },
-      "ArUserRole": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "ArUser",
-          "Spectator",
-          "Server"
-        ],
-        "enum": [
-          0,
-          1,
-          2
-        ]
       },
       "LoginUserCommand": {
         "type": "object",

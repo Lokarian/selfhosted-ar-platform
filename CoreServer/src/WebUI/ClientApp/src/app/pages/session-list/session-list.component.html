@@ -1,6 +1,6 @@
 <div class="container py-12 mx-auto flex flex-col items-end">
   <button [popper]="createPopper"
-    class=" mb-4 p-2 text-white bg-background-secondary hover:bg-background-highlight rounded-lg">Create
+          class=" mb-4 p-2 text-white bg-background-secondary hover:bg-background-highlight rounded-lg">Create
   </button>
   <popper-content #createPopper>
     <div class="rounded-lg p-2 bg-background-secondary">
@@ -25,6 +25,9 @@
         </th>
         <th scope="col" class="px-6 py-3 text-center">
           VideoSession
+        </th>
+        <th scope="col" class="px-6 py-3 text-center">
+          ArSession
         </th>
       </tr>
       </thead>
@@ -58,6 +61,16 @@
             </ng-container>
             <ng-template #noVideoSession>
               <button (click)="createVideoSession(session)" class="p-2 w-full text-white bg-background-secondary hover:bg-background-highlight rounded-lg">
+                Create
+              </button>
+            </ng-template>
+          </td>
+          <td class="px-6 py-4 text-center">
+            <ng-container *ngIf="session.arSession; else noArSession">
+              Y
+            </ng-container>
+            <ng-template #noArSession>
+              <button (click)="createArSession(session)" class="p-2 w-full text-white bg-background-secondary hover:bg-background-highlight rounded-lg">
                 Create
               </button>
             </ng-template>

@@ -47,4 +47,31 @@ public class UnityServerService : IUnityServerService
         process.WaitForExit();
         _logger.LogInformation($"Unity Server started with output: {output}");
     }
+
+    public Task ShutdownServer(Guid arSessionId)
+    {
+        _logger.LogInformation("Shutting down Unity Server");
+        
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+        {
+            _logger.LogInformation("Unity Server stopped");
+            return Task.CompletedTask;
+        }
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"rm -f arServer-{arSessionId}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            }
+        };
+        process.Start();
+        var output = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        _logger.LogInformation($"Unity Server stopped with output: {output}");
+        return Task.CompletedTask;
+    }
 }

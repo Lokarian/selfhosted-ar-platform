@@ -11,6 +11,8 @@ public class ArMemberDto : IMapFrom<ArMember>
     public Guid UserId { get; set; }
     public Guid SessionId { get; set; }
     public DateTime? DeletedAt { get; set; }
+    
+    public ArUserRole Role { get; set; }
 
     public void Mapping(Profile profile)
     {

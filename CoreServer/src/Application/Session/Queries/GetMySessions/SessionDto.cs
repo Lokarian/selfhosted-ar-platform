@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreServer.Application.AR.Queries.GetMyArSessions;
 using CoreServer.Application.Chat.Queries.GetChatMembers;
 using CoreServer.Application.Chat.Queries.GetChatMessages;
 using CoreServer.Application.Chat.Queries.GetMyChatSessions;
@@ -17,5 +18,6 @@ public class SessionDto : IMapFrom<BaseSession>
     public IList<SessionMemberDto> Members { get; set; } = new List<SessionMemberDto>();
     public ChatSessionDto? ChatSession { get; set; }
     public VideoSessionDto? VideoSession { get; set; }
+    public ArSessionDto? ArSession { get; set; }
     
 }

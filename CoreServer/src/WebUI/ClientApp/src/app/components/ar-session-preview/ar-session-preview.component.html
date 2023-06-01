@@ -1,0 +1,19 @@
+<div class="flex flex-col items-center">
+  <button class="h-6 w-6 fill-text rounded-lg group group-hover:bg-background-highlight" (click)="joinSession()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+      <path
+        d="M795 936q-122 0-242.5-60T336 720q-96-96-156-216.5T120 261q0-19 13-32t32-13h140q14 0 24.5 9.5T343 251l27 126q2 14-.5 25.5T359 422L259 523q56 93 125.5 162T542 802l95-98q10-11 23-15.5t26-1.5l119 26q15 3 25 15t10 28v135q0 19-13 32t-32 13Z"/>
+    </svg>
+  </button>
+
+  <div class="flex flex-row gap-2 justify-center overflow-x-auto">
+    <div *ngFor="let member of session.members" class="flex flex-col justify-end">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 96 96" class="fill-text" *ngIf="member.role==ArUserRole.ArUser">
+        <path
+          d="M 254,705 C 40,680 40,680 40,511 40,420 44,387 59,355 96,275 160,240 269,240 c 87,0 115,10 169,63 l 42,41 43,-41 c 53,-53 81,-63 170,-63 111,1 176,38 212,122 10,26 15,71 15,151 0,99 -3,118 -20,140 -24,30 -35,33 -202,52 -157,17 -291,17 -444,0 z M 505,590 c 0,-18 -8,-24.37739 -25,-26.37739 -19.19338,0 -29.4965,3.45679 -30.02743,26.82544 C 450.39476,617.60607 462.58219,617.40271 482,618 c 17,-2 23,-10 23,-28 z M 295,570 c 0,-24 -3,-25 -63,-28 -65,-3 -82,8 -68,43 4,13 19,15 68,13 60,-3 63,-4 63,-28 z m 500,0 c 0,-24 -3,-25 -63,-28 -49,-2 -64,0 -68,13 -14,35 3,46 68,43 60,-3 63,-4 63,-28 z"/>
+      </svg>
+      <app-avatar [user]="member.userId|user|async" class="h-6 w-6"></app-avatar>
+    </div>
+  </div>
+
+</div>

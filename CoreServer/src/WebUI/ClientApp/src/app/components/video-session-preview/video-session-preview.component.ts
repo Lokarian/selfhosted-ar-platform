@@ -12,13 +12,13 @@ export class VideoSessionPreviewComponent implements OnInit {
 
   @Input() session: VideoSessionDto;
   @Output() join:EventEmitter<VideoSessionDto>=new EventEmitter();
-  constructor(private videoFacade: VideoFacade, private router: Router) {
+  constructor() {
   }
 
   ngOnInit(): void {
   }
 
   joinCall() {
-    this.join.emit();
+    this.join.emit(this.session);
   }
 }

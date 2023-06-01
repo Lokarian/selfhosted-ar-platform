@@ -1,0 +1,6 @@
+<app-multi-session *ngIf="session$|async as session" [baseSession]="session" [initiallyShowChat]="!!session.chatSession"
+                   [initiallyShowVideo]="!!session.chatSession"
+                   [initiallyShowAr]="!!session.arSession"></app-multi-session>
+<div *ngIf="!(session$|async)">
+  join
+</div>

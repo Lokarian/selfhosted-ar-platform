@@ -1,0 +1,29 @@
+<as-split direction="vertical" class="w-full h-full min-h-0" [useTransition]="true">
+  <as-split-area *ngIf="showVideo||showAr" [size]="65" [order]="0">
+    <as-split direction="horizontal" class="w-full h-full min-w-0" [useTransition]="true">
+      <as-split-area *ngIf="showVideo" [size]="50" [order]="0">
+        <ng-container *ngIf="videoSession$|async as videoSession">
+          <app-video-session [session]="videoSession" *ngIf="joinedVideoSession"></app-video-session>
+          <div *ngIf="!joinedVideoSession"
+               class="w-full h-full flex justify-center items-center">
+            <app-video-session-preview *ngIf="videoSession" [session]="videoSession" (join)="joinedVideoSession=true"></app-video-session-preview>
+          </div>
+        </ng-container>
+      </as-split-area>
+      <as-split-area [size]="50" [order]="1">
+        <ng-container *ngIf="arSession$|async as arSession">
+          <iframe class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          <div *ngIf="!joinedArSession"
+               class="w-full h-full flex justify-center items-center">
+            <app-ar-session-preview *ngIf="arSession" [session]="arSession" (join)="joinedVideoSession=true"></app-ar-session-preview>
+          </div>
+        </ng-container>
+      </as-split-area>
+
+    </as-split>
+  </as-split-area>
+  <as-split-area [size]="35" [order]="1">
+    <app-chat #rightElement *ngIf="chatSession$|async as chatSession" [session]="chatSession"></app-chat>
+  </as-split-area>
+
+</as-split>
