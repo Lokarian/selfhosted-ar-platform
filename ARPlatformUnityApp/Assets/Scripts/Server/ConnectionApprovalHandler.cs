@@ -41,7 +41,7 @@ public class ConnectionApprovalHandler : MonoBehaviour
             response.CreatePlayerObject = true;
             response.PlayerPrefabHash=919149416;
         }
-        else
+        else if (System.Text.Encoding.ASCII.GetString(connectionData)=="WebXR")
         {
             response.CreatePlayerObject = true;
             // The Prefab hash value of the NetworkPrefab, if null the default NetworkManager player Prefab is used

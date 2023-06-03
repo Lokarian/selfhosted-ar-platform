@@ -21,7 +21,7 @@ public class NetworkMesh : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!IsOwner)
+        if (!IsOwner && !IsServer)
         {
             return;
         }
@@ -63,11 +63,32 @@ public class NetworkMesh : NetworkBehaviour
             chunkCount++;
         }
 
-        for (var i = 0; i < chunkCount; i++)
+        if (IsServer)
         {
-            var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
-            var lastChunk = i == chunkCount - 1;
-            UpdateMeshChunk_ServerRpc(chunk, i, lastChunk);
+            var clientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    //send to all clients except the owner
+                    TargetClientIds = NetworkManager.Singleton.ConnectedClientsList.Select(x => x.ClientId)
+                        .Except(new[] { OwnerClientId }).ToList()
+                }
+            };
+            for (var i = 0; i < chunkCount; i++)
+            {
+                var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
+                var lastChunk = i == chunkCount - 1;
+                UpdateMeshChunk_ClientRpc(chunk, i, lastChunk, clientRpcParams);
+            }
+        }
+        else
+        {
+            for (var i = 0; i < chunkCount; i++)
+            {
+                var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
+                var lastChunk = i == chunkCount - 1;
+                UpdateMeshChunk_ServerRpc(chunk, i, lastChunk);
+            }
         }
     }
 

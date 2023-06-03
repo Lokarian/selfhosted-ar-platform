@@ -81,3 +81,5 @@ crashlytics-build.properties
 !/[Pp]ackages/your embedded package to share with git/
 
 /[Aa]ssets/[Ss]amples/
+
+!/[Bb]uild/docker

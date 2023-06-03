@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using UnityEditor;
 using UnityEngine;
 
 public class ConnectionManager : MonoBehaviour
@@ -28,7 +29,27 @@ public class ConnectionManager : MonoBehaviour
 
     void ConnectLocalhost()
     {
-        NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.ASCII.GetBytes("Hololens");
+        #if UNITY_EDITOR
+        if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WSAPlayer)
+        {
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.ASCII.GetBytes("Hololens");
+        }
+        else if(EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
+        {
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.ASCII.GetBytes("WebXR");
+        }
+        #else
+        if (Application.platform == RuntimePlatform.WSAPlayerARM ||
+                Application.platform == RuntimePlatform.WSAPlayerX64 ||
+                Application.platform == RuntimePlatform.WSAPlayerX86)
+        {
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.ASCII.GetBytes("Hololens");
+        }
+        else if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.ASCII.GetBytes("WebXR");
+        }
+        #endif
         NetworkManager.Singleton.StartClient();
     }
 }

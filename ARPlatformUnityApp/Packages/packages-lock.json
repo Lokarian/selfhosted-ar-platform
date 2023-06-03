@@ -1,5 +1,30 @@
 {
   "dependencies": {
+    "com.community.netcode.transport.websocket": {
+      "version": "https://github.com/Unity-Technologies/multiplayer-community-contributions.git?path=/Transports/com.community.netcode.transport.websocket",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "d862504b148f6c3a31763797900eb5a54d4625a5"
+    },
+    "com.de-panther.webxr": {
+      "version": "0.16.1-preview",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.xr.management": "3.2.13"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "com.de-panther.webxr-interactions": {
+      "version": "0.16.3-preview",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.de-panther.webxr": "0.16.0-preview"
+      },
+      "url": "https://package.openupm.com"
+    },
     "com.github-glitchenzo.nugetforunity": {
       "version": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
       "depth": 0,
@@ -141,7 +166,7 @@
       }
     },
     "com.unity.ide.rider": {
-      "version": "3.0.18",
+      "version": "3.0.22",
       "depth": 0,
       "source": "registry",
       "dependencies": {
