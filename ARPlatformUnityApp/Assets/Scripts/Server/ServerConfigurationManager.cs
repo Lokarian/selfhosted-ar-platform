@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Netcode.Transports.WebSocket;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,6 +10,10 @@ public class ServerConfigurationManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (NetworkManager.Singleton.gameObject.GetComponent<WebSocketTransport>().SecureConnection)
+        {
+            NetworkManager.Singleton.gameObject.GetComponent<WebSocketTransport>().CertificateBase64String = GlobalConfig.Singleton.certificateBase64;
+        }
         Debug.Log("ServerConfigurationManager Start");
         if (!NetworkManager.Singleton.IsServer)
         {

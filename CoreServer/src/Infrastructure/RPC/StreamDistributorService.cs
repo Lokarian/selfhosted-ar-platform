@@ -215,7 +215,11 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
             {
                 while (reader.TryRead(out var value))
                 {
-                    await OnStreamValue(value, streamId);
+                    if (_streamToTopic.ContainsKey(streamId))
+                    {
+                        var topic = _streamToTopic[streamId];
+                        await Publish(value, topic);
+                    }
                 }
 
                 val = await reader.WaitToReadAsync();
@@ -234,13 +238,10 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
      * this method is called when a stream receives a value
      * it will send the value to all subscriptions
      */
-    private async Task OnStreamValue(T value, Guid streamId)
+    public async Task Publish(T value, string topic)
     {
-        Console.WriteLine($"Stream {streamId} value: {value}");
-
         async Task SendToReceiver(Guid subscriptionId)
         {
-            Console.WriteLine($"Sending value to subscription {subscriptionId}");
             var writer = _subscriptions[subscriptionId].Item1;
             var cancellationToken = _subscriptions[subscriptionId].Item2;
             //check for cancellation and remove subscription
@@ -254,17 +255,11 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
             await writer.WriteAsync(value, cancellationToken);
         }
 
-        if (_streamToTopic.ContainsKey(streamId))
+        //write to all subscriptions
+        if (_topicToSubscription.ContainsKey(topic))
         {
-            var topic = _streamToTopic[streamId];
-            //write to all subscriptions
-            if (_topicToSubscription.ContainsKey(topic))
-            {
-                Console.WriteLine(
-                    $"Valie on topic {topic} will be sent to {string.Join(", ", _topicToSubscription[topic])}");
-                var tasks = _topicToSubscription[topic].ToList().Select(SendToReceiver);
-                await Task.WhenAll(tasks);
-            }
+            var tasks = _topicToSubscription[topic].ToList().Select(SendToReceiver);
+            await Task.WhenAll(tasks);
         }
     }
 
@@ -322,7 +317,7 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
                 Console.WriteLine($"Removing stream {streamId} from topic {topic}");
                 allTopicStreams.Remove(streamId);
             }
-            else
+            /*else //for now we do not actually want to close a topic when removing the last stream
             {
                 Console.WriteLine($"Removing topic {topic}");
                 _topicToStreams.Remove(topic);
@@ -331,7 +326,7 @@ public class StreamDistributorService<T> : IStreamDistributorService<T>
                 {
                     CloseAndDeleteSubscription(subscriptionId, exception);
                 }
-            }
+            }*/
         }
 
         //remove association with client

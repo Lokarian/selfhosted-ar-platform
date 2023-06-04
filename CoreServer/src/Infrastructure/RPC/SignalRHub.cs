@@ -100,11 +100,19 @@ public class SignalRHub : Hub
         }
     }
 
-    public async Task PublishStream(IAsyncEnumerable<object> stream, string topic)
+    public async Task PublishStreamWithContextUserId(IAsyncEnumerable<object> stream, string topic, Guid contextClientId)
     {
         //create channelreader from stream
         var channel = Channel.CreateUnbounded<object>();
-        var streamId=await _streamDistributorService.RegisterStream(Guid.Parse(Context.UserIdentifier!), channel.Reader, topic);
+        var streamId =
+            await _streamDistributorService.RegisterStream(Guid.Parse(Context.UserIdentifier!), channel.Reader, topic);
+        await _streamDistributorService.Publish(
+            new StreamMetaEvent()
+            {
+                Type = StreamMetaEventType.PublisherConnected,
+                Topic = topic,
+                ClientId = contextClientId,
+            }, $"{topic}/meta");
         try
         {
             await foreach (var item in stream)
@@ -122,19 +130,60 @@ public class SignalRHub : Hub
         finally
         {
             await _streamDistributorService.RemoveStream(streamId);
+            await _streamDistributorService.Publish(
+                new StreamMetaEvent()
+                {
+                    Type = StreamMetaEventType.PublisherDisconnected,
+                    Topic = topic,
+                    ClientId = contextClientId,
+                }, $"{topic}/meta");
         }
-        
     }
 
-    public ChannelReader<object> SubscribeToTopic(
-        string topic,
+    public async Task PublishStream(IAsyncEnumerable<object> stream, string topic)
+    {
+        await PublishStreamWithContextUserId(stream, topic, Guid.Parse(Context.UserIdentifier!));
+    }
+
+
+    public ChannelReader<object> SubscribeToTopicWithContextUserId(
+        string topic, Guid? contextClientId,
         CancellationToken cancellationToken)
     {
         var channel = Channel.CreateUnbounded<object>();
+        //if topic does not end with /meta, publish meta events
+        if (!topic.EndsWith("/meta"))
+        {
+            _streamDistributorService.Publish(
+                new StreamMetaEvent()
+                {
+                    Type = StreamMetaEventType.SubscriberConnected,
+                    Topic = topic,
+                    ClientId = contextClientId ?? Guid.Parse(Context.UserIdentifier!),
+                }, $"{topic}/meta");
+            cancellationToken.Register(() =>
+            {
+                _streamDistributorService.Publish(
+                    new StreamMetaEvent()
+                    {
+                        Type = StreamMetaEventType.SubscriberDisconnected,
+                        Topic = topic,
+                        ClientId = contextClientId ?? Guid.Parse(Context.UserIdentifier!),
+                    }, $"{topic}/meta");
+            });
+        }
+
         _streamDistributorService.Subscribe(topic, Guid.Parse(Context.UserIdentifier!), channel.Writer,
             cancellationToken);
         return channel.Reader;
     }
+
+    public ChannelReader<object> SubscribeToTopic(
+        string topic, CancellationToken cancellationToken)
+    {
+        return SubscribeToTopicWithContextUserId(topic, Guid.Parse(Context.UserIdentifier!), cancellationToken);
+    }
+
 
     //upload VideoStream to server
     public async Task UploadVideoStream(ChannelReader<byte[]> stream, Guid id, string streamPW)

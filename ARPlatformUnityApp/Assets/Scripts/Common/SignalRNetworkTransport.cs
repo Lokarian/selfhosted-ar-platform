@@ -17,58 +17,34 @@ using UnityEngine.Serialization;
 public class SignalRNetworkTransport : NetworkTransport
 {
     private bool _isServer = false;
-    private ulong myClientId = 0;
     private DateTime startTime = DateTime.Now;
     private float Now => (float)(DateTime.Now - startTime).TotalSeconds;
 
-    enum SignalRConnectionState
-    {
-        Disconnected,
-        Connecting,
-        Registering,
-        SendConnectionRequest,
-        Connected
-    }
-
-
     HubConnection _connection;
-    private ulong _serverClientId;
-    private NetworkManager _networkManager;
-    private SignalRConnectionState _connectionState = SignalRConnectionState.Disconnected;
-    private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+    private readonly ulong _serverClientId = 0;
 
     private Queue<Tuple<ServerMessage, float>> _messageQueue = new();
 
-    //storage for client id to ChannelWriter
-    private Dictionary<ulong, Tuple<string, ChannelWriter<ServerMessage>>> _clientWriters = new();
+    private ulong _clientIdCounter = 1;
 
+    //storage for client id to ChannelWriter
+    private Dictionary<ulong, string> _clientIdToMemberId = new();
+    private Dictionary<string, ulong> _memberIdToClientId = new();
+    private Dictionary<string, ChannelWriter<ServerMessage>> _memberIdToWriter = new();
+    private ChannelWriter<ServerMessage> _serverWriter;
+    public Dictionary<ulong,ulong> ClientIdToRtt = new();
     public void Start()
     {
     }
 
     public void Update()
     {
-        //check if we(the client) are freshly connected and need to send a connection request
-        if (_connectionState == SignalRConnectionState.SendConnectionRequest)
-        {
-            CreateChannelWriter(0, GlobalConfig.Singleton.ArSessionId);
-            InvokeOnTransportEvent(NetworkEvent.Connect, myClientId, default, Now);
-            _connectionState = SignalRConnectionState.Connected;
-        }
-
-        //deque messages
-        while (_messageQueue.Count > 0)
-        {
-            var (serverMessage, receiveTime) = _messageQueue.Dequeue();
-            InvokeOnTransportEvent(serverMessage.networkEvent, serverMessage.clientId, serverMessage.payload,
-                receiveTime);
-        }
     }
 
-    private void StartSignalR()
+    private async Task StartSignalR()
     {
         _connection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:5001/api/hub", HttpTransportType.WebSockets,
+            .WithUrl($"{GlobalConfig.Singleton.ServerUrl}/api/hub", HttpTransportType.WebSockets,
                 options => { options.Headers.Add("Authorization", "Bearer " + GlobalConfig.Singleton.JwtToken); })
             .AddMessagePackProtocol(options =>
             {
@@ -76,111 +52,160 @@ public class SignalRNetworkTransport : NetworkTransport
                     MessagePackSerializerOptions.Standard.WithResolver(ContractlessStandardResolver.Instance);
             })
             .Build();
-        _connectionState = SignalRConnectionState.Connecting;
-        _connection.StartAsync().ContinueWith(async task =>
-        {
-            if (task.IsFaulted)
-            {
-                Debug.Log($"There was an error opening the connection: {task.Exception?.GetBaseException()}");
-            }
-            else
-            {
-                OnSignalRConnected();
-            }
-        });
-    }
-
-    private async Task OnSignalRConnected()
-    {
+        await _connection.StartAsync();
         Debug.Log("SignalR connection established");
-        _connectionState = SignalRConnectionState.Registering;
-        var stream = _connection.StreamAsync<ServerMessage>("SubscribeToTopic", GlobalConfig.Singleton.SubscriptionId,
-            _cancellationTokenSource.Token);
-        _connectionState = SignalRConnectionState.Connected;
-        if (!_isServer)
+        if (_isServer)
         {
-            _connectionState = SignalRConnectionState.SendConnectionRequest;
+            var metaStream =
+                _connection.StreamAsync<StreamMetaEvent>("SubscribeToTopic",
+                    $"{GlobalConfig.Singleton.ArSessionId}/meta");
+            Task.Run(async () =>
+            {
+                await foreach (var metaEvent in metaStream)
+                {
+                    Debug.Log($"Received meta event: {metaEvent}");
+                    OnMetaEvent(metaEvent);
+                }
+            });
+            var dataStream =
+                _connection.StreamAsync<ServerMessage>("SubscribeToTopic", $"{GlobalConfig.Singleton.ArSessionId}");
+            Task.Run(async () =>
+            {
+                await foreach (var serverMessage in dataStream)
+                {
+                    Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
+                    OnServerMessage(serverMessage);
+                }
+            });
         }
-
-        await foreach (var message in stream)
+        else
         {
-            OnServerMessage(message);
+            var channel = Channel.CreateUnbounded<ServerMessage>();
+            _connection.SendAsync("PublishStreamWithContextUserId", channel.Reader, GlobalConfig.Singleton.ArSessionId,GlobalConfig.Singleton.MyMemberId);
+            _serverWriter = channel.Writer;
+            var dataStream =
+                _connection.StreamAsync<ServerMessage>("SubscribeToTopic", GlobalConfig.Singleton.MyMemberId);
+            Task.Run(async () =>
+            {
+                await foreach (var serverMessage in dataStream)
+                {
+                    Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
+                    OnServerMessage(serverMessage);
+                }
+            });
         }
-
-        StopSignalRConnection();
     }
 
-    private void StopSignalRConnection()
+    private void OnMetaEvent(StreamMetaEvent metaEvent)
     {
-        _cancellationTokenSource.Cancel();
-        _connectionState = SignalRConnectionState.Disconnected;
-        Debug.Log($"StopSignalRConnection");
+        switch (metaEvent.Type)
+        {
+            case StreamMetaEventType.PublisherDisconnected:
+                if (_memberIdToClientId.ContainsKey(metaEvent.ClientId.ToString()))
+                {
+                    _messageQueue.Enqueue(new Tuple<ServerMessage, float>(new ServerMessage()
+                    {
+                        networkEvent = NetworkEvent.Disconnect,
+                        clientId = _memberIdToClientId[metaEvent.ClientId.ToString()],
+                        senderArMemberId = metaEvent.ClientId.ToString(),
+                        payload = default
+                    }, Now));
+                    //remove from dictionaries
+                    _clientIdToMemberId.Remove(_memberIdToClientId[metaEvent.ClientId.ToString()]);
+                    _memberIdToClientId.Remove(metaEvent.ClientId.ToString());
+                    _memberIdToWriter.Remove(metaEvent.ClientId.ToString());
+                }
+                break;
+        }
     }
+
 
     private void OnServerMessage(ServerMessage serverMessage)
     {
-        Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
         if (_isServer)
         {
-            //check if the client is already connected by checking if we have an outgoing channel writer
-            if (!_clientWriters.ContainsKey(serverMessage.clientId))
+            if (!_memberIdToClientId.TryGetValue(serverMessage.senderArMemberId, out var clientId))
             {
-                //create new channel writer for the client
-                CreateChannelWriter(serverMessage.clientId, serverMessage.senderArMemberId);
-                //notify the network manager that a new client has connected
-                _messageQueue.Enqueue(new Tuple<ServerMessage, float > (new ServerMessage()
+                clientId = _clientIdCounter++;
+                _memberIdToClientId[serverMessage.senderArMemberId] = clientId;
+                _clientIdToMemberId[clientId] = serverMessage.senderArMemberId;
+                // create channel 
+                var channel = Channel.CreateUnbounded<ServerMessage>();
+                _connection.SendAsync("PublishStream", channel.Reader, serverMessage.senderArMemberId);
+                _memberIdToWriter[serverMessage.senderArMemberId] = channel.Writer;
+                _messageQueue.Enqueue(new Tuple<ServerMessage, float>(new ServerMessage()
                 {
-                    networkEvent = NetworkEvent.Connect, payload = default, clientId = serverMessage.clientId,
-                    senderArMemberId = serverMessage.senderArMemberId
+                    networkEvent = NetworkEvent.Connect,
+                    clientId = clientId,
+                    senderArMemberId = serverMessage.senderArMemberId,
+                    payload = default
                 }, Now));
             }
 
-            //if there is data in the payload, send it to the network manager
-            if (serverMessage.payload.Count > 0)
-            {
-                _messageQueue.Enqueue(new Tuple<ServerMessage, float>(serverMessage, Now));
-            }
-            else
-            {
-                Debug.Log($"Received empty payload from client {serverMessage.clientId}");
-            }
+            serverMessage.clientId = clientId;
+            _messageQueue.Enqueue(new Tuple<ServerMessage, float>(serverMessage, Now));
+        }
+        else
+        {
+            _messageQueue.Enqueue(new Tuple<ServerMessage, float>(serverMessage, Now));
         }
     }
 
     public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
     {
-        Debug.Log($"Send: clientId={clientId}, payload={payload}, networkDelivery={networkDelivery}");
-        if (_connectionState != SignalRConnectionState.Connected)
+        if (!_isServer)
         {
+            if (!_serverWriter.TryWrite(new ServerMessage()
+                {
+                    networkEvent = NetworkEvent.Data,
+                    clientId = 0,
+                    payload = payload.ToArray(),
+                    senderArMemberId = GlobalConfig.Singleton.MyMemberId
+                }))
+            {
+                Debug.Log($"Send: failed to write to channel for clientId={clientId}");
+            }
+
             return;
         }
 
-        if (!_clientWriters.ContainsKey(clientId))
+        if (!_clientIdToMemberId.TryGetValue(clientId, out var memberId))
         {
-            Debug.LogWarning($"Could not Send, no writer associated with clientId {clientId}");
+            Debug.Log($"Send: clientId={clientId} not found in _clientIdToMemberId");
             return;
         }
 
-        var writer = _clientWriters[clientId].Item2;
-        writer.TryWrite(new ServerMessage()
+        if (!_memberIdToWriter.TryGetValue(memberId, out var writer))
         {
-            clientId = clientId,
-            payload = payload,
-            senderArMemberId = GlobalConfig.Singleton.SubscriptionId
-        });
-    }
+            Debug.Log($"Send: memberId={memberId} not found in _memberIdToWriter");
+            return;
+        }
 
-    private void CreateChannelWriter(ulong clientId, string topic)
-    {
-        var channel = Channel.CreateUnbounded<ServerMessage>();
-        _connection.SendAsync("PublishStream", channel.Reader, topic);
-        _clientWriters.Add(clientId, new Tuple<string, ChannelWriter<ServerMessage>>(topic, channel.Writer));
+        if (!writer.TryWrite(new ServerMessage()
+            {
+                networkEvent = NetworkEvent.Data,
+                clientId = _serverClientId,
+                payload = payload.ToArray(),
+                senderArMemberId = GlobalConfig.Singleton.MyMemberId
+            }))
+        {
+            Debug.Log($"Send: failed to write to channel for clientId={clientId}");
+        }
     }
 
     public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
     {
+        if (_messageQueue.Count > 0)
+        {
+            var message = _messageQueue.Dequeue();
+            clientId = message.Item1.clientId;
+            payload = message.Item1.payload;
+            receiveTime = message.Item2;
+            return message.Item1.networkEvent;
+        }
+
         clientId = 0;
-        payload = new ArraySegment<byte>();
+        payload = default;
         receiveTime = 0;
         return NetworkEvent.Nothing;
     }
@@ -189,10 +214,23 @@ public class SignalRNetworkTransport : NetworkTransport
     {
         Debug.Log($"StartClient");
         _isServer = false;
-        //parse the first 8 letters of GlobalConfig.Singleton.SubscriptionId as hex to get the clientId
-        myClientId = ulong.Parse(GlobalConfig.Singleton.SubscriptionId.Substring(0, 8),
-            System.Globalization.NumberStyles.HexNumber);
-        StartSignalR();
+        StartSignalR().ContinueWith(task =>
+        {
+            if (task.IsFaulted)
+            {
+                Debug.Log($"StartClient: failed to start SignalR: {task.Exception}");
+            }
+            else
+            {
+                _messageQueue.Enqueue(new Tuple<ServerMessage, float>(new ServerMessage()
+                {
+                    networkEvent = NetworkEvent.Connect,
+                    clientId = 0,
+                    senderArMemberId = GlobalConfig.Singleton.MyMemberId,
+                    payload = default
+                }, Now));
+            }
+        });
         return true;
     }
 
@@ -216,8 +254,8 @@ public class SignalRNetworkTransport : NetworkTransport
 
     public override ulong GetCurrentRtt(ulong clientId)
     {
-        Debug.Log($"GetCurrentRtt: clientId={clientId}");
-        return 10;
+        var rtt = ClientIdToRtt.ContainsKey(clientId) ? ClientIdToRtt[clientId] : 0;
+        return rtt;
     }
 
     public override void Shutdown()
@@ -228,7 +266,6 @@ public class SignalRNetworkTransport : NetworkTransport
 
     public override void Initialize(NetworkManager networkManager = null)
     {
-        _networkManager = networkManager;
         Debug.Log($"Initialize with networkManager={networkManager}");
     }
 
@@ -244,6 +281,21 @@ public class ServerMessage
 {
     public NetworkEvent networkEvent;
     public ulong clientId;
-    public ArraySegment<byte> payload;
+    public byte[] payload;
     public string senderArMemberId;
+}
+
+public enum StreamMetaEventType
+{
+    SubscriberConnected,
+    SubscriberDisconnected,
+    PublisherConnected,
+    PublisherDisconnected,
+}
+
+public struct StreamMetaEvent
+{
+    public StreamMetaEventType Type { get; set; }
+    public string Topic { get; set; }
+    public Guid ClientId { get; set; }
 }

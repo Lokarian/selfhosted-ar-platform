@@ -22,12 +22,12 @@ public class ConnectionManager : MonoBehaviour
     void OnGUI()
     {
         GUILayout.BeginArea(new Rect(10, 10, 300, 300));
-        if (GUILayout.Button("Connect Localhost")) ConnectLocalhost();
+        if (GUILayout.Button("Connect")) Connect();
 
         GUILayout.EndArea();
     }
 
-    void ConnectLocalhost()
+    void Connect()
     {
         #if UNITY_EDITOR
         if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WSAPlayer)

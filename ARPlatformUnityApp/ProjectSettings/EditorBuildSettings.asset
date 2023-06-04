@@ -24,3 +24,4 @@ EditorBuildSettings:
     WebXR.Settings: {fileID: 11400000, guid: 6ff8e9249355e44488b83f1fd47a157a, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: eb3d47dcc40641e449228f6c91c2288c, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: f7cd1a9e11b27f348a3cb8e29af49c59, type: 2}
+    xr.sdk.mock-hmd.settings: {fileID: 11400000, guid: cd0112ac3b22b584e8cfe9743cddc5cf, type: 2}

@@ -271,8 +271,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1128539872}
   - component: {fileID: 1128539871}
-  - component: {fileID: 1128539874}
   - component: {fileID: 1128539875}
+  - component: {fileID: 1128539876}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -296,7 +296,7 @@ MonoBehaviour:
   LogLevel: 1
   NetworkConfig:
     ProtocolVersion: 0
-    NetworkTransport: {fileID: 1128539875}
+    NetworkTransport: {fileID: 1128539876}
     PlayerPrefab: {fileID: 0}
     NetworkPrefabs:
     - Override: 0
@@ -349,33 +349,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1128539874
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1128539869}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProtocolType: 0
-  m_MaxPacketQueueSize: 128
-  m_MaxPayloadSize: 1000000
-  m_HeartbeatTimeoutMS: 500
-  m_ConnectTimeoutMS: 1000
-  m_MaxConnectAttempts: 60
-  m_DisconnectTimeoutMS: 30000
-  ConnectionData:
-    Address: 127.0.0.1
-    Port: 7777
-    ServerListenAddress: 
-  DebugSimulator:
-    PacketDelayMS: 0
-    PacketJitterMS: 0
-    PacketDropRate: 0
 --- !u!114 &1128539875
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -388,12 +361,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54618226c9df54608af7731199ed5f0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ConnectAddress: 192.168.2.151
+  ConnectAddress: reithmeir.duckdns.org
   Path: /netcode
   Port: 7777
   SecureConnection: 0
-  AllowForwardedRequest: 0
+  AllowForwardedRequest: 1
   CertificateBase64String: 
+--- !u!114 &1128539876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1128539869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5778d2537417cea41aa2cbee2ecd4ae1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1182522130
 GameObject:
   m_ObjectHideFlags: 0
@@ -424,9 +409,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   JwtToken: 
-  SubscriptionId: 
+  MyMemberId: 
   ArSessionId: 
   ServerUrl: 
+  certificateBase64: 
 --- !u!4 &1182522132
 Transform:
   m_ObjectHideFlags: 0
