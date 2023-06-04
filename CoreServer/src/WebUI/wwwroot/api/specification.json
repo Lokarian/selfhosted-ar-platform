@@ -1933,9 +1933,9 @@
         "type": "integer",
         "description": "",
         "x-enumNames": [
-          "ArUser",
-          "Spectator",
-          "Server"
+          "Server",
+          "Hololens",
+          "Web"
         ],
         "enum": [
           0,
@@ -1960,6 +1960,9 @@
           "arSessionId": {
             "type": "string",
             "format": "guid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ArUserRole"
           }
         }
       },

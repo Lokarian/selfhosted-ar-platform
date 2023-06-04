@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using MessagePack;
@@ -10,9 +8,9 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.Networking;
+using NetworkTransport = Unity.Netcode.NetworkTransport;
 
 public class SignalRNetworkTransport : NetworkTransport
 {
@@ -32,7 +30,8 @@ public class SignalRNetworkTransport : NetworkTransport
     private Dictionary<string, ulong> _memberIdToClientId = new();
     private Dictionary<string, ChannelWriter<ServerMessage>> _memberIdToWriter = new();
     private ChannelWriter<ServerMessage> _serverWriter;
-    public Dictionary<ulong,ulong> ClientIdToRtt = new();
+    public Dictionary<ulong, ulong> ClientIdToRtt = new();
+
     public void Start()
     {
     }
@@ -54,6 +53,7 @@ public class SignalRNetworkTransport : NetworkTransport
             .Build();
         await _connection.StartAsync();
         Debug.Log("SignalR connection established");
+        await JoinArSession();
         if (_isServer)
         {
             var metaStream =
@@ -81,7 +81,8 @@ public class SignalRNetworkTransport : NetworkTransport
         else
         {
             var channel = Channel.CreateUnbounded<ServerMessage>();
-            _connection.SendAsync("PublishStreamWithContextUserId", channel.Reader, GlobalConfig.Singleton.ArSessionId,GlobalConfig.Singleton.MyMemberId);
+            _connection.SendAsync("PublishStreamWithContextUserId", channel.Reader, GlobalConfig.Singleton.ArSessionId,
+                GlobalConfig.Singleton.MyMemberId);
             _serverWriter = channel.Writer;
             var dataStream =
                 _connection.StreamAsync<ServerMessage>("SubscribeToTopic", GlobalConfig.Singleton.MyMemberId);
@@ -94,6 +95,44 @@ public class SignalRNetworkTransport : NetworkTransport
                 }
             });
         }
+    }
+
+    private async Task JoinArSession()
+    {
+        var connectionId = await _connection.InvokeAsync<Guid>("InitializeConnection", new List<string>());
+        var joinRequest = new JoinArSessionCommand()
+        {
+            arSessionId = GlobalConfig.Singleton.ArSessionId,
+            role = GlobalConfig.Singleton.MyBuildTarget switch
+            {
+                ArBuildTarget.Hololens => ArUserRole.Hololens,
+                ArBuildTarget.Server => ArUserRole.Server,
+                ArBuildTarget.Web => ArUserRole.Web,
+                _ => throw new ArgumentOutOfRangeException()
+            }
+        };
+        var json = JsonUtility.ToJson(joinRequest);
+        using UnityWebRequest webRequest =new UnityWebRequest(GlobalConfig.Singleton.ServerUrl + "/api/Ar/JoinArSession","POST");
+        webRequest.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+        webRequest.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
+        webRequest.SetRequestHeader("Content-Type", "application/json");
+        webRequest.SetRequestHeader("Authorization", "Bearer " + GlobalConfig.Singleton.JwtToken);
+        webRequest.SetRequestHeader("userconnectionid", connectionId.ToString());
+        var operation = webRequest.SendWebRequest();
+        while (!operation.isDone)
+        {
+            await Task.Yield();
+        }
+
+        if (webRequest.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError("Failed to join AR session");
+            throw new Exception("Failed to join AR session");
+        }
+
+        ArMemberDto arMemberDto = JsonUtility.FromJson<ArMemberDto>(webRequest.downloadHandler.text);
+        GlobalConfig.Singleton.MyMemberId = arMemberDto.id;
+        Debug.Log($"Joined AR session as {arMemberDto.Role}");
     }
 
     private void OnMetaEvent(StreamMetaEvent metaEvent)
@@ -115,6 +154,7 @@ public class SignalRNetworkTransport : NetworkTransport
                     _memberIdToClientId.Remove(metaEvent.ClientId.ToString());
                     _memberIdToWriter.Remove(metaEvent.ClientId.ToString());
                 }
+
                 break;
         }
     }
@@ -295,7 +335,33 @@ public enum StreamMetaEventType
 
 public struct StreamMetaEvent
 {
-    public StreamMetaEventType Type { get; set; }
-    public string Topic { get; set; }
-    public Guid ClientId { get; set; }
+    public StreamMetaEventType Type;
+    public string Topic;
+    public Guid ClientId;
+}
+
+[Serializable]
+public class JoinArSessionCommand
+{
+    public string arSessionId;
+    public ArUserRole role;
+}
+
+public enum ArUserRole
+{
+    Server,
+    Hololens,
+    Web
+}
+
+[Serializable]
+public class ArMemberDto
+{
+    public string id;
+    public string baseMemberId;
+    public string userId;
+    public string sessionId;
+    public DateTime? DeletedAt;
+
+    public ArUserRole Role;
 }

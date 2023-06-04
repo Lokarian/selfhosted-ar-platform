@@ -12,6 +12,7 @@ namespace CoreServer.Application.AR.Commands.JoinArSession;
 public class JoinArSessionCommand : IRequest<ArMember>
 {
     public Guid ArSessionId { get; set; }
+    public ArUserRole Role { get; set; }
 }
 
 public class JoinArSessionCommandHandler : IRequestHandler<JoinArSessionCommand, ArMember>
@@ -54,7 +55,8 @@ public class JoinArSessionCommandHandler : IRequestHandler<JoinArSessionCommand,
             BaseMember = baseMember,
             Session = ArSession,
             AccessKey = RandomString.Generate(10),
-            UserConnectionId = _currentUserService.Connection.Id
+            UserConnectionId = _currentUserService.Connection.Id,
+            Role = request.Role
         };
         ArSession.Members.Add(member);
         member.AddDomainEvent(new ArMemberUpdatedEvent(member));

@@ -21,7 +21,7 @@ public class ArMember : EntityWithEvents
 
 public enum ArUserRole
 {
-    ArUser,
-    Spectator,
-    Server
+    Server,
+    Hololens,
+    Web
 }

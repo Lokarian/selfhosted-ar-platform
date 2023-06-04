@@ -3200,9 +3200,9 @@ export interface IArMemberDto {
 }
 
 export enum ArUserRole {
-    ArUser = 0,
-    Spectator = 1,
-    Server = 2,
+    Server = 0,
+    Hololens = 1,
+    Web = 2,
 }
 
 export class CreateArSessionCommand implements ICreateArSessionCommand {
@@ -3243,6 +3243,7 @@ export interface ICreateArSessionCommand {
 
 export class JoinArSessionCommand implements IJoinArSessionCommand {
     arSessionId?: string;
+    role?: ArUserRole;
 
     constructor(data?: IJoinArSessionCommand) {
         if (data) {
@@ -3256,6 +3257,7 @@ export class JoinArSessionCommand implements IJoinArSessionCommand {
     init(_data?: any) {
         if (_data) {
             this.arSessionId = _data["arSessionId"];
+            this.role = _data["role"];
         }
     }
 
@@ -3269,12 +3271,14 @@ export class JoinArSessionCommand implements IJoinArSessionCommand {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["arSessionId"] = this.arSessionId;
+        data["role"] = this.role;
         return data;
     }
 }
 
 export interface IJoinArSessionCommand {
     arSessionId?: string;
+    role?: ArUserRole;
 }
 
 export class LeaveArSessionCommand implements ILeaveArSessionCommand {

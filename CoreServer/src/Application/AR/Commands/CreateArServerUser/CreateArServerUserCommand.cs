@@ -39,7 +39,7 @@ public class CreateArServerUserCommandHandler : IRequestHandler<CreateArServerUs
         string Email = $"{UserName}@arserver.com";
         string Password = "ARServerPassword123!";
 
-        AppUser appUser = new() { UserName = UserName, Email = Email,AccountType = AppUserAccountType.Service};
+        AppUser appUser = new() { UserName = UserName, Email = Email, AccountType = AppUserAccountType.Service };
         _context.AppUsers.Add(appUser);
         (Result result, string userId) = await _identityService.CreateUserAsync(appUser, Password);
         if (!result.Succeeded)
@@ -47,7 +47,17 @@ public class CreateArServerUserCommandHandler : IRequestHandler<CreateArServerUs
             _context.AppUsers.Remove(appUser);
             throw new BusinessRuleException(string.Join(";", result.Errors));
         }
-        
+
+        //add user to base session
+        BaseSession? baseSession = await _context.BaseSessions.Include(x => x.Members)
+            .FirstOrDefaultAsync(x => x.Id == request.ArSessionId, cancellationToken);
+        if (baseSession == null)
+        {
+            throw new NotFoundException(nameof(BaseSession), request.ArSessionId);
+        }
+
+        SessionMember sessionMember = new() { User = appUser, Session = baseSession };
+        _context.SessionMembers.Add(sessionMember);
 
         await _context.SaveChangesAsync(cancellationToken);
         return (appUser, await _tokenService.CreateTokenAsync(appUser));
