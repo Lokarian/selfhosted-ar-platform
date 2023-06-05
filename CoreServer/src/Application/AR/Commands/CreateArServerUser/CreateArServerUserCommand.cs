@@ -35,7 +35,7 @@ public class CreateArServerUserCommandHandler : IRequestHandler<CreateArServerUs
 
     public async Task<(AppUser, string)> Handle(CreateArServerUserCommand request, CancellationToken cancellationToken)
     {
-        string UserName = $"ARServer-{request.ArSessionId}";
+        string UserName = $"ARServer-{request.ArSessionId}-{DateTime.UtcNow.ToString("yyyyMMddHHmmss")}";
         string Email = $"{UserName}@arserver.com";
         string Password = "ARServerPassword123!";
 

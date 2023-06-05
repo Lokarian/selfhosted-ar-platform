@@ -1,5 +1,5 @@
 <div class="flex flex-row h-full w-full justify-between p-1 box-border">
-  <div></div>
+  <div><button (click)="joinArSession()">arsess</button> <button (click)="joinArSession2()">holo</button></div>
   <div *ngIf="user$|async as user" class="h-full flex flex-row gap-4 items-center" [popper]="userPopup"
         [popperPlacement]="ngxPopperjsPlacements.BOTTOM">
     <p class="text-white ">{{user.userName}}</p>

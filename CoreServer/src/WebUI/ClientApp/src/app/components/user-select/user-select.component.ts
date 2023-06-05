@@ -33,6 +33,7 @@ export class UserSelectComponent implements OnInit, AfterViewInit, OnChanges {
   @Input() popperStyle = "";
   @Input() preselectedUserIds: string[] = [];
   @Input() clearOnSubmit = false;
+  @Input() showSubmitButton = true;
   @Output() usersSelected = new EventEmitter<AppUserDto[]>();
   @ViewChild("searchResultPopup") popper: NgxPopperjsContentComponent;
   @ViewChild("container") container: ElementRef;
@@ -79,6 +80,9 @@ export class UserSelectComponent implements OnInit, AfterViewInit, OnChanges {
     if (this.multi) {
       if (!this.selectedUsers.some(a => a.id === user.id)) {
         this.selectedUsers.push(user);
+        if(!this.showSubmitButton){
+          this.usersSelected.next(this.selectedUsers);
+        }
       }
     } else {
       this.usersSelected.next([user]);

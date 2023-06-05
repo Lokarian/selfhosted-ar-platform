@@ -14,17 +14,5 @@ public class JoinArSessionCommandValidator : SessionContextValidator<JoinArSessi
     {
         RuleFor(x => x.ArSessionId).NotEmpty().WithMessage("ArSession Id must not be empty")
             .MustAsync(MustBeMemberOfSession).WithMessage("User is not a member of this session");
-        RuleFor(x => x).MustAsync(MustBeServiceAccountIfServerRole).WithMessage("Only server can be server");
-    }
-    
-    async Task<bool> MustBeServiceAccountIfServerRole(JoinArSessionCommand command,
-        CancellationToken cancellationToken)
-    {
-        if (command.Role != ArUserRole.Server)
-        {
-            return true;
-        }
-
-        return this._currentUserService.User!.AccountType ==AppUserAccountType.Service;
     }
 }

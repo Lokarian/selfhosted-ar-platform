@@ -11,7 +11,7 @@
          class="flex-1 py-2 text-text bg-transparent border-none focus:outline-none"
          placeholder="Search" [value]="searchTextSubject.value||''" (keyup)="searchTextSubject.next(searchBar.value)">
 </div>
-<div class="bg-background-highlight p-2 mt-2 rounded-xl {{popperStyle}}" *ngIf="!usePopper">
+<div class="bg-background-highlight p-2 mt-2 rounded-xl {{popperStyle}}" *ngIf="!usePopper&&(selectedUsers.length||users)">
   <ng-container [ngTemplateOutlet]="selectionArea"></ng-container>
 </div>
 <popper-content #searchResultPopup>
@@ -34,7 +34,7 @@
         </button>
       </div>
     </div>
-    <button class="p-2 text-white bg-background-primary hover:bg-background-tertiary rounded-lg" (click)="confirm()">
+    <button class="p-2 text-white bg-background-primary hover:bg-background-tertiary rounded-lg" *ngIf="showSubmitButton" (click)="confirm()">
       <svg aria-hidden="true" class="aspect-square w-4 text-white" fill="none" stroke="currentColor"
            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

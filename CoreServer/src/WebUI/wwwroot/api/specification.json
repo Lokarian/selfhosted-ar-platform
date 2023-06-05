@@ -1933,14 +1933,12 @@
         "type": "integer",
         "description": "",
         "x-enumNames": [
-          "Server",
           "Hololens",
           "Web"
         ],
         "enum": [
           0,
-          1,
-          2
+          1
         ]
       },
       "CreateArSessionCommand": {

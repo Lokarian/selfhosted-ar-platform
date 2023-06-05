@@ -3200,9 +3200,8 @@ export interface IArMemberDto {
 }
 
 export enum ArUserRole {
-    Server = 0,
-    Hololens = 1,
-    Web = 2,
+    Hololens = 0,
+    Web = 1,
 }
 
 export class CreateArSessionCommand implements ICreateArSessionCommand {
