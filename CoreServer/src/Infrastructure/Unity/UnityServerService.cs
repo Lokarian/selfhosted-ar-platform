@@ -24,7 +24,8 @@ public class UnityServerService : IUnityServerService
         _logger.LogInformation("Starting Unity Server");
         var result = await _mediator.Send(new CreateArServerUserCommand(arSessionId));
         //if development than return
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+        //if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+        if (true)
         {
             _logger.LogInformation("Credentials for Unity Server: id: {0}, token: {1}", arSessionId, result.Item2);
             return;

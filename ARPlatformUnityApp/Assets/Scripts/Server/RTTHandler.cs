@@ -5,24 +5,21 @@ using UnityEngine;
 
 public class RTTHandler : NetworkBehaviour
 {
+    public ulong rttIntervalMs = 1000;
+    public SignalRNetworkTransport SignalRNetworkTransport;
+
     private static Dictionary<ulong, ulong> _clientIdToRtt = new();
     private static Dictionary<ulong, ClientRpcParams> _clientIdToClientRpcParams = new();
 
-    private ulong _rttCounter = 0;
-
-    //store start time of a rtt request with a unique id with a capactiy of 10
-    private ulong lastRttRequestTime = 0;
-
-    public ulong rttIntervalMs = 1000;
-
-    private ulong Now => (ulong)(Time.realtimeSinceStartup * 1000);
-
-    public SignalRNetworkTransport SignalRNetworkTransport;
 
     // Start is called before the first frame update
     void Start()
     {
-        SignalRNetworkTransport = NetworkManager.Singleton.gameObject.GetComponent<SignalRNetworkTransport>();
+        if (!SignalRNetworkTransport)
+        {
+            SignalRNetworkTransport = NetworkManager.Singleton.gameObject.GetComponent<SignalRNetworkTransport>();
+        }
+
         if (IsServer)
         {
             StartCoroutine(RttLoop());
@@ -30,34 +27,31 @@ public class RTTHandler : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void RespondToRttRequest_ServerRpc(ulong rttRequestCounter, ServerRpcParams serverRpcParams = default)
+    public void RespondToRttRequest_ServerRpc(float timeSinceStartup, ServerRpcParams serverRpcParams = default)
     {
         var clientId = serverRpcParams.Receive.SenderClientId;
-        var rtt = Now - lastRttRequestTime;
+        var rtt = (ulong)((Time.realtimeSinceStartup - timeSinceStartup) * 1000);
         //if the request took longer than the interval, add the interval to the rtt
-        if (rttRequestCounter != _rttCounter - 1)
-        {
-            rtt += rttIntervalMs * (rttRequestCounter - _rttCounter + 1);
-        }
-
         //update the rtt for this client
         _clientIdToRtt[clientId] = rtt;
         SignalRNetworkTransport.ClientIdToRtt[clientId] = rtt;
     }
 
     [ClientRpc]
-    public void RttRequest_ClientRpc(ulong currentRtt, ulong rttRequestCounter,
+    public void RttRequest_ClientRpc(ulong currentRtt, float timeSinceStartup,
         ClientRpcParams clientRpcParams = default)
     {
-        RespondToRttRequest_ServerRpc(rttRequestCounter);
-        SignalRNetworkTransport.ClientIdToRtt[SignalRNetworkTransport.ServerClientId] = currentRtt;
+        RespondToRttRequest_ServerRpc(timeSinceStartup);
+        if (SignalRNetworkTransport?.ClientIdToRtt != null)
+        {
+            SignalRNetworkTransport.ClientIdToRtt[SignalRNetworkTransport.ServerClientId] = currentRtt;
+        }
     }
 
     IEnumerator RttLoop()
     {
         while (true)
         {
-            lastRttRequestTime = Now;
             //send rtt request to all clients
             foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
             {
@@ -74,7 +68,7 @@ public class RTTHandler : NetworkBehaviour
                     currentRtt = 0;
                 }
 
-                RttRequest_ClientRpc(currentRtt, _rttCounter++, clientRpcParams);
+                RttRequest_ClientRpc(currentRtt, Time.realtimeSinceStartup, clientRpcParams);
             }
 
             yield return new WaitForSecondsRealtime(rttIntervalMs / 1000f);

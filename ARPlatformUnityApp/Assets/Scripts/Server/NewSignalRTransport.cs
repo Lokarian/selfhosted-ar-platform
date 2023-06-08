@@ -31,7 +31,7 @@ public class NewSignalRTransport : NetworkTransport
     {
         _connection = new HubConnectionBuilder()
             .WithUrl("https://localhost:5001/api/hub", HttpTransportType.WebSockets,
-                options => { options.Headers.Add("Authorization", "Bearer " + GlobalConfig.Singleton.JwtToken); })
+                options => { options.Headers.Add("Authorization", "Bearer " + GlobalConfig.Singleton.AccessToken); })
             .AddMessagePackProtocol(options =>
             {
                 options.SerializerOptions =

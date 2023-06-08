@@ -1,7 +1,12 @@
 <div class="flex flex-row h-full w-full justify-between p-1 box-border">
-  <div><button (click)="joinArSession()">arsess</button> <button (click)="joinArSession2()">holo</button></div>
+  <div>
+    <button (click)="joinArSession()">arsess</button>
+    <button (click)="joinArSession2()">holo</button>
+    <a href="arplatform://a.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjYwODdkYzFiLWRhZmEtNGUyNi04ODJkLWNjNzM0NTU5ODY4YSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.9S0TOxxfZgtWeNuh7kmr2gtW1AzPJDvWAV-C2YnyBGg&serverUrl=https://192.168.2.151:5001&arSessionId=c3b66fb7-7322-46be-8c19-020b64aa89ea">PRESSFORHOLOLENS</a>
+      <a href="arplatform://a.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjYwODdkYzFiLWRhZmEtNGUyNi04ODJkLWNjNzM0NTU5ODY4YSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.9S0TOxxfZgtWeNuh7kmr2gtW1AzPJDvWAV-C2YnyBGg">PRESSFORHOLOLENS2</a>
+  </div>
   <div *ngIf="user$|async as user" class="h-full flex flex-row gap-4 items-center" [popper]="userPopup"
-        [popperPlacement]="ngxPopperjsPlacements.BOTTOM">
+       [popperPlacement]="ngxPopperjsPlacements.BOTTOM">
     <p class="text-white ">{{user.userName}}</p>
     <app-avatar [user]="user" class="h-10 w-10"></app-avatar>
     <popper-content #userPopup>

@@ -21,9 +21,17 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowCredentials();
     });
+    options.AddPolicy("develop",
+        x =>
+        {
+            x.AllowAnyHeader()
+                .AllowAnyMethod()
+                .SetIsOriginAllowed((host) => true)
+                .AllowCredentials();
+        });
 });
 WebApplication app = builder.Build();
-app.UseCors("test");
+app.UseCors("develop");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

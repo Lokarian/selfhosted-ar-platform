@@ -39,7 +39,7 @@ public class ConnectionApprovalHandler : MonoBehaviour
         if (System.Text.Encoding.ASCII.GetString(connectionData)=="Hololens")
         {
             response.CreatePlayerObject = true;
-            response.PlayerPrefabHash=919149416;
+            response.PlayerPrefabHash=1800378180;
         }
         else if (System.Text.Encoding.ASCII.GetString(connectionData)=="WebXR")
         {

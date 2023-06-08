@@ -15,13 +15,11 @@ using NetworkTransport = Unity.Netcode.NetworkTransport;
 public class SignalRNetworkTransport : NetworkTransport
 {
     private bool _isServer = false;
-    private DateTime startTime = DateTime.Now;
-    private float Now => (float)(DateTime.Now - startTime).TotalSeconds;
 
     HubConnection _connection;
     private readonly ulong _serverClientId = 0;
 
-    private Queue<Tuple<ServerMessage, float>> _messageQueue = new();
+    private Queue<ServerMessage> _messageQueue = new();
 
     private ulong _clientIdCounter = 1;
 
@@ -32,19 +30,45 @@ public class SignalRNetworkTransport : NetworkTransport
     private ChannelWriter<ServerMessage> _serverWriter;
     public Dictionary<ulong, ulong> ClientIdToRtt = new();
 
-    public void Start()
+    
+#if UNITY_WEBGL &&!UNITY_EDITOR
+    [DllImport("__Internal")]
+    public static extern void StartSignalRJs();
+
+    [DllImport("__Internal")]
+    public static extern void ProvideDataCallback(MyCallback action);
+
+    [DllImport("__Internal")]
+    public static extern void SendByteArrayToSignalR(int data, int length);
+
+    public delegate void MyCallback(IntPtr prt, int length, int eventCode);
+    [MonoPInvokeCallback(typeof(MyCallback))]
+    public static void Callback(IntPtr prt, int length, int eventCode)
     {
+        byte[] managedArray = new byte[length];
+        Marshal.Copy(prt, managedArray, 0, length);
+        var serverMessage = new ServerMessage()
+        {
+            networkEvent = (NetworkEvent)eventCode,
+            senderArMemberId = "",
+            clientId = Singleton._serverClientId,
+            payload = managedArray
+        };
+        Singleton._messageQueue.Enqueue(serverMessage);
     }
 
-    public void Update()
-    {
-    }
+    public static SignalRNetworkTransport Singleton;
+#endif
 
     private async Task StartSignalR()
     {
+#if UNITY_WEBGL&&!UNITY_EDITOR
+        Debug.Log("Starting SignalR from c# to js");
+        StartSignalRJs();
+#else
         _connection = new HubConnectionBuilder()
             .WithUrl($"{GlobalConfig.Singleton.ServerUrl}/api/hub", HttpTransportType.WebSockets,
-                options => { options.Headers.Add("Authorization", "Bearer " + GlobalConfig.Singleton.JwtToken); })
+                options => { options.Headers.Add("Authorization", "Bearer " + GlobalConfig.Singleton.AccessToken); })
             .AddMessagePackProtocol(options =>
             {
                 options.SerializerOptions =
@@ -73,7 +97,7 @@ public class SignalRNetworkTransport : NetworkTransport
             {
                 await foreach (var serverMessage in dataStream)
                 {
-                    Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
+                    //Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
                     OnServerMessage(serverMessage);
                 }
             });
@@ -90,33 +114,40 @@ public class SignalRNetworkTransport : NetworkTransport
             {
                 await foreach (var serverMessage in dataStream)
                 {
-                    Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
+                    //Debug.Log($"Received SignalR Message: {serverMessage.networkEvent}");
                     OnServerMessage(serverMessage);
                 }
             });
         }
+#endif
     }
 
     private async Task JoinArSession()
     {
         var connectionId = await _connection.InvokeAsync<Guid>("InitializeConnection", new List<string>());
+        if (_isServer)
+        {
+            GlobalConfig.Singleton.MyMemberId = connectionId.ToString();
+            return;
+        }
+
         var joinRequest = new JoinArSessionCommand()
         {
             arSessionId = GlobalConfig.Singleton.ArSessionId,
             role = GlobalConfig.Singleton.MyBuildTarget switch
             {
                 ArBuildTarget.Hololens => ArUserRole.Hololens,
-                ArBuildTarget.Server => ArUserRole.Server,
                 ArBuildTarget.Web => ArUserRole.Web,
                 _ => throw new ArgumentOutOfRangeException()
             }
         };
         var json = JsonUtility.ToJson(joinRequest);
-        using UnityWebRequest webRequest =new UnityWebRequest(GlobalConfig.Singleton.ServerUrl + "/api/Ar/JoinArSession","POST");
+        using UnityWebRequest webRequest =
+            new UnityWebRequest(GlobalConfig.Singleton.ServerUrl + "/api/Ar/JoinArSession", "POST");
         webRequest.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
-        webRequest.downloadHandler = (DownloadHandler) new DownloadHandlerBuffer();
+        webRequest.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
         webRequest.SetRequestHeader("Content-Type", "application/json");
-        webRequest.SetRequestHeader("Authorization", "Bearer " + GlobalConfig.Singleton.JwtToken);
+        webRequest.SetRequestHeader("Authorization", "Bearer " + GlobalConfig.Singleton.AccessToken);
         webRequest.SetRequestHeader("userconnectionid", connectionId.ToString());
         var operation = webRequest.SendWebRequest();
         while (!operation.isDone)
@@ -132,7 +163,7 @@ public class SignalRNetworkTransport : NetworkTransport
 
         ArMemberDto arMemberDto = JsonUtility.FromJson<ArMemberDto>(webRequest.downloadHandler.text);
         GlobalConfig.Singleton.MyMemberId = arMemberDto.id;
-        Debug.Log($"Joined AR session as {arMemberDto.Role}");
+        Debug.Log($"Joined AR session as {arMemberDto.role}");
     }
 
     private void OnMetaEvent(StreamMetaEvent metaEvent)
@@ -142,13 +173,13 @@ public class SignalRNetworkTransport : NetworkTransport
             case StreamMetaEventType.PublisherDisconnected:
                 if (_memberIdToClientId.ContainsKey(metaEvent.ClientId.ToString()))
                 {
-                    _messageQueue.Enqueue(new Tuple<ServerMessage, float>(new ServerMessage()
+                    _messageQueue.Enqueue(new ServerMessage()
                     {
                         networkEvent = NetworkEvent.Disconnect,
                         clientId = _memberIdToClientId[metaEvent.ClientId.ToString()],
                         senderArMemberId = metaEvent.ClientId.ToString(),
                         payload = default
-                    }, Now));
+                    });
                     //remove from dictionaries
                     _clientIdToMemberId.Remove(_memberIdToClientId[metaEvent.ClientId.ToString()]);
                     _memberIdToClientId.Remove(metaEvent.ClientId.ToString());
@@ -173,26 +204,31 @@ public class SignalRNetworkTransport : NetworkTransport
                 var channel = Channel.CreateUnbounded<ServerMessage>();
                 _connection.SendAsync("PublishStream", channel.Reader, serverMessage.senderArMemberId);
                 _memberIdToWriter[serverMessage.senderArMemberId] = channel.Writer;
-                _messageQueue.Enqueue(new Tuple<ServerMessage, float>(new ServerMessage()
+                _messageQueue.Enqueue(new ServerMessage()
                 {
                     networkEvent = NetworkEvent.Connect,
                     clientId = clientId,
                     senderArMemberId = serverMessage.senderArMemberId,
                     payload = default
-                }, Now));
+                });
             }
 
             serverMessage.clientId = clientId;
-            _messageQueue.Enqueue(new Tuple<ServerMessage, float>(serverMessage, Now));
+            _messageQueue.Enqueue(serverMessage);
         }
         else
         {
-            _messageQueue.Enqueue(new Tuple<ServerMessage, float>(serverMessage, Now));
+            _messageQueue.Enqueue(serverMessage);
         }
     }
 
     public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
     {
+#if UNITY_WEBGL&&!UNITY_EDITOR
+        IntPtr ptr = Marshal.UnsafeAddrOfPinnedArrayElement(payload.Array, payload.Offset);
+        SendByteArrayToSignalR(ptr.ToInt32(), payload.Count);
+#else
+        //Debug.Log("Sending: "+payload.Count+" bytes to "+clientId);
         if (!_isServer)
         {
             if (!_serverWriter.TryWrite(new ServerMessage()
@@ -231,6 +267,7 @@ public class SignalRNetworkTransport : NetworkTransport
         {
             Debug.Log($"Send: failed to write to channel for clientId={clientId}");
         }
+#endif
     }
 
     public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
@@ -238,10 +275,11 @@ public class SignalRNetworkTransport : NetworkTransport
         if (_messageQueue.Count > 0)
         {
             var message = _messageQueue.Dequeue();
-            clientId = message.Item1.clientId;
-            payload = message.Item1.payload;
-            receiveTime = message.Item2;
-            return message.Item1.networkEvent;
+            clientId = message.clientId;
+            payload = message.payload;
+            receiveTime = Time.realtimeSinceStartup;
+            //Debug.Log($"Roll Event: {(message.payload?.Length ?? 0)} bytes from {message.clientId}");
+            return message.networkEvent;
         }
 
         clientId = 0;
@@ -262,13 +300,13 @@ public class SignalRNetworkTransport : NetworkTransport
             }
             else
             {
-                _messageQueue.Enqueue(new Tuple<ServerMessage, float>(new ServerMessage()
+                _messageQueue.Enqueue(new ServerMessage()
                 {
                     networkEvent = NetworkEvent.Connect,
                     clientId = 0,
                     senderArMemberId = GlobalConfig.Singleton.MyMemberId,
                     payload = default
-                }, Now));
+                });
             }
         });
         return true;
@@ -295,18 +333,23 @@ public class SignalRNetworkTransport : NetworkTransport
     public override ulong GetCurrentRtt(ulong clientId)
     {
         var rtt = ClientIdToRtt.ContainsKey(clientId) ? ClientIdToRtt[clientId] : 0;
+        Debug.Log("Rtt: " + rtt + "ms");
         return rtt;
     }
 
     public override void Shutdown()
     {
         Debug.Log($"Shutdown");
-        _connection.StopAsync();
+        _connection?.StopAsync();
     }
 
     public override void Initialize(NetworkManager networkManager = null)
     {
         Debug.Log($"Initialize with networkManager={networkManager}");
+#if UNITY_WEBGL &&!UNITY_EDITOR
+        ProvideDataCallback(Callback);
+        Singleton = this;
+#endif
     }
 
     private void OnDestroy()
@@ -349,7 +392,6 @@ public class JoinArSessionCommand
 
 public enum ArUserRole
 {
-    Server,
     Hololens,
     Web
 }
@@ -363,5 +405,5 @@ public class ArMemberDto
     public string sessionId;
     public DateTime? DeletedAt;
 
-    public ArUserRole Role;
+    public ArUserRole role;
 }

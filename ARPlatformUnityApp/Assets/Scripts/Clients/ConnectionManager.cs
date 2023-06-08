@@ -21,13 +21,15 @@ public class ConnectionManager : MonoBehaviour
     
     void OnGUI()
     {
+#if UNITY_EDITOR
         GUILayout.BeginArea(new Rect(10, 10, 300, 300));
         if (GUILayout.Button("Connect")) Connect();
 
         GUILayout.EndArea();
+#endif
     }
 
-    void Connect()
+    public void Connect()
     {
         #if UNITY_EDITOR
         if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WSAPlayer)

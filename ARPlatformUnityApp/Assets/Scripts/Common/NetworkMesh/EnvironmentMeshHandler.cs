@@ -125,6 +125,7 @@ public class EnvironmentMeshHandler : NetworkBehaviour, SpatialAwarenessHandler
         GameObject go = Instantiate(NetworkMeshPrefab, Vector3.zero, Quaternion.identity);
         go.name = gameObjectName;
         go.GetComponent<NetworkObject>().SpawnWithOwnership(rpcParams.Receive.SenderClientId);
+        go.GetComponent<NetworkObject>().DontDestroyWithOwner=true;
         go.GetComponent<NetworkMesh>().RemoveMeshRenderer_ClientRpc(new ClientRpcParams()
         {
             Send = new ClientRpcSendParams()
