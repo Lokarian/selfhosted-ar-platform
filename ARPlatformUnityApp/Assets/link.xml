@@ -28,4 +28,22 @@
     <assembly fullname="System.Text.Json" preserve="all"/>
     <assembly fullname="System.Threading.Channels" preserve="all"/>
     <assembly fullname="System.Threading.Tasks.Extensions" preserve="all"/>
+	<assembly fullname="System.Core">
+        <type fullname="System.Linq.Expressions" preserve="all"/>
+        <type fullname="System.Linq.Expressions.*" preserve="all"/>
+        <type fullname="System.Linq.Expressions.Interpreter.LightLambda" preserve="all"/>
+        <type fullname="System.Linq.Expressions.LambdaExpression" preserve="all"/>
+    </assembly>
+    <assembly fullname="System.Linq.Expressions">
+        <type fullname="System.Linq.Expressions" preserve="all"/>
+        <type fullname="System.Linq.Expressions.*" preserve="all"/>
+        <type fullname="System.Linq.Expressions.Interpreter.LightLambda" preserve="all"/>
+        <type fullname="System.Linq.Expressions.LambdaExpression" preserve="all"/>
+    </assembly>
+    <assembly fullname="netstandard">
+        <type fullname="System.Linq.Expressions" preserve="all"/>
+        <type fullname="System.Linq.Expressions.*" preserve="all"/>
+        <type fullname="System.Linq.Expressions.Interpreter.LightLambda" preserve="all"/>
+        <type fullname="System.Linq.Expressions.LambdaExpression" preserve="all"/>
+    </assembly>
 </linker>

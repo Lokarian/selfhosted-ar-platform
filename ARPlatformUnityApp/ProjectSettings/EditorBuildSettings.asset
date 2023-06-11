@@ -6,9 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Bootstrap.unity
-    guid: 40506226c297a58498a4d9a36d524c1d
-  - enabled: 1
     path: Assets/Scenes/Hololens/Connecting.unity
     guid: e633c6b7abb864e42948f33b2a5ef2b2
   - enabled: 1
@@ -20,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/WebXR/Connecting.unity
     guid: 812b2097cbd638a4aadaaf9be9070652
+  - enabled: 1
+    path: Assets/Scenes/Bootstrap.unity
+    guid: 40506226c297a58498a4d9a36d524c1d
   m_configObjects:
     WebXR.Settings: {fileID: 11400000, guid: 6ff8e9249355e44488b83f1fd47a157a, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: eb3d47dcc40641e449228f6c91c2288c, type: 2}

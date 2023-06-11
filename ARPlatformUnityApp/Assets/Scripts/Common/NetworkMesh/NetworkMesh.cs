@@ -3,14 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Netcode;
 using UnityEngine;
 
 public class NetworkMesh : NetworkBehaviour
 {
     private Mesh previousMesh;
-    private List<byte[]> meshDataChunks = new List<byte[]>();
+    private List<Vector3> _verticesChunks = new();
+    private List<int> _indicesChunks = new();
+    private Coroutine _sendMeshCoroutine;
+
 
     // Start is called before the first frame update
     void Start()
@@ -26,14 +31,79 @@ public class NetworkMesh : NetworkBehaviour
             return;
         }
 
-        var meshFilter = GetComponent<MeshFilter>();
-        if (meshFilter.sharedMesh != previousMesh)
+        /*
+        if (_meshSerializationJobHandle.HasValue && _meshSerializationJobHandle.Value.IsCompleted &&
+            _meshBytes.HasValue)
         {
-            previousMesh = meshFilter.sharedMesh;
-            if (meshFilter.sharedMesh != null)
+            var meshBytes = _meshBytes.Value.ToArray();
+            var chunkSize = 10000;
+            var chunkCount = meshBytes.Length / chunkSize;
+            if (meshBytes.Length % chunkSize != 0)
             {
-                SendMesh();
+                chunkCount++;
             }
+
+            if (IsServer)
+            {
+                var clientRpcParams = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams
+                    {
+                        //send to all clients except the owner
+                        TargetClientIds = NetworkManager.Singleton.ConnectedClientsList.Select(x => x.ClientId)
+                            .Except(new[] { OwnerClientId }).ToList()
+                    }
+                };
+                for (var i = 0; i < chunkCount; i++)
+                {
+                    var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
+                    var lastChunk = i == chunkCount - 1;
+                    UpdateMeshChunk_ClientRpc(chunk, i, lastChunk, clientRpcParams);
+                }
+            }
+            else
+            {
+                for (var i = 0; i < chunkCount; i++)
+                {
+                    var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
+                    var lastChunk = i == chunkCount - 1;
+                    UpdateMeshChunk_ServerRpc(chunk, i, lastChunk);
+                }
+            }
+        }
+        */
+
+        var meshFilter = GetComponent<MeshFilter>();
+        var mesh = meshFilter.mesh;
+        if (mesh != previousMesh)
+        {
+            previousMesh = mesh;
+            if (mesh != null)
+            {
+                if (_sendMeshCoroutine != null)
+                {
+                    StopCoroutine(_sendMeshCoroutine);
+                }
+
+                _sendMeshCoroutine = StartCoroutine(SendMeshCoroutine(mesh));
+            }
+        }
+    }
+
+    public IEnumerator SendMeshCoroutine(Mesh mesh)
+    {
+        var maxSendSize = 1000;
+        //max from vertices and triangles
+        var chunkCount = Math.Max(1,
+            Math.Max(Math.Ceiling(mesh.vertices.Length / (float)maxSendSize),
+                Math.Ceiling(mesh.triangles.Length / (float)maxSendSize)));
+        for (var i = 0; i < chunkCount; i++)
+        {
+            var vertices = mesh.vertices.Skip(i * maxSendSize).Take(maxSendSize).ToArray();
+            var triangles = mesh.triangles.Skip(i * maxSendSize).Take(maxSendSize).ToArray();
+            var lastChunk = i == chunkCount - 1;
+            UpdateMeshChunk_ServerRpc(vertices, triangles, i, lastChunk);
+            yield return null;
         }
     }
 
@@ -47,55 +117,12 @@ public class NetworkMesh : NetworkBehaviour
         }
     }
 
-    void SendMesh()
-    {
-        var meshFilter = GetComponent<MeshFilter>();
-        if (!meshFilter.sharedMesh)
-        {
-            return;
-        }
-
-        byte[] meshBytes = MeshSerializer.SerializeMesh(meshFilter.sharedMesh);
-        var chunkSize = 10000;
-        var chunkCount = meshBytes.Length / chunkSize;
-        if (meshBytes.Length % chunkSize != 0)
-        {
-            chunkCount++;
-        }
-
-        if (IsServer)
-        {
-            var clientRpcParams = new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams
-                {
-                    //send to all clients except the owner
-                    TargetClientIds = NetworkManager.Singleton.ConnectedClientsList.Select(x => x.ClientId)
-                        .Except(new[] { OwnerClientId }).ToList()
-                }
-            };
-            for (var i = 0; i < chunkCount; i++)
-            {
-                var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
-                var lastChunk = i == chunkCount - 1;
-                UpdateMeshChunk_ClientRpc(chunk, i, lastChunk, clientRpcParams);
-            }
-        }
-        else
-        {
-            for (var i = 0; i < chunkCount; i++)
-            {
-                var chunk = meshBytes.Skip(i * chunkSize).Take(chunkSize).ToArray();
-                var lastChunk = i == chunkCount - 1;
-                UpdateMeshChunk_ServerRpc(chunk, i, lastChunk);
-            }
-        }
-    }
 
     [ServerRpc]
-    void UpdateMeshChunk_ServerRpc(byte[] meshBytes, int chunkNumber, bool lastChunk)
+    void UpdateMeshChunk_ServerRpc(Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk,
+        ServerRpcParams serverRpcParams = default)
     {
-        UpdateMeshChunk(meshBytes, chunkNumber, lastChunk);
+        UpdateMeshChunk(vertices, triangles, chunkNumber, lastChunk);
         var allClientIds = NetworkManager.Singleton.ConnectedClientsList.Select(x => x.ClientId);
         ClientRpcParams clientRpcParams = new ClientRpcParams
         {
@@ -105,38 +132,37 @@ public class NetworkMesh : NetworkBehaviour
                 TargetClientIds = allClientIds.Except(new[] { OwnerClientId }).ToList()
             }
         };
+        UpdateMeshChunk_ClientRpc(vertices, triangles, chunkNumber, lastChunk, clientRpcParams);
     }
 
     [ClientRpc]
-    void UpdateMeshChunk_ClientRpc(byte[] meshBytes, int chunkNumber, bool lastChunk,
+    void UpdateMeshChunk_ClientRpc(Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk,
         ClientRpcParams clientRpcParams = default)
     {
-        UpdateMeshChunk(meshBytes, chunkNumber, lastChunk);
+        UpdateMeshChunk(vertices, triangles, chunkNumber, lastChunk);
     }
 
-    void UpdateMeshChunk(byte[] meshBytes, int chunkNumber, bool lastChunk)
+    void UpdateMeshChunk(Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk)
     {
         if (chunkNumber == 0)
         {
-            meshDataChunks.Clear();
+            _verticesChunks.Clear();
+            _indicesChunks.Clear();
         }
 
-        meshDataChunks.Add(meshBytes);
+        _verticesChunks.AddRange(vertices);
+        _indicesChunks.AddRange(triangles);
         if (lastChunk)
         {
-            var totalLength = meshDataChunks.Sum(chunk => chunk.Length);
-            var byteArray = new byte[totalLength];
-            var offset = 0;
-            foreach (var chunk in meshDataChunks)
-            {
-                Array.Copy(chunk, 0, byteArray, offset, chunk.Length);
-                offset += chunk.Length;
-            }
-
-            var mesh = MeshSerializer.DeserializeMesh(byteArray);
+            var mesh = new Mesh();
+            mesh.SetVertices(_verticesChunks);
+            mesh.SetTriangles(_indicesChunks, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            mesh.RecalculateTangents();
             if (mesh != null)
             {
-                GetComponent<MeshFilter>().sharedMesh = mesh;
+                GetComponent<MeshFilter>().mesh = mesh;
             }
         }
     }
@@ -275,6 +301,11 @@ public static class MeshSerializer
 
     const uint m_Magic = 0x6873654D; // "Mesh"
 
+    public static int GetMeshDataSize(Mesh.MeshData meshData, bool hasTangents, bool hasColors, bool hasUvs)
+    {
+        return 0;
+    }
+
     public static byte[] SerializeMesh(Mesh aMesh)
     {
         using (var stream = new MemoryStream())
@@ -288,6 +319,155 @@ public static class MeshSerializer
     {
         using (var writer = new BinaryWriter(aStream))
             SerializeMesh(writer, aMesh);
+    }
+
+    public static byte[] SerializeMeshData(Mesh.MeshData aMesh, bool hasTangents, bool hasColors, bool[] hasUvs,
+        bool hasBoneWeights)
+    {
+        using (var stream = new MemoryStream())
+        {
+            SerializeMeshData(stream, aMesh, hasTangents, hasColors, hasUvs);
+            return stream.ToArray();
+        }
+    }
+
+    public static void SerializeMeshData(MemoryStream aStream, Mesh.MeshData aMesh, bool hasTangents, bool hasColors,
+        bool[] hasUvs)
+    {
+        using (var writer = new BinaryWriter(aStream))
+            SerializeMeshData(writer, aMesh, hasTangents, hasColors, hasUvs);
+    }
+
+
+    public static void SerializeMeshData(BinaryWriter aWriter, Mesh.MeshData aMesh, bool hasTangents, bool hasColors,
+        bool[] hasUvs)
+    {
+        aWriter.Write(m_Magic);
+        var vertices = new NativeArray<Vector3>(aMesh.vertexCount, Allocator.TempJob);
+        aMesh.GetVertices(vertices);
+        int count = vertices.Length;
+        int subMeshCount = aMesh.subMeshCount;
+        aWriter.Write(count);
+        aWriter.Write(subMeshCount);
+        foreach (var v in vertices)
+            aWriter.WriteVector3(v);
+        vertices.Dispose();
+
+        var normals = new NativeArray<Vector3>(aMesh.vertexCount, Allocator.TempJob);
+        aMesh.GetNormals(normals);
+        if (normals.Length == count)
+        {
+            aWriter.Write((byte)EChunkID.Normals);
+            foreach (var v in normals)
+                aWriter.WriteVector3(v);
+        }
+
+        normals.Dispose();
+
+        if (hasTangents)
+        {
+            var tangents = new NativeArray<Vector4>(aMesh.vertexCount, Allocator.TempJob);
+            aMesh.GetTangents(tangents);
+
+            if (tangents.Length == count)
+            {
+                aWriter.Write((byte)EChunkID.Tangents);
+                foreach (var v in tangents)
+                    aWriter.WriteVector4(v);
+            }
+
+            tangents.Dispose();
+        }
+
+        if (hasColors)
+        {
+            var colors = new NativeArray<Color32>(aMesh.vertexCount, Allocator.TempJob);
+            aMesh.GetColors(colors);
+            if (colors.Length == count)
+            {
+                aWriter.Write((byte)EChunkID.Colors);
+                foreach (var c in colors)
+                    aWriter.WriteColor32(c);
+            }
+
+            colors.Dispose();
+        }
+
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (!hasUvs[i])
+                continue;
+
+            var uvs = new NativeArray<Vector4>(aMesh.vertexCount, Allocator.TempJob);
+            aMesh.GetUVs(i, uvs);
+            if (uvs.Length == count)
+            {
+                aWriter.Write((byte)((byte)EChunkID.UV0 + i));
+                byte channelCount = 2;
+                foreach (var uv in uvs)
+                {
+                    if (uv.z != 0f)
+                        channelCount = 3;
+                    if (uv.w != 0f)
+                    {
+                        channelCount = 4;
+                        break;
+                    }
+                }
+
+                aWriter.Write(channelCount);
+                if (channelCount == 2)
+                    foreach (var uv in uvs)
+                        aWriter.WriteVector2(uv);
+                else if (channelCount == 3)
+                    foreach (var uv in uvs)
+                        aWriter.WriteVector3(uv);
+                else
+                    foreach (var uv in uvs)
+                        aWriter.WriteVector4(uv);
+            }
+
+            uvs.Dispose();
+        }
+
+
+        for (int i = 0; i < subMeshCount; i++)
+        {
+            var subMeshDesc = aMesh.GetSubMesh(i);
+            var indices = new NativeArray<int>(subMeshDesc.indexCount, Allocator.TempJob);
+            aMesh.GetIndices(indices, i);
+            if (indices.Length > 0)
+            {
+                aWriter.Write((byte)EChunkID.Submesh);
+                aWriter.Write((byte)subMeshDesc.topology);
+                aWriter.Write(indices.Length);
+                var max = int.MinValue;
+                foreach (var index in indices) max = Math.Max(max, index);
+                if (max < 256)
+                {
+                    aWriter.Write((byte)1);
+                    foreach (var index in indices)
+                        aWriter.Write((byte)index);
+                }
+                else if (max < 65536)
+                {
+                    aWriter.Write((byte)2);
+                    foreach (var index in indices)
+                        aWriter.Write((ushort)index);
+                }
+                else
+                {
+                    aWriter.Write((byte)4);
+                    foreach (var index in indices)
+                        aWriter.Write(index);
+                }
+            }
+
+            indices.Dispose();
+        }
+
+        aWriter.Write((byte)EChunkID.End);
     }
 
     public static void SerializeMesh(BinaryWriter aWriter, Mesh aMesh)

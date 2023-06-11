@@ -30,8 +30,8 @@ public class SignalRNetworkTransport : NetworkTransport
     private ChannelWriter<ServerMessage> _serverWriter;
     public Dictionary<ulong, ulong> ClientIdToRtt = new();
 
-    
-#if UNITY_WEBGL &&!UNITY_EDITOR
+
+#if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]
     public static extern void StartSignalRJs();
 
@@ -71,8 +71,13 @@ public class SignalRNetworkTransport : NetworkTransport
                 options => { options.Headers.Add("Authorization", "Bearer " + GlobalConfig.Singleton.AccessToken); })
             .AddMessagePackProtocol(options =>
             {
-                options.SerializerOptions =
-                    MessagePackSerializerOptions.Standard.WithResolver(ContractlessStandardResolver.Instance);
+                StaticCompositeResolver.Instance.Register(
+            MessagePack.Resolvers.GeneratedResolver.Instance,
+            MessagePack.Resolvers.StandardResolver.Instance
+        );
+                options.SerializerOptions = MessagePackSerializerOptions.Standard
+                    .WithResolver(StaticCompositeResolver.Instance)
+                    .WithSecurity(MessagePackSecurity.UntrustedData);
             })
             .Build();
         await _connection.StartAsync();
@@ -175,7 +180,7 @@ public class SignalRNetworkTransport : NetworkTransport
                 {
                     _messageQueue.Enqueue(new ServerMessage()
                     {
-                        networkEvent = NetworkEvent.Disconnect,
+                        networkEvent = (int)NetworkEvent.Disconnect,
                         clientId = _memberIdToClientId[metaEvent.ClientId.ToString()],
                         senderArMemberId = metaEvent.ClientId.ToString(),
                         payload = default
@@ -206,7 +211,7 @@ public class SignalRNetworkTransport : NetworkTransport
                 _memberIdToWriter[serverMessage.senderArMemberId] = channel.Writer;
                 _messageQueue.Enqueue(new ServerMessage()
                 {
-                    networkEvent = NetworkEvent.Connect,
+                    networkEvent = (int)NetworkEvent.Connect,
                     clientId = clientId,
                     senderArMemberId = serverMessage.senderArMemberId,
                     payload = default
@@ -232,12 +237,12 @@ public class SignalRNetworkTransport : NetworkTransport
         if (!_isServer)
         {
             if (!_serverWriter.TryWrite(new ServerMessage()
-                {
-                    networkEvent = NetworkEvent.Data,
-                    clientId = 0,
-                    payload = payload.ToArray(),
-                    senderArMemberId = GlobalConfig.Singleton.MyMemberId
-                }))
+            {
+                networkEvent = (int)NetworkEvent.Data,
+                clientId = 0,
+                payload = payload.ToArray(),
+                senderArMemberId = GlobalConfig.Singleton.MyMemberId
+            }))
             {
                 Debug.Log($"Send: failed to write to channel for clientId={clientId}");
             }
@@ -258,12 +263,12 @@ public class SignalRNetworkTransport : NetworkTransport
         }
 
         if (!writer.TryWrite(new ServerMessage()
-            {
-                networkEvent = NetworkEvent.Data,
-                clientId = _serverClientId,
-                payload = payload.ToArray(),
-                senderArMemberId = GlobalConfig.Singleton.MyMemberId
-            }))
+        {
+            networkEvent = (int)NetworkEvent.Data,
+            clientId = _serverClientId,
+            payload = payload.ToArray(),
+            senderArMemberId = GlobalConfig.Singleton.MyMemberId
+        }))
         {
             Debug.Log($"Send: failed to write to channel for clientId={clientId}");
         }
@@ -279,7 +284,7 @@ public class SignalRNetworkTransport : NetworkTransport
             payload = message.payload;
             receiveTime = Time.realtimeSinceStartup;
             //Debug.Log($"Roll Event: {(message.payload?.Length ?? 0)} bytes from {message.clientId}");
-            return message.networkEvent;
+            return (NetworkEvent)message.networkEvent;
         }
 
         clientId = 0;
@@ -302,7 +307,7 @@ public class SignalRNetworkTransport : NetworkTransport
             {
                 _messageQueue.Enqueue(new ServerMessage()
                 {
-                    networkEvent = NetworkEvent.Connect,
+                    networkEvent = (int)NetworkEvent.Connect,
                     clientId = 0,
                     senderArMemberId = GlobalConfig.Singleton.MyMemberId,
                     payload = default
@@ -360,13 +365,20 @@ public class SignalRNetworkTransport : NetworkTransport
     public override ulong ServerClientId => 0;
 }
 
+[MessagePackObject]
 public class ServerMessage
 {
-    public NetworkEvent networkEvent;
+    [Key(0)]
+    public int networkEvent;
+    [Key(1)]
     public ulong clientId;
+    [Key(2)]
     public byte[] payload;
+    [Key(3)]
     public string senderArMemberId;
 }
+
+
 
 public enum StreamMetaEventType
 {

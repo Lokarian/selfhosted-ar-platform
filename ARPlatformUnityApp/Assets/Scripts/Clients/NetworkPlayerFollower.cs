@@ -21,7 +21,10 @@ public class NetworkPlayerFollower : MonoBehaviour
             if (NetworkManager.Singleton.LocalClient?.PlayerObject)
             {
                 playerObject = NetworkManager.Singleton.LocalClient.PlayerObject.gameObject;
-                playerObject.GetComponent<Renderer>().enabled = false;
+                if (playerObject.GetComponent<Renderer>())
+                {
+                    playerObject.GetComponent<Renderer>().enabled = false;
+                }
                 foreach (var childRenderer in playerObject.GetComponentsInChildren<Renderer>())
                 {
                     childRenderer.enabled = false;

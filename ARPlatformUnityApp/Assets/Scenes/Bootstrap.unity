@@ -296,7 +296,7 @@ MonoBehaviour:
   LogLevel: 1
   NetworkConfig:
     ProtocolVersion: 0
-    NetworkTransport: {fileID: 1128539876}
+    NetworkTransport: {fileID: 1128539875}
     PlayerPrefab: {fileID: 0}
     NetworkPrefabs:
     - Override: 0
@@ -361,7 +361,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54618226c9df54608af7731199ed5f0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ConnectAddress: localhost
+  ConnectAddress: reithmeir.duckdns.org
   Path: /netcode
   Port: 7777
   SecureConnection: 0

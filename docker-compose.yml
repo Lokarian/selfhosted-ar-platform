@@ -30,7 +30,7 @@ services:
     volumes:
       - ${CERTS_VOLUME}:/https
       - ${FILES_VOLUME}:/filestorage
-      - ${WEBGL_VOLUME}:/wwwroot/webgl
+      - ${WEBGL_VOLUME}:/app/wwwroot/webgl
     depends_on:
       - db
   
