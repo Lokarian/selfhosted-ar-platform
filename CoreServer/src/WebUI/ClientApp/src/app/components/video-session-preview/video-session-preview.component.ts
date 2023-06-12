@@ -11,6 +11,7 @@ import {Router} from "@angular/router";
 export class VideoSessionPreviewComponent implements OnInit {
 
   @Input() session: VideoSessionDto;
+  @Input() big:boolean=false;
   @Output() join:EventEmitter<VideoSessionDto>=new EventEmitter();
   constructor() {
   }

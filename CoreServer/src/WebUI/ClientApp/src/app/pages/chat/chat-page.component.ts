@@ -11,6 +11,7 @@ import {BehaviorSubject, Observable, switchMap, tap} from "rxjs";
 import {filter, map} from "rxjs/operators";
 import {SessionFacade} from "../../services/session-facade.service";
 import {VideoFacade} from "../../services/video-facade.service";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-chat-page',
@@ -36,7 +37,8 @@ export class ChatPageComponent implements OnInit {
               private chatClient: ChatClient,
               private sessionFacade: SessionFacade,
               private videoFacade: VideoFacade,
-              private sessionClient: SessionClient) {
+              private sessionClient: SessionClient,
+              private router: Router) {
 
     this.sessions$ = this.chatFacade.sessions$.pipe(tap(sessions => {
       const session = sessions.find(s => s.baseSessionId === this.selectedSession?.baseSessionId);
@@ -99,6 +101,6 @@ export class ChatPageComponent implements OnInit {
 
 
   joinVideoSession(videoSession: VideoSessionDto) {
-    this.videoSession = videoSession;
+    this.router.navigate(['/call', videoSession.baseSessionId], {queryParams:{video:true}});
   }
 }

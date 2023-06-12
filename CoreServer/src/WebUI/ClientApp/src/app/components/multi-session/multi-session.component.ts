@@ -38,5 +38,7 @@ export class MultiSessionComponent implements OnInit {
     this.showChat = this.initiallyShowChat;
     this.showVideo = this.initiallyShowVideo;
     this.showAr = this.initiallyShowAr;
+    this.joinedVideoSession=this.initiallyShowVideo;
+
   }
 }

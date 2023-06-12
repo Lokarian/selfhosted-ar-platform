@@ -2,15 +2,15 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
-  ComponentRef,
+  ComponentRef, EventEmitter,
   Input,
-  OnInit,
+  OnInit, Output,
   ViewChild,
   ViewContainerRef,
   ViewEncapsulation,
   ViewRef
 } from '@angular/core';
-import {VideoClient, VideoMemberDto, VideoSessionDto} from "../../web-api-client";
+import {LeaveVideoSessionCommand, VideoClient, VideoMemberDto, VideoSessionDto} from "../../web-api-client";
 import {BehaviorSubject, concatMap, distinctUntilChanged, switchMap, tap} from "rxjs";
 import {filter, map} from "rxjs/operators";
 import {NgxPopperjsDirective, NgxPopperjsPlacements, NgxPopperjsTriggers} from 'ngx-popperjs';
@@ -51,6 +51,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     return this.sessionSubject.value;
   }
 
+  @Output() onLeaveCall = new EventEmitter();
   @ViewChild('cameraButton', {read: NgxPopperjsDirective}) cameraButtonElement: NgxPopperjsDirective
   @ViewChild('microphoneButton', {read: NgxPopperjsDirective}) microphoneButtonElement: NgxPopperjsDirective
   public NgxPopperjsTriggers = NgxPopperjsTriggers;
@@ -79,6 +80,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   public selectedCamera?: MediaDeviceInfo;
   public selectedMicrophone?: MediaDeviceInfo;
 
+  private myTracksForCleanup: MediaStreamTrack[] = [];
 
   constructor(private videoClient: VideoClient,
               private videoFacade: VideoFacade,
@@ -115,27 +117,41 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   }
 
   onSessionDetailChanged(session: VideoSessionDto) {
+    console.log("session detail changed current members", session.members.map(m => m.id));
+    console.log("current webrtc connections", JSON.stringify(this.webRtcConnectionDetails.keys()));
 
+    this.webRtcConnectionDetails.forEach((value, key) => {
+      if (!session.members.some(m => m.id === key)) {
+        console.log("member", key, "left the session");
+        this.webRtcConnectionDetails.get(key).pc.close();
+        for(let val of this.remoteStreams.values()){
+          if(val.memberId === key){
+            this.removeStreamFromUi(val.stream);
+          }
+        }
+        this.webRtcConnectionDetails.delete(key);
+      }
+    });
   }
 
   async startWebRtcConnection(memberId: string, amIPolite: boolean) {
     console.log("starting webrtc connection to", memberId, amIPolite ? " politely" : " impolitely");
     const pc = new RTCPeerConnection(environment.iceConfiguration);
-    this.webRtcConnectionDetails[memberId] = {
+    this.webRtcConnectionDetails.set(memberId, {
       pc: pc,
       amIPolite: amIPolite,
       trackMap: new Map<MediaStreamTrack, RTCRtpSender>(),
       makingOffer: false,
       ignoreOffer: false,
-    };
+    });
     try {
       this.userMediaStream.getTracks().forEach(track => {
         const sender = pc.addTrack(track, this.userMediaStream);
-        this.webRtcConnectionDetails[memberId].trackMap.set(track, sender);
+        this.webRtcConnectionDetails.get(memberId).trackMap.set(track, sender);
       });
       this.screenShareStream?.getTracks().forEach(track => {
         const sender = pc.addTrack(track, this.screenShareStream);
-        this.webRtcConnectionDetails[memberId].trackMap.set(track, sender);
+        this.webRtcConnectionDetails.get(memberId).trackMap.set(track, sender);
       });
     } catch (err) {
       console.error(err);
@@ -206,11 +222,11 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   }
 
   async getWebRtcConnection(memberId: string) {
-    let connectionDetails = this.webRtcConnectionDetails[memberId];
+    let connectionDetails = this.webRtcConnectionDetails.get(memberId);
     // if we do not have a connection to this member, create one
     if (!connectionDetails) {
       await this.startWebRtcConnection(memberId, true);
-      connectionDetails = this.webRtcConnectionDetails[memberId];
+      connectionDetails = this.webRtcConnectionDetails.get(memberId);
     }
     return connectionDetails;
   }
@@ -336,7 +352,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   addLocalTrack(track: MediaStreamTrack, stream: MediaStream) {
     console.log("adding local track", track, stream);
     stream.addTrack(track);
-    for (let connectionDetails of Object.values(this.webRtcConnectionDetails)) {
+    for (let connectionDetails of this.webRtcConnectionDetails.values()) {
       const sender = connectionDetails.pc.addTrack(track, stream);
       connectionDetails.trackMap.set(track, sender);
     }
@@ -349,7 +365,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
       track.stop();
     }
     stream.removeTrack(track);
-    for (let connectionDetails of Object.values(this.webRtcConnectionDetails)) {
+    for (let connectionDetails of this.webRtcConnectionDetails.values()) {
       const sender = connectionDetails.trackMap.get(track);
       if (sender) {
         connectionDetails.pc.removeTrack(sender);
@@ -369,7 +385,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   public async getMediaDevices() {
     //ask for permission to use microphone and camera
     try {
-      await navigator.mediaDevices.getUserMedia({video: true, audio: true})
+      (await navigator.mediaDevices.getUserMedia({video: true, audio: true})).getTracks().forEach(t => t.stop());
     } catch (e) {
       this.notificationService.error(`You need to allow access to your microphone and camera to use this feature. Please refresh the page and try again.`);
     }
@@ -441,6 +457,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
           this.stopScreenShare();
         });
         this.addStreamToUi(stream, this.myMember.id);
+        stream.getTracks().forEach(t => this.myTracksForCleanup.push(t));
       });
     }
   }
@@ -468,6 +485,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
           console.warn("unexpected number of audio tracks when setting microphone", stream.getAudioTracks());
         }
         this.addLocalTrack(stream.getAudioTracks()[0], this.userMediaStream);
+        stream.getTracks().forEach(t => this.myTracksForCleanup.push(t));
       });
     }
   }
@@ -485,8 +503,16 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
           console.warn("unexpected number of video tracks when setting camera", stream.getVideoTracks());
         }
         this.addLocalTrack(stream.getVideoTracks()[0], this.userMediaStream);
+        stream.getTracks().forEach(t => this.myTracksForCleanup.push(t));
       });
     }
   }
 
+  leaveCall() {
+    this.videoClient.leaveVideoSession(new LeaveVideoSessionCommand({videoMemberId:this.myMember.id})).subscribe();
+    this.myTracksForCleanup.forEach(t => t.stop());
+    this.webRtcConnectionDetails.forEach(c => c.pc.close());
+
+    this.onLeaveCall.emit();
+  }
 }

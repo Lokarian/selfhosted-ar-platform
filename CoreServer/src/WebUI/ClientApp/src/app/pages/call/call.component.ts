@@ -20,7 +20,8 @@ export class CallComponent implements OnInit {
   public chatSession$: Observable<SessionDto> | null = null;
   public videoSession$: Observable<SessionDto> | null = null;
   public arSession$: Observable<SessionDto> | null = null;
-
+  public joinVideo=false;
+  public joinAr=false;
   constructor(private activatedRoute: ActivatedRoute,private router:Router, private sessionFacade: SessionFacade, private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade, private fb: FormBuilder) {
 
   }
@@ -41,8 +42,10 @@ export class CallComponent implements OnInit {
         this.videoSession$ = this.videoFacade.session$(sessionId);
         this.arSession$ = this.arFacade.session$(sessionId);
       }
-
     });
+    //if qp video=true then join video
+    this.joinVideo=!!this.activatedRoute.snapshot.queryParams["video"];
+    this.joinAr=!!this.activatedRoute.snapshot.queryParams["ar"];
   }
 
   public setMembers(members: AppUserDto[]) {

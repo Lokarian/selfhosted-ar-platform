@@ -1,5 +1,5 @@
 <app-multi-session *ngIf="session$|async as session" [baseSession]="session" [initiallyShowChat]="!!session.chatSession"
-                   [initiallyShowVideo]="!!session.chatSession"
+                   [initiallyShowVideo]="joinVideo"
                    [initiallyShowAr]="!!session.arSession"></app-multi-session>
 <form [formGroup]="form" *ngIf="!(session$|async)" class="flex flex-col justify-center items-center w-full h-full">
   <div class="rounded-md bg-background-secondary p-4 w-80">

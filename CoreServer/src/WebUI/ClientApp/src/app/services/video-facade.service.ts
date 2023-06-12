@@ -6,7 +6,7 @@ import {
   ChatSessionDto,
   CreateVideoSessionCommand,
   CreateVideoStreamCommand,
-  JoinVideoSessionCommand,
+  JoinVideoSessionCommand, LeaveVideoSessionCommand,
   VideoClient, VideoMemberDto,
   VideoSessionDto,
   VideoStreamDto
