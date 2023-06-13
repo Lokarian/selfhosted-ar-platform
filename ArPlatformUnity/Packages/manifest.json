@@ -11,16 +11,20 @@
   ],
   "dependencies": {
     "com.atteneder.gltfast": "5.0.4",
+    "com.community.netcode.transport.websocket": "https://github.com/Unity-Technologies/multiplayer-community-contributions.git?path=/Transports/com.community.netcode.transport.websocket",
     "com.de-panther.webxr": "0.16.1-preview",
     "com.de-panther.webxr-interactions": "0.16.3-preview",
     "com.microsoft.mixedreality.openxr": "file:MixedReality/com.microsoft.mixedreality.openxr-1.8.0.tgz",
     "com.microsoft.mrtk.core": "file:MixedReality/com.microsoft.mrtk.core-3.0.0-pre.16.tgz",
+    "com.microsoft.mrtk.extendedassets": "file:MixedReality/com.microsoft.mrtk.extendedassets-3.0.0-pre.16.tgz",
     "com.microsoft.mrtk.graphicstools.unity": "file:MixedReality/com.microsoft.mrtk.graphicstools.unity-0.4.0.tgz",
     "com.microsoft.mrtk.input": "file:MixedReality/com.microsoft.mrtk.input-3.0.0-pre.16.tgz",
     "com.microsoft.mrtk.spatialmanipulation": "file:MixedReality/com.microsoft.mrtk.spatialmanipulation-3.0.0-pre.16.tgz",
     "com.microsoft.mrtk.standardassets": "file:MixedReality/com.microsoft.mrtk.standardassets-3.0.0-pre.16.tgz",
+    "com.microsoft.mrtk.tts.windows": "file:MixedReality/com.microsoft.mrtk.tts.windows-1.0.1.tgz",
     "com.microsoft.mrtk.uxcomponents": "file:MixedReality/com.microsoft.mrtk.uxcomponents-3.0.0-pre.16.tgz",
     "com.microsoft.mrtk.uxcore": "file:MixedReality/com.microsoft.mrtk.uxcore-3.0.0-pre.16.tgz",
+    "com.microsoft.mrtk.windowsspeech": "file:MixedReality/com.microsoft.mrtk.windowsspeech-3.0.0-pre.16.tgz",
     "com.microsoft.spatialaudio.spatializer.unity": "file:MixedReality/com.microsoft.spatialaudio.spatializer.unity-2.0.37.tgz",
     "com.unity.collab-proxy": "2.0.1",
     "com.unity.feature.development": "1.0.1",
@@ -36,6 +40,7 @@
     "com.unity.ugui": "1.0.0",
     "com.unity.visualscripting": "1.8.0",
     "com.unity.xr.openxr": "1.6.0",
+    "com.veriorpies.parrelsync": "https://github.com/VeriorPies/ParrelSync.git?path=/ParrelSync",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
@@ -66,9 +71,6 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0",
-    "com.microsoft.mrtk.extendedassets": "file:MixedReality/com.microsoft.mrtk.extendedassets-3.0.0-pre.16.tgz",
-    "com.microsoft.mrtk.windowsspeech": "file:MixedReality/com.microsoft.mrtk.windowsspeech-3.0.0-pre.16.tgz",
-    "com.microsoft.mrtk.tts.windows": "file:MixedReality/com.microsoft.mrtk.tts.windows-1.0.1.tgz"
+    "com.unity.modules.xr": "1.0.0"
   }
 }

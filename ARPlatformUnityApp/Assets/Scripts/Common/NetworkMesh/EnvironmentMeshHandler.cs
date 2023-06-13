@@ -182,7 +182,7 @@ public class EnvironmentMeshHandler : NetworkBehaviour, SpatialAwarenessHandler
         }
         else
         {
-            //check if mesh ist still alive
+            //check if mesh ist still ali   ve
             if (!networkMesh)
             {
                 return;

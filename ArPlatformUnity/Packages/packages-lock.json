@@ -12,6 +12,13 @@
       },
       "url": "https://package.openupm.com"
     },
+    "com.community.netcode.transport.websocket": {
+      "version": "https://github.com/Unity-Technologies/multiplayer-community-contributions.git?path=/Transports/com.community.netcode.transport.websocket",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "d862504b148f6c3a31763797900eb5a54d4625a5"
+    },
     "com.de-panther.webxr": {
       "version": "0.16.1-preview",
       "depth": 0,
@@ -450,6 +457,13 @@
         "com.unity.inputsystem": "1.4.4"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.veriorpies.parrelsync": {
+      "version": "https://github.com/VeriorPies/ParrelSync.git?path=/ParrelSync",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "141b4e1e31966242a6fb7c495b52ac3d1221bc75"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

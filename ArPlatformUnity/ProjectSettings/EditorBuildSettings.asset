@@ -9,14 +9,17 @@ EditorBuildSettings:
     path: Assets/Scenes/Bootstrap.unity
     guid: adffcfab360f45742ad353ca8e731f1e
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
-  - enabled: 1
     path: Assets/Scenes/WebXR/Connecting.unity
     guid: 8f0e82cffe6c3fa4a82488bd4ad430b7
   - enabled: 1
     path: Assets/Scenes/Hololens/Connecting.unity
     guid: 2a537b9adc0db0140b55bbd8189fbe65
+  - enabled: 1
+    path: Assets/Scenes/Server/Idle.unity
+    guid: c5fa156e104a6534abfca396a55b2ba9
+  - enabled: 1
+    path: Assets/Scenes/Server/Remote Assist.unity
+    guid: 2a0c0d13d0c824b448c822a52a1ab34e
   m_configObjects:
     WebXR.Settings: {fileID: 11400000, guid: 0497c3393b646d0489b269cc8b1a42a4, type: 2}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 578864b3a85b4c94b811b5a9e7a4199f, type: 2}
