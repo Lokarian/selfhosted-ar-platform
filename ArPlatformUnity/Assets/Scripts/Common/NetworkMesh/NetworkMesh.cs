@@ -10,18 +10,31 @@ public class NetworkMesh : NetworkBehaviour
     private Mesh previousMesh;
     private List<Vector3> _verticesChunks = new();
     private List<int> _indicesChunks = new();
-    private Coroutine _sendMeshCoroutine;
+    private List<Coroutine> _sendMeshCoroutines = new();
 
 
-    // Start is called before the first frame update
-    void Start()
+    [DebugGUIGraph(group: 1)] public float TotalBytesGenerated = 0;
+
+    [DebugGUIGraph(group: 1)] public float TotalBytesSent = 0;
+
+
+    public override void OnNetworkSpawn()
     {
+        Debug.Log("OnNetworkSpawn");
+        base.OnNetworkSpawn();
+        //request initial mesh from server if we are not the server and not the owner
+        if (!IsServer && !IsOwner)
+        {
+            Debug.Log("Requesting initial mesh from server");
+            RequestInitialMesh_ServerRpc();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!IsOwner && !IsServer)
+        //only owner or server can send mesh
+        if (!(IsOwner || IsServer))
         {
             return;
         }
@@ -33,29 +46,68 @@ public class NetworkMesh : NetworkBehaviour
             previousMesh = mesh;
             if (mesh != null)
             {
-                if (_sendMeshCoroutine != null)
-                {
-                    StopCoroutine(_sendMeshCoroutine);
-                }
+                TotalBytesGenerated += mesh.triangles.Length * 12 + 4 * mesh.vertices.Length;
 
-                _sendMeshCoroutine = StartCoroutine(SendMeshCoroutine(mesh));
+                _sendMeshCoroutines.ForEach(coroutine =>
+                {
+                    if (coroutine != null) StopCoroutine(coroutine);
+                });
+                
+                if (IsServer)
+                {
+                    //send to all clients except owner
+                    foreach (var networkClient in NetworkManager.Singleton.ConnectedClientsList)
+                    {
+                        if (networkClient.ClientId != OwnerClientId)
+                        {
+                            _sendMeshCoroutines.Add(StartCoroutine(SendMeshCoroutine(mesh, networkClient.ClientId)));
+                        }
+                    }
+                }
+                else
+                {
+                    _sendMeshCoroutines.Add(StartCoroutine(SendMeshCoroutine(mesh, 0)));
+                }
             }
         }
     }
 
-    public IEnumerator SendMeshCoroutine(Mesh mesh)
+    public IEnumerator SendMeshCoroutine(Mesh mesh, ulong clientId)
     {
-        var maxSendSize = 1000;
-        //max from vertices and triangles
-        var chunkCount = Math.Max(1,
-            Math.Max(Math.Ceiling(mesh.vertices.Length / (float)maxSendSize),
-                Math.Ceiling(mesh.triangles.Length / (float)maxSendSize)));
-        for (var i = 0; i < chunkCount; i++)
+        //Debug.Log($"{mesh.triangles.Length*12+4*mesh.vertices.Length} with {mesh.triangles.Length} {mesh.vertices.Length}");
+        var verticesLeft = mesh.vertices.ToList();
+        var trianglesLeft = mesh.triangles.ToList();
+        var bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
+        var chunkNumber = 0;
+        while (bytesLeft > 0)
         {
-            var vertices = mesh.vertices.Skip(i * maxSendSize).Take(maxSendSize).ToArray();
-            var triangles = mesh.triangles.Skip(i * maxSendSize).Take(maxSendSize).ToArray();
-            var lastChunk = i == chunkCount - 1;
-            UpdateMeshChunk_ServerRpc(vertices, triangles, i, lastChunk);
+            //check if we can allocate bytes to client, prevent overflow of send buffer
+            if (BandwidthAllocator.Singleton.TryAllocateBytesToClient(clientId, bytesLeft, out var actualBytes))
+            {
+                var verticesToSend = verticesLeft.Take(actualBytes / 12).ToArray();
+                verticesLeft.RemoveRange(0, verticesToSend.Length);
+
+                var bytesLeftForTriangles = actualBytes - verticesToSend.Length * 12;
+                var trianglesToSend = trianglesLeft.Take(bytesLeftForTriangles / 4).ToArray();
+                trianglesLeft.RemoveRange(0, trianglesToSend.Length);
+                bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
+                if (clientId == 0)
+                {
+                    Debug.Log(
+                        $"Sending bytes: {verticesToSend.Length * 12 + 4 * trianglesToSend.Length} at Frame: {Time.frameCount}");
+                    TotalBytesSent += verticesToSend.Length * 12 + 4 * trianglesToSend.Length;
+                    UpdateMeshChunk_ServerRpc(verticesToSend, trianglesToSend, chunkNumber, bytesLeft == 0);
+                }
+                else
+                {
+                    UpdateMeshChunk_ClientRpc(verticesToSend, trianglesToSend, chunkNumber, bytesLeft == 0,
+                        new ClientRpcParams()
+                            { Send = new ClientRpcSendParams() { TargetClientIds = new[] { clientId } } });
+                }
+
+                chunkNumber++;
+            }
+
             yield return null;
         }
     }
@@ -67,6 +119,18 @@ public class NetworkMesh : NetworkBehaviour
         if (meshRenderer)
         {
             Destroy(meshRenderer);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestInitialMesh_ServerRpc(ServerRpcParams serverRpcParams = default)
+    {
+        var meshFilter = GetComponent<MeshFilter>();
+        var mesh = meshFilter.mesh;
+        if (mesh != null)
+        {
+            TotalBytesGenerated += mesh.triangles.Length * 12 + 4 * mesh.vertices.Length;
+            _sendMeshCoroutines.Add(StartCoroutine(SendMeshCoroutine(mesh, serverRpcParams.Receive.SenderClientId)));
         }
     }
 
@@ -85,7 +149,6 @@ public class NetworkMesh : NetworkBehaviour
                 TargetClientIds = allClientIds.Except(new[] { OwnerClientId }).ToList()
             }
         };
-        UpdateMeshChunk_ClientRpc(vertices, triangles, chunkNumber, lastChunk, clientRpcParams);
     }
 
     [ClientRpc]

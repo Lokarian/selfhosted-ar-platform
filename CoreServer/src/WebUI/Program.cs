@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using CoreServer.Application;
 using CoreServer.Infrastructure;
 using CoreServer.Infrastructure.Persistence;
@@ -5,7 +6,25 @@ using CoreServer.Infrastructure.RPC;
 using WebUI;
 using WebUI.Services;
 
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+
+//run a task in 1 second to write hello world to the console
+Task.Run(async () =>
+{
+    byte[] binaryData = File.ReadAllBytes("C:/ssl/certificate.pfx");
+
+    // Convert the binary data to a base64 string
+    string certificateBase64String = Convert.ToBase64String(binaryData);
+    await Task.Delay(1000);
+    var cert=new X509Certificate2("C:/ssl/certificate2.pfx");
+        var bytes = cert.Export(X509ContentType.Cert);
+        var base64 = Convert.ToBase64String(bytes);
+        Console.WriteLine(base64);
+    
+});
+
 
 // Add services to the container.
 builder.Services.AddApplicationServices();

@@ -6,6 +6,10 @@ using UnityEngine;
 public class ConnectionApprovalHandler : MonoBehaviour
 {
         public bool currentlyLocked = false;
+        
+        //public prefab for the player
+        public GameObject hololensPlayerPrefab;
+        public GameObject webXrPlayerPrefab;
     // Start is called before the first frame update
     void Start()
     {
@@ -39,13 +43,13 @@ public class ConnectionApprovalHandler : MonoBehaviour
         if (System.Text.Encoding.ASCII.GetString(connectionData)=="Hololens")
         {
             response.CreatePlayerObject = true;
-            response.PlayerPrefabHash=1402457728;
+            response.PlayerPrefabHash=hololensPlayerPrefab.GetComponent<NetworkObject>().PrefabIdHash;
         }
         else if (System.Text.Encoding.ASCII.GetString(connectionData)=="WebXR")
         {
             response.CreatePlayerObject = true;
             // The Prefab hash value of the NetworkPrefab, if null the default NetworkManager player Prefab is used
-            response.PlayerPrefabHash = 750167724;
+            response.PlayerPrefabHash = webXrPlayerPrefab.GetComponent<NetworkObject>().PrefabIdHash;
         }
 
         // Position to spawn the player object (if null it uses default of Vector3.zero)

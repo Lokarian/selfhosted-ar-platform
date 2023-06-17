@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 7504944971491767263}
   - component: {fileID: 7504944971491767261}
-  - component: {fileID: -3883205673076772211}
   - component: {fileID: 7504944971491767262}
   - component: {fileID: 7504944971491767073}
   - component: {fileID: 7504944971491767072}
+  - component: {fileID: 6490998480733202580}
   m_Layer: 0
   m_Name: NetworkMesh_Prefab
   m_TagString: Untagged
@@ -50,20 +50,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   GlobalObjectIdHash: 951099334
   AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
---- !u!114 &-3883205673076772211
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7504944971491767260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: efe3906ff77373e4b897272da7356140, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &7504944971491767262
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88,8 +79,12 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
   InLocalSpace: 0
   Interpolate: 1
+  SlerpPosition: 0
 --- !u!33 &7504944971491767073
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -140,3 +135,15 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &6490998480733202580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7504944971491767260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efe3906ff77373e4b897272da7356140, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

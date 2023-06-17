@@ -1,0 +1,8 @@
+{
+  "name": "MyWebXrCamera",
+  "references": [
+    "Unity.XR.Management",
+    "Unity.Subsystem.Registration",
+    "WebXR"
+  ]
+}
