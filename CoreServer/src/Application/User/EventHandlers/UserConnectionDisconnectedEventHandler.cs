@@ -8,6 +8,7 @@ using CoreServer.Domain.Entities;
 using CoreServer.Domain.Events.User;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoreServer.Application.User.EventHandlers;
 
@@ -15,37 +16,43 @@ public class UserConnectionDisconnectedEventHandler : INotificationHandler<UserC
 {
     private readonly IUserConnectionStore _userConnectionStore;
     private readonly IUserProxy<IRpcUserService> _userProxy;
-    private readonly IApplicationDbContext _context;
+    private IApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public UserConnectionDisconnectedEventHandler(IUserConnectionStore userConnectionStore,
-        IUserProxy<IRpcUserService> userProxy, IApplicationDbContext context, IMapper mapper)
+        IUserProxy<IRpcUserService> userProxy, IMapper mapper, IServiceScopeFactory serviceScopeFactory)
     {
         _userConnectionStore = userConnectionStore;
         _userProxy = userProxy;
-        _context = context;
         _mapper = mapper;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task Handle(UserConnectionDisconnectedEvent notification, CancellationToken cancellationToken)
     {
-        var connections = await this._context.UserConnections
-            .Where(uc => uc.UserId == notification.UserConnection.UserId && uc.DisconnectedAt == null)
-            .ToListAsync(cancellationToken);
-        await _userConnectionStore.RemoveConnection(notification.UserConnection.UserId,
-            notification.UserConnection.ConnectionId);
-        if (connections.Count == 0)
+        //create new db context to avoid tracking issues
+        using (var scope = _serviceScopeFactory.CreateScope())
         {
-            var user = await _context.AppUsers.AsTracking()
-                .FirstOrDefaultAsync(u => u.Id == notification.UserConnection.UserId, cancellationToken);
-            if (user is null)
+            _context = scope.ServiceProvider.GetService<IApplicationDbContext>();
+            var connections = await this._context.UserConnections
+                .Where(uc => uc.UserId == notification.UserConnection.UserId && uc.DisconnectedAt == null)
+                .ToListAsync(cancellationToken);
+            await _userConnectionStore.RemoveConnection(notification.UserConnection.UserId,
+                notification.UserConnection.ConnectionId);
+            if (connections.Count == 0)
             {
-                throw new NotFoundException(nameof(AppUser));
-            }
+                var user = await _context.AppUsers.AsTracking()
+                    .FirstOrDefaultAsync(u => u.Id == notification.UserConnection.UserId, cancellationToken);
+                if (user is null)
+                {
+                    throw new NotFoundException(nameof(AppUser));
+                }
 
-            user.OnlineStatus = OnlineStatus.Offline;
-            await _context.SaveChangesAsync(cancellationToken);
-            await (await _userProxy.All()).UpdateUser(_mapper.Map<AppUserDto>(user));
+                user.OnlineStatus = OnlineStatus.Offline;
+                await _context.SaveChangesAsync(cancellationToken);
+                await (await _userProxy.All()).UpdateUser(_mapper.Map<AppUserDto>(user));
+            }
         }
     }
 }

@@ -25,41 +25,38 @@ var signalRInterop ={
         return buffer;
     },
     StartSignalRJs:function(){
-        var url = window.location.protocol + "//" + window.location.host + "/api/hub";
+        var url = window.location.protocol + "//" + window.location.host + "/api/unityBrokerHub";
         var connection = new signalR.HubConnectionBuilder().withUrl(url,{
             accessTokenFactory: async () => {
                 return localStorage.getItem("access_token");
             }
-        }).withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol()).withAutomaticReconnect().build();
+        }).withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol()).build();
         connection.start().then(async () => {
-            const connectionId = await connection.invoke("InitializeConnection", []);
             console.log('SignalR Connected!');
             var urlParams = new URLSearchParams(window.location.search);
             var arSessionId = urlParams.get('arSessionId');
-            const response = await fetch("/api/Ar/JoinArSession",{method:"POST",headers:{"Content-Type": "application/json","userconnectionid":connectionId,"Authorization":"Bearer "+localStorage.getItem('access_token')},body:JSON.stringify({role:0,arSessionId:arSessionId})});
-            if(!response.ok){
-                console.log("Error joining AR session",response);
-            }
-            const member = await response.json();
-            const myId = member.id;
-            signalRInterop.myId=myId;
+            const myId = await connection.invoke("CreateArMember", arSessionId,1);//1 is for ArUserRole.Web
 
-            const stream=connection.stream("SubscribeToTopic", myId);
+            const stream=connection.stream("ClientGetOwnStream", myId);
             stream.subscribe({
                 next: (item) => {
                     console.log("received signalR message",item);
                     //send to wasm
-                    const pointer = _malloc(item.payload.length);
-                    HEAPU8.set(item.payload, pointer);
-                    dynCall('viii', signalRInterop.callback, [pointer, item.payload.length,0]);//0 is for NetworkEvent.Data
+                    const pointer = _malloc(item.length);
+                    HEAPU8.set(item, pointer);
+                    dynCall('viii', signalRInterop.callback, [pointer, item.length,0]);//0 is for NetworkEvent.Data
                 },
-                complete: () => console.log("complete"),
-                error: (err) => console.log(err)
+                complete: () => {console.log("complete");dynCall('viii', signalRInterop.callback, [0, 0,2])},
+                error: (err) => {console.log(err);dynCall('viii', signalRInterop.callback, [0, 0,2])}
             });
             const subject=new signalR.Subject();
-            connection.send("PublishStreamWithContextUserId",subject,arSessionId,myId);
+            connection.send("ClientSendToServer",subject,arSessionId,myId);
             signalRInterop.subject=subject;
-            dynCall('viii', signalRInterop.callback, [0, 0,1]);
+            connection.on("ConnectionEstablished",()=>{
+                console.log("ConnectionEstablished");
+                dynCall('viii', signalRInterop.callback, [0, 0,1]);//send connection event
+            });
+            await connection.invoke("NotifyServerOfClient",arSessionId,myId);
 
         }).catch(function (err) {
             return console.error(err.toString());
@@ -68,8 +65,7 @@ var signalRInterop ={
     },
     SendByteArrayToSignalR:function(byteOffset, length){
         const myByteArray = new Uint8Array(buffer, byteOffset, length);
-        const data={networkEvent:0,clientId:0,payload:myByteArray,senderArMemberId:signalRInterop.myId};
-        signalRInterop.subject.next(data);
+        signalRInterop.subject.next(myByteArray);
     },
     ProvideDataCallback:function(obj){
         console.log("ProvideDataCallback",obj);

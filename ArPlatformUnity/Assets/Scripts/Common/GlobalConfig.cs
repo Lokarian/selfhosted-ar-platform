@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -17,6 +18,7 @@ public class GlobalConfig : MonoBehaviour
     private static extern string GetServerUrl();
 #endif
 
+    public bool EmulateRelease = false;
 
     public string AccessToken;
     public string ArSessionId;
@@ -24,24 +26,33 @@ public class GlobalConfig : MonoBehaviour
     public string certificateBase64;
     public string MyMemberId;
     public ArBuildTarget MyBuildTarget;
+    
 
 
     private void Initialize()
     {
 #if UNITY_EDITOR
+        ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+        ServerUrl = "https://localhost:5001";
         if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WSAPlayer)
         {
-            ConfigureUWP(true);
+            AccessToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjYwODdkYzFiLWRhZmEtNGUyNi04ODJkLWNjNzM0NTU5ODY4YSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.9S0TOxxfZgtWeNuh7kmr2gtW1AzPJDvWAV-C2YnyBGg";
+            ConfigureUWP(!EmulateRelease);
         }
         else if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
         {
-            ConfigureWeb(true);
+            AccessToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjYwODdkYzFiLWRhZmEtNGUyNi04ODJkLWNjNzM0NTU5ODY4YSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.9S0TOxxfZgtWeNuh7kmr2gtW1AzPJDvWAV-C2YnyBGg";
+            ConfigureWeb(!EmulateRelease);
         }
         else
         {
-            ConfigureServer(true);
+            AccessToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjViOTQ3MTczLTQ3ZTEtNDVhMy1hZDQxLWVmZmQ0MWRmNzVjOCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.TRPN3jTNlYSY76Iquc3-TDMcb_7VkyPovHD9VaKCcGg";
+            ConfigureServer(!EmulateRelease);
         }
-#else 
+#else
         if (Application.platform == RuntimePlatform.WSAPlayerARM ||
             Application.platform == RuntimePlatform.WSAPlayerX64 ||
             Application.platform == RuntimePlatform.WSAPlayerX86)
@@ -65,52 +76,57 @@ public class GlobalConfig : MonoBehaviour
 
     private void ConfigureServer(bool editor)
     {
-        var privKey=File.ReadAllText("C:/ssl/privkey2.pem");
-        var cert=File.ReadAllText("C:/ssl/fullchain2.pem");
-        var unityTransport = NetworkManager.Singleton.gameObject.GetComponent<UnityTransport>();
-        unityTransport.SetServerSecrets(cert,privKey);
-        
-        ServerUrl = "https://reithmeir.duckdns.org:5001";
-        ArSessionId = "6a7a6c13-faf0-4668-89e4-ed98bcbc82f9";
-        AccessToken =
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjJmOGQxNDAyLTcwMTgtNDQ3ZS1iODcxLWFmNmJhZmZhODAyOCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.jHWbwwR1sntNDRhPxwZULtXG4XMPPQZr3pS7JZYZbUU";
         MyBuildTarget = ArBuildTarget.Server;
-
+        if (!editor)
+        {
+            ServerUrl = "https://reithmeir.duckdns.org:5001";
+            ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+            AccessToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
+        }
     }
 
     private void ConfigureWeb(bool editor)
     {
-        var unityTransport = NetworkManager.Singleton.gameObject.GetComponent<UnityTransport>();
-        unityTransport.SetClientSecrets("reithmeir.duckdns.org");
         MyBuildTarget = ArBuildTarget.Web;
+        if (!editor)
+        {
+            ServerUrl = "https://reithmeir.duckdns.org:5001";
+            AccessToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY3YmM2NDRkLTIwNDktNGQ0NS05YWUwLWYwMGYzOTMyODcyZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MZ3oi2wKz7dBwPR8LORbGxfr-PyUu2frnuYeZntdG2k";
+            ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+        }
     }
+
     private void ConfigureUWP(bool editor)
     {
-        var unityTransport = NetworkManager.Singleton.gameObject.GetComponent<UnityTransport>();
-        unityTransport.SetClientSecrets("reithmeir.duckdns.org");
+        
 
         if (editor)
         {
-            
         }
         else
         {
             //get params from launch url
-            var appUrl = Application.absoluteURL;
+            /*var appUrl = Application.absoluteURL;
             var url = new Uri(appUrl);
             var query = url.Query;
-            var queryDictionary = System.Web.HttpUtility.ParseQueryString(query);
+            var queryDictionary = WebUtility.
             ServerUrl = queryDictionary["serverUrl"];
             ArSessionId = queryDictionary["arSessionId"];
             MyBuildTarget = ArBuildTarget.Hololens;
-            AccessToken = queryDictionary["token"];
+            AccessToken = queryDictionary["token"];*/
+            ServerUrl = "https://reithmeir.duckdns.org:5001";
+            AccessToken =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY3YmM2NDRkLTIwNDktNGQ0NS05YWUwLWYwMGYzOTMyODcyZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MZ3oi2wKz7dBwPR8LORbGxfr-PyUu2frnuYeZntdG2k";
+            ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
         }
+
         MyBuildTarget = ArBuildTarget.Hololens;
     }
-    
+
     private void Start()
     {
-    
         if (Singleton == null)
         {
             Initialize();

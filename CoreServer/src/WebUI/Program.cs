@@ -3,6 +3,7 @@ using CoreServer.Application;
 using CoreServer.Infrastructure;
 using CoreServer.Infrastructure.Persistence;
 using CoreServer.Infrastructure.RPC;
+using CoreServer.Infrastructure.Unity;
 using WebUI;
 using WebUI.Services;
 
@@ -106,6 +107,7 @@ app.MapControllerRoute(
     "{controller}/{action=Index}/{id?}");
 
 app.MapHub<SignalRHub>("/api/hub");
+app.MapHub<UnityBrokerHub>("/api/unityBrokerHub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

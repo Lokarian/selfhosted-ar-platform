@@ -44,7 +44,7 @@ public static class ConfigureServices
                 {
                     StringValues accessToken = context.Request.Query["access_token"];
                     PathString path = context.HttpContext.Request.Path;
-                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/api/hub"))
+                    if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/api/hub")||path.StartsWithSegments("/api/unityBrokerHub")))
                     {
                         context.Token = accessToken;
                     }

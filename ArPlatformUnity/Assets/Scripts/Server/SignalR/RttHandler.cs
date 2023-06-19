@@ -5,20 +5,19 @@ using UnityEngine;
 
 public class RttHandler : NetworkBehaviour
 {
-        /*
-        public ulong rttIntervalMs = 1000;
-    public SignalRNetworkTransport SignalRNetworkTransport;
+    public ulong rttIntervalMs = 1000;
+    public SignalRNetworkTransport2 SignalRNetworkTransport;
 
     private static Dictionary<ulong, ulong> _clientIdToRtt = new();
     private static Dictionary<ulong, ClientRpcParams> _clientIdToClientRpcParams = new();
-
+    
 
     // Start is called before the first frame update
-    void Start()
+    public override void OnNetworkSpawn()
     {
         if (!SignalRNetworkTransport)
         {
-            SignalRNetworkTransport = NetworkManager.Singleton.gameObject.GetComponent<SignalRNetworkTransport>();
+            SignalRNetworkTransport = NetworkManager.Singleton.gameObject.GetComponent<SignalRNetworkTransport2>();
         }
 
         if (IsServer)
@@ -32,7 +31,6 @@ public class RttHandler : NetworkBehaviour
     {
         var clientId = serverRpcParams.Receive.SenderClientId;
         var rtt = (ulong)((Time.realtimeSinceStartup - timeSinceStartup) * 1000);
-        //if the request took longer than the interval, add the interval to the rtt
         //update the rtt for this client
         _clientIdToRtt[clientId] = rtt;
         SignalRNetworkTransport.ClientIdToRtt[clientId] = rtt;
@@ -75,6 +73,4 @@ public class RttHandler : NetworkBehaviour
             yield return new WaitForSecondsRealtime(rttIntervalMs / 1000f);
         }
     }
-    */
-
 }
