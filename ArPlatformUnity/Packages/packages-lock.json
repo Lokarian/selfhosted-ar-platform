@@ -44,6 +44,13 @@
       "dependencies": {},
       "hash": "03353e7a94bd01ef6daa80e3a5fd85c7f5fa4725"
     },
+    "com.madsbangh.easybuttons": {
+      "version": "1.3.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
     "com.microsoft.mixedreality.openxr": {
       "version": "file:MixedReality/com.microsoft.mixedreality.openxr-1.8.0.tgz",
       "depth": 0,
