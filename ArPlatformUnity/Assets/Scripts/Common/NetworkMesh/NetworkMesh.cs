@@ -10,6 +10,7 @@ public class NetworkMesh : NetworkBehaviour
     private Mesh previousMesh;
     private List<Vector3> _verticesChunks = new();
     private List<int> _indicesChunks = new();
+    private List<Vector2> _uvChunks = new();
     private Dictionary<ulong, Coroutine> _sendMeshCoroutines = new();
 
 
@@ -72,10 +73,12 @@ public class NetworkMesh : NetworkBehaviour
 
     public IEnumerator SendMeshCoroutine(Mesh mesh, ulong clientId)
     {
-        //Debug.Log($"{mesh.triangles.Length*12+4*mesh.vertices.Length} with {mesh.triangles.Length} {mesh.vertices.Length}");
+        
         var verticesLeft = mesh.vertices.ToList();
         var trianglesLeft = mesh.triangles.ToList();
-        var bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
+        var uvsLeft = mesh.uv.ToList();
+        var bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count+8*uvsLeft.Count;
+        
         var chunkNumber = 0;
         while (bytesLeft > 0)
         {
@@ -85,17 +88,23 @@ public class NetworkMesh : NetworkBehaviour
                 var verticesToSend = verticesLeft.Take(actualBytes / 12).ToArray();
                 verticesLeft.RemoveRange(0, verticesToSend.Length);
 
-                var bytesLeftForTriangles = actualBytes - verticesToSend.Length * 12;
-                var trianglesToSend = trianglesLeft.Take(bytesLeftForTriangles / 4).ToArray();
+                actualBytes -= verticesToSend.Length * 12;
+                var trianglesToSend = trianglesLeft.Take(actualBytes / 4).ToArray();
                 trianglesLeft.RemoveRange(0, trianglesToSend.Length);
-                bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
+                actualBytes -= trianglesToSend.Length * 4;
+                var uvsToSend = uvsLeft.Take(actualBytes / 8).ToArray();
+                uvsLeft.RemoveRange(0, uvsToSend.Length);
+                
+                bytesLeft -= verticesToSend.Length * 12 + trianglesToSend.Length * 4+uvsToSend.Length*8;
+
+                
                 if (clientId == 0)
                 {
-                    UpdateMeshChunk_ServerRpc(verticesToSend, trianglesToSend, chunkNumber, bytesLeft == 0);
+                    UpdateMeshChunk_ServerRpc(verticesToSend, trianglesToSend,uvsToSend, chunkNumber, bytesLeft == 0);
                 }
                 else
                 {
-                    UpdateMeshChunk_ClientRpc(verticesToSend, trianglesToSend, chunkNumber, bytesLeft == 0,
+                    UpdateMeshChunk_ClientRpc(verticesToSend, trianglesToSend,uvsToSend, chunkNumber, bytesLeft == 0,
                         new ClientRpcParams()
                             { Send = new ClientRpcSendParams() { TargetClientIds = new[] { clientId } } });
                 }
@@ -132,34 +141,42 @@ public class NetworkMesh : NetworkBehaviour
 
 
     [ServerRpc]
-    void UpdateMeshChunk_ServerRpc(Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk,
+    void UpdateMeshChunk_ServerRpc(Vector3[] vertices, int[] triangles,Vector2[] uvs, int chunkNumber, bool lastChunk,
         ServerRpcParams serverRpcParams = default)
     {
-        UpdateMeshChunk(vertices, triangles, chunkNumber, lastChunk);
+        UpdateMeshChunk(vertices, triangles,uvs, chunkNumber, lastChunk);
     }
 
     [ClientRpc]
-    void UpdateMeshChunk_ClientRpc(Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk,
+    void UpdateMeshChunk_ClientRpc(Vector3[] vertices, int[] triangles,Vector2[] uvs, int chunkNumber, bool lastChunk,
         ClientRpcParams clientRpcParams = default)
     {
-        UpdateMeshChunk(vertices, triangles, chunkNumber, lastChunk);
+        UpdateMeshChunk(vertices, triangles,uvs, chunkNumber, lastChunk);
     }
 
-    void UpdateMeshChunk(Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk)
+    void UpdateMeshChunk(Vector3[] vertices, int[] triangles,Vector2[] uvs, int chunkNumber, bool lastChunk)
     {
         if (chunkNumber == 0)
         {
             _verticesChunks.Clear();
             _indicesChunks.Clear();
+            _uvChunks.Clear();
         }
 
         _verticesChunks.AddRange(vertices);
         _indicesChunks.AddRange(triangles);
+        _uvChunks.AddRange(uvs);
         if (lastChunk)
         {
-            var mesh = new Mesh();
-            mesh.vertices = _verticesChunks.ToArray();
-            mesh.triangles = _indicesChunks.ToArray();
+            var mesh = new Mesh
+            {
+                vertices = _verticesChunks.ToArray(),
+                triangles = _indicesChunks.ToArray()
+            };
+            if (_uvChunks.Count > 0)
+            {
+                mesh.uv = _uvChunks.ToArray();
+            }
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             SetMesh(mesh);
