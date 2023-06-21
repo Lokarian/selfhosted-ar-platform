@@ -1,20 +1,24 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.MixedReality.OpenXR;
 using UnityEngine;
+
+#if !UNITY_WEBGL
+using Microsoft.MixedReality.OpenXR;
 using UnityEngine.Windows.WebCam;
+#endif
 
 public class HoloLensSnapshotTest:MonoBehaviour
 {
-    GestureRecognizer m_GestureRecognizer;
+    
     GameObject m_Canvas = null;
     Renderer m_CanvasRenderer = null;
-    PhotoCapture m_PhotoCaptureObj;
-    CameraParameters m_CameraParameters;
     bool m_CapturingPhoto = false;
     Texture2D m_Texture = null;
 
     public bool DoTakePhoto = false;
+    #if !UNITY_WEBGL
+    CameraParameters m_CameraParameters;
+    PhotoCapture m_PhotoCaptureObj;
     void Start()
     {
         Initialize();
@@ -109,4 +113,5 @@ public class HoloLensSnapshotTest:MonoBehaviour
         Debug.Log("Took picture!");
         m_CapturingPhoto = false;
     }
+#endif
 }

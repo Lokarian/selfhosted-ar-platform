@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.XR;
@@ -12,9 +13,17 @@ public class EnvironmentMeshHandler : NetworkBehaviour
 
     public ARMeshManager arMeshManager;
     public GameObject NetworkMeshPrefab;
-    private List<string> _pendingUpdates = new();
-    private IDictionary<string, GameObject> _spatialMeshNameToNetworkMesh = new Dictionary<string, GameObject>();
+    private readonly Queue<MeshFilter> _pendingUpdates = new();
 
+    private readonly IDictionary<string, NetworkMesh> _spatialMeshNameToNetworkMesh =
+        new Dictionary<string, NetworkMesh>();
+
+    private readonly IDictionary<string, int> _spatialMeshNameToUniqueMeshId = new Dictionary<string, int>();
+    private readonly IDictionary<int, string> _uniqueMeshIdToSpatialMeshName = new Dictionary<int, string>();
+    private int _uniqueMeshIdCounter = 0;
+
+    private readonly List<Vector3> _verticesChunks = new();
+    private readonly List<int> _indicesChunks = new();
 
     public void Start()
     {
@@ -31,10 +40,6 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         if (NetworkManager.Singleton.LocalClient?.PlayerObject?.CompareTag("HololensPlayer") ?? false)
         {
             RequestOwnership_ServerRpc();
-        }
-        else
-        {
-            Debug.Log("Not registering EnvironmentMeshHandler");
         }
     }
 
@@ -61,104 +66,138 @@ public class EnvironmentMeshHandler : NetworkBehaviour
             return;
         }
 
-        var existingMeshes = arMeshManager.meshes;
-
-        foreach (var mesh in existingMeshes)
+        foreach (var meshFilter in arMeshManager.meshes)
         {
-            RequestNetworkMesh_ServerRpc($"EnvironmentNetworkMesh_{mesh.name}");
-            AddPendingUpdate(mesh.name);
+            AddPendingUpdate(meshFilter);
         }
 
         arMeshManager.meshesChanged += ArMeshManagerOnMeshesChanged;
+        StartCoroutine(SendMeshCoroutine());
     }
 
     private void ArMeshManagerOnMeshesChanged(ARMeshesChangedEventArgs eventData)
     {
-        eventData.added.ForEach(x =>
+        eventData.added.ForEach(AddPendingUpdate);
+        eventData.updated.ForEach(AddPendingUpdate);
+        eventData.removed.ForEach(x => { RemoveMesh_ServerRpc(x.gameObject.name); });
+    }
+
+    public IEnumerator SendMeshCoroutine()
+    {
+        while (true)
         {
-            RequestNetworkMesh_ServerRpc($"EnvironmentNetworkMesh_{x.name}");
-            AddPendingUpdate(x.name);
-        });
-        eventData.updated.ForEach(x =>
-        {
-            if (!_spatialMeshNameToNetworkMesh.TryGetValue(x.name, out var networkMesh))
+            if (_pendingUpdates.TryDequeue(out var meshFilter))
             {
-                RequestNetworkMesh_ServerRpc($"EnvironmentNetworkMesh_{x.name}");
-                AddPendingUpdate(x.name);
-            }
-            else
-            {
-                //check if mesh ist still alive
-                if (!networkMesh)
+                var meshId = _spatialMeshNameToUniqueMeshId[meshFilter.gameObject.name];
+                if (meshId == -1)
                 {
-                    return;
+                    //not yet ready to send mesh, try again later
+                    AddPendingUpdate(meshFilter);
+                    yield return null;
+                    continue;
                 }
 
-                //remove all pending updates for this mesh
-                _pendingUpdates.RemoveAll(y => y == x.name);
-                //apply the update
-                networkMesh.GetComponent<MeshFilter>().sharedMesh = x.mesh;
-                networkMesh.transform.position = x.transform.position;
+                var mesh = meshFilter.mesh;
+                var verticesLeft = mesh.vertices.ToList();
+                var trianglesLeft = mesh.triangles.ToList();
+                var bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
+                var chunkNumber = 0;
+                while (bytesLeft > 0)
+                {
+                    //check if we can allocate bytes to client, prevent overflow of send buffer
+                    if (BandwidthAllocator.Singleton.TryAllocateBytesToClient(0, bytesLeft, out var actualBytes))
+                    {
+                        var verticesToSend = verticesLeft.Take(actualBytes / 12).ToArray();
+                        verticesLeft.RemoveRange(0, verticesToSend.Length);
+
+                        var bytesLeftForTriangles = actualBytes - verticesToSend.Length * 12;
+                        var trianglesToSend = trianglesLeft.Take(bytesLeftForTriangles / 4).ToArray();
+                        trianglesLeft.RemoveRange(0, trianglesToSend.Length);
+                        bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
+
+                        UpdateMeshChunk_ServerRpc(meshId, verticesToSend, trianglesToSend, chunkNumber, bytesLeft == 0);
+
+                        chunkNumber++;
+                    }
+
+                    yield return null;
+                }
             }
-        });
+
+            yield return null;
+        }
     }
 
     [ServerRpc]
-    public void RequestNetworkMesh_ServerRpc(string gameObjectName, ServerRpcParams rpcParams = default)
+    void UpdateMeshChunk_ServerRpc(int meshId, Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk)
     {
-        if (GameObject.Find(gameObjectName))
+        if (chunkNumber == 0)
         {
-            Debug.Log($"Mesh already exists: {gameObjectName}");
-            return;
+            _verticesChunks.Clear();
+            _indicesChunks.Clear();
         }
 
+        _verticesChunks.AddRange(vertices);
+        _indicesChunks.AddRange(triangles);
+        if (lastChunk)
+        {
+            var networkMesh = _spatialMeshNameToNetworkMesh[_uniqueMeshIdToSpatialMeshName[meshId]];
+            FindObjectOfType<MeshProcessor>().EnqueueMesh(networkMesh, _verticesChunks.ToArray(), _indicesChunks.ToArray());
+        }
+    }
+
+    public NetworkMesh CreateNetworkMesh(string gameObjectName, ulong clientId)
+    {
         GameObject go = Instantiate(NetworkMeshPrefab, Vector3.zero, Quaternion.identity);
         go.name = gameObjectName;
-        go.GetComponent<NetworkObject>().SpawnWithOwnership(rpcParams.Receive.SenderClientId);
-        go.GetComponent<NetworkObject>().DontDestroyWithOwner = true;
-        var senderParams = new ClientRpcParams()
-        {
-            Send = new ClientRpcSendParams()
-            {
-                TargetClientIds = new[] { rpcParams.Receive.SenderClientId }
-            }
-        };
-        go.GetComponent<NetworkMesh>().RemoveMeshRenderer_ClientRpc(senderParams);
-        NotifyMeshSpawned_ClientRpc(gameObjectName, go.GetComponent<NetworkObject>().NetworkObjectId, senderParams);
+        go.GetComponent<NetworkObject>().Spawn();
+        go.GetComponent<NetworkObject>().NetworkHide(clientId);
+        return go.GetComponent<NetworkMesh>();
     }
 
-    //clientRpc to notify environmentMeshHandler that mesh was spawned
-    [ClientRpc]
-    void NotifyMeshSpawned_ClientRpc(string gameObjectName, ulong meshNetworkObjectId,
-        ClientRpcParams rpcParams = default)
+
+    [ServerRpc]
+    public void RemoveMesh_ServerRpc(FixedString128Bytes meshName)
     {
-        GameObject go = NetworkManager.SpawnManager.SpawnedObjects[meshNetworkObjectId].gameObject;
-        if (!go)
+        if (!_spatialMeshNameToNetworkMesh.TryGetValue(meshName.ToString(), out var networkMesh))
         {
             return;
         }
 
-        var realMeshName = gameObjectName.Replace("EnvironmentNetworkMesh_", "");
-        var pendingUpdate = _pendingUpdates.FirstOrDefault(x => x == realMeshName);
-        if (pendingUpdate != null)
-        {
-            var spatialMeshGameObject = GameObject.Find(realMeshName)?.gameObject;
-            if (!spatialMeshGameObject)
-            {
-                Debug.LogWarning($"Mesh not found for pending update {realMeshName}");
-                return;
-            }
+        Destroy(networkMesh);
+        //todo cleanup in processor
+    }
 
-            _spatialMeshNameToNetworkMesh.Add(spatialMeshGameObject.name, go);
-            go.GetComponent<MeshFilter>().sharedMesh = spatialMeshGameObject.GetComponent<MeshFilter>().sharedMesh;
-            go.transform.position = spatialMeshGameObject.transform.position;
-            _pendingUpdates.Remove(pendingUpdate);
+    void AddPendingUpdate(MeshFilter meshFilter)
+    {
+        //check if we already have a unique id for this mesh, if not create one and set it to -1
+        if (!_spatialMeshNameToUniqueMeshId.TryGetValue(meshFilter.gameObject.name, out _))
+        {
+            _spatialMeshNameToUniqueMeshId.Add(meshFilter.gameObject.name, -1);
+            RequestUniqueIdForMesh_ServerRpc(meshFilter.gameObject.name, meshFilter.gameObject.transform.position);
+        }
+
+        if (!_pendingUpdates.Contains(meshFilter))
+        {
+            _pendingUpdates.Enqueue(meshFilter);
         }
     }
 
-    void AddPendingUpdate(string meshName)
+    [ServerRpc]
+    public void RequestUniqueIdForMesh_ServerRpc(string name, Vector3 position, ServerRpcParams rpcParams = default)
     {
-        _pendingUpdates.RemoveAll(x => x == meshName);
-        _pendingUpdates.Add(meshName);
+        var networkMesh = CreateNetworkMesh(name, rpcParams.Receive.SenderClientId);
+        networkMesh.transform.position = position;
+        _spatialMeshNameToNetworkMesh.Add(name, networkMesh);
+        var id = _uniqueMeshIdCounter++;
+        _spatialMeshNameToUniqueMeshId[name] = id;
+        _uniqueMeshIdToSpatialMeshName[id] = name;
+        SetUniqueIdForMesh_ClientRpc(name, id);
+    }
+
+    [ClientRpc]
+    public void SetUniqueIdForMesh_ClientRpc(string name, int uniqueId)
+    {
+        _spatialMeshNameToUniqueMeshId[name] = uniqueId;
     }
 }

@@ -1791,7 +1791,7 @@ MonoBehaviour:
   m_Tangents: 0
   m_TextureCoordinates: 0
   m_Colors: 0
-  m_ConcurrentQueueSize: 2
+  m_ConcurrentQueueSize: 1
 --- !u!224 &1907783087 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8376646494505211229, guid: c6b351a67ceb69140b199996bbbea156, type: 3}

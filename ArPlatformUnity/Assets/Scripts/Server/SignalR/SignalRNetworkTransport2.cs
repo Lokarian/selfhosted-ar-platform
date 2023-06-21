@@ -45,7 +45,7 @@ public class SignalRNetworkTransport2 : NetworkTransport
         _incomingTrafficBytes=0;
     }
 
-//#if UNITY_WEBGL && !UNITY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]
     public static extern void StartSignalRJs();
 
@@ -72,7 +72,7 @@ public class SignalRNetworkTransport2 : NetworkTransport
     }
 
     public static SignalRNetworkTransport2 Singleton;
-//#endif
+#endif
 
     private async Task StartSignalRCs()
     {

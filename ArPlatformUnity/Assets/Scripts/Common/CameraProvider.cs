@@ -5,22 +5,26 @@ using System.Linq;
 using EasyButtons;
 using Unity.Netcode;
 using UnityEngine;
+#if !UNITY_WEBGL
 using UnityEngine.Windows.WebCam;
+#endif
 
 public class CameraProvider : NetworkBehaviour
 {
     public GameObject PositionedPhotoPrefab;
-    private PhotoCapture photoCaptureObject = null;
     private Resolution cameraResolution;
     private List<byte> _imageBufferList = new List<byte>();
     public bool TakePhoto = false;
     private Coroutine _sendPhotoCoroutine;
-
+    
     // Start is called before the first frame update
     void Start()
     {
     }
-
+    #if !UNITY_WEBGL
+    private PhotoCapture photoCaptureObject = null;
+    
+    
     // Update is called once per frame
     void Update()
     {
@@ -47,7 +51,7 @@ public class CameraProvider : NetworkBehaviour
         c.hologramOpacity = 0.0f;
         c.cameraResolutionWidth = cameraResolution.width;
         c.cameraResolutionHeight = cameraResolution.height;
-        c.pixelFormat = CapturePixelFormat.PNG;
+        c.pixelFormat = CapturePixelFormat.BGRA32;
 
         captureObject.StartPhotoModeAsync(c, OnPhotoModeStarted);
     }
@@ -56,14 +60,31 @@ public class CameraProvider : NetworkBehaviour
     {
         if (result.success)
         {
-            photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
+            string filename = string.Format(@"CapturedImage{0}_n.jpg", Time.time);
+            string filePath = System.IO.Path.Combine(Application.persistentDataPath, filename);
+
+            photoCaptureObject.TakePhotoAsync(filePath, PhotoCaptureFileOutputFormat.JPG, OnCapturedPhotoToDisk);
+
+            //photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
         }
         else
         {
             Debug.LogError("Unable to start photo mode!");
         }
     }
-
+    void OnCapturedPhotoToDisk(PhotoCapture.PhotoCaptureResult result)
+    {
+        if (result.success)
+        {
+            Debug.Log("Saved Photo to disk!");
+            photoCaptureObject.StopPhotoModeAsync(OnStoppedPhotoMode);
+        }
+        else
+        {
+            Debug.Log("Failed to save Photo to disk");
+        }
+    }
+    
     void OnCapturedPhotoToMemory(PhotoCapture.PhotoCaptureResult result, PhotoCaptureFrame photoCaptureFrame)
     {
         if (result.success)
@@ -180,4 +201,5 @@ public class CameraProvider : NetworkBehaviour
         photoCaptureObject.Dispose();
         photoCaptureObject = null;
     }
+    #endif
 }

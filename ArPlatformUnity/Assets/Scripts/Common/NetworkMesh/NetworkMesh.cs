@@ -10,12 +10,7 @@ public class NetworkMesh : NetworkBehaviour
     private Mesh previousMesh;
     private List<Vector3> _verticesChunks = new();
     private List<int> _indicesChunks = new();
-    private List<Coroutine> _sendMeshCoroutines = new();
-
-
-    [DebugGUIGraph(group: 1)] public float TotalBytesGenerated = 0;
-
-    [DebugGUIGraph(group: 1)] public float TotalBytesSent = 0;
+    private Dictionary<ulong, Coroutine> _sendMeshCoroutines = new();
 
 
     public override void OnNetworkSpawn()
@@ -46,12 +41,14 @@ public class NetworkMesh : NetworkBehaviour
             previousMesh = mesh;
             if (mesh != null)
             {
-                TotalBytesGenerated += mesh.triangles.Length * 12 + 4 * mesh.vertices.Length;
-
-                _sendMeshCoroutines.ForEach(coroutine =>
+                foreach (var sendMeshCoroutine in _sendMeshCoroutines)
                 {
-                    if (coroutine != null) StopCoroutine(coroutine);
-                });
+                    if (sendMeshCoroutine.Value != null)
+                    {
+                        StopCoroutine(sendMeshCoroutine.Value);
+                    }
+                }
+                _sendMeshCoroutines.Clear();
 
                 if (IsServer)
                 {
@@ -60,13 +57,14 @@ public class NetworkMesh : NetworkBehaviour
                     {
                         if (networkClient.ClientId != OwnerClientId)
                         {
-                            _sendMeshCoroutines.Add(StartCoroutine(SendMeshCoroutine(mesh, networkClient.ClientId)));
+                            _sendMeshCoroutines.Add(networkClient.ClientId,
+                                StartCoroutine(SendMeshCoroutine(mesh, networkClient.ClientId)));
                         }
                     }
                 }
                 else
                 {
-                    _sendMeshCoroutines.Add(StartCoroutine(SendMeshCoroutine(mesh, 0)));
+                    _sendMeshCoroutines.Add(0, StartCoroutine(SendMeshCoroutine(mesh, 0)));
                 }
             }
         }
@@ -93,9 +91,6 @@ public class NetworkMesh : NetworkBehaviour
                 bytesLeft = verticesLeft.Count * 12 + 4 * trianglesLeft.Count;
                 if (clientId == 0)
                 {
-                    Debug.Log(
-                        $"Sending bytes: {verticesToSend.Length * 12 + 4 * trianglesToSend.Length} at Frame: {Time.frameCount}");
-                    TotalBytesSent += verticesToSend.Length * 12 + 4 * trianglesToSend.Length;
                     UpdateMeshChunk_ServerRpc(verticesToSend, trianglesToSend, chunkNumber, bytesLeft == 0);
                 }
                 else
@@ -110,6 +105,7 @@ public class NetworkMesh : NetworkBehaviour
 
             yield return null;
         }
+        _sendMeshCoroutines.Remove(clientId);
     }
 
     [ClientRpc]
@@ -127,10 +123,10 @@ public class NetworkMesh : NetworkBehaviour
     {
         var meshFilter = GetComponent<MeshFilter>();
         var mesh = meshFilter.mesh;
-        if (mesh != null)
+        if (mesh != null && !_sendMeshCoroutines.ContainsKey(serverRpcParams.Receive.SenderClientId))
         {
-            TotalBytesGenerated += mesh.triangles.Length * 12 + 4 * mesh.vertices.Length;
-            _sendMeshCoroutines.Add(StartCoroutine(SendMeshCoroutine(mesh, serverRpcParams.Receive.SenderClientId)));
+            _sendMeshCoroutines.Add(serverRpcParams.Receive.SenderClientId,
+                StartCoroutine(SendMeshCoroutine(mesh, serverRpcParams.Receive.SenderClientId)));
         }
     }
 
@@ -161,7 +157,12 @@ public class NetworkMesh : NetworkBehaviour
         _indicesChunks.AddRange(triangles);
         if (lastChunk)
         {
-            SetMesh(_verticesChunks, _indicesChunks);
+            var mesh = new Mesh();
+            mesh.vertices = _verticesChunks.ToArray();
+            mesh.triangles = _indicesChunks.ToArray();
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            SetMesh(mesh);
         }
     }
 
@@ -182,35 +183,10 @@ public class NetworkMesh : NetworkBehaviour
         return false;
     }
 
-    public void SetMesh(List<Vector3> vertices, List<int> indices, Vector2[] uvs = null)
+    public void SetMesh(Mesh mesh)
     {
         var meshFilter = GetComponent<MeshFilter>();
-        var mesh = meshFilter.mesh;
-        if (mesh == null)
-        {
-            mesh = new Mesh();
-            meshFilter.mesh = mesh;
-        }
-
-        mesh.Clear();
-        mesh.SetVertices(vertices);
-        mesh.SetTriangles(indices, 0);
-        if (uvs != null)
-        {
-            mesh.SetUVs(0, uvs);
-        }
-        else
-        {
-            mesh.SetUVs(0, new List<Vector2>());
-        }
-
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-Debug.Log($"Setting mesh with {vertices.Count} vertices and {indices.Count} indices {IsServer}");
-        if (IsServer)
-        {
-            var meshProcessor = FindObjectOfType<MeshProcessor>();
-            meshProcessor.OnNewMesh(this);
-        }
+        meshFilter.mesh = mesh;
     }
+    
 }

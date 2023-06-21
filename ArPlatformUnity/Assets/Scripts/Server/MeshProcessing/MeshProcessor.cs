@@ -18,7 +18,7 @@ public class MeshProcessor : MonoBehaviour
 {
     private List<NetworkMesh> _meshes = new();
     public TextureSize textureSize = TextureSize.Large;
-    private Queue<NetworkMesh> _meshesToProcess = new();
+    private Queue<Tuple<NetworkMesh, Vector3[], int[]>> _meshesToProcess = new();
     private Queue<Tuple<NetworkMesh, Vector3[], int[], Vector2[]>> _meshesToRejoin = new();
     private Queue<NetworkMesh> _meshesToGenerateTextures = new();
 
@@ -34,33 +34,31 @@ public class MeshProcessor : MonoBehaviour
     {
         while (true)
         {
-            while (_meshesToProcess.TryDequeue(out var networkMesh))
+            while (_meshesToProcess.TryDequeue(out var tuple))
             {
                 Debug.Log("Processing mesh");
-                var mesh = networkMesh.GetComponent<MeshFilter>().mesh;
-                var vertices = mesh.vertices;
-                var indices = mesh.triangles;
                 Task.Run(() =>
                 {
-                    ProcessMesh(vertices, indices, out var newVertices, out var newIndices, out var uvs);
-                    _meshesToRejoin.Enqueue(new(networkMesh, newVertices, newIndices, uvs));
+                    ProcessMesh(tuple.Item2, tuple.Item3, out var newVertices, out var newIndices, out var uvs);
+                    _meshesToRejoin.Enqueue(new(tuple.Item1, newVertices, newIndices, uvs));
                 });
             }
 
             while (_meshesToRejoin.TryDequeue(out var tuple))
             {
                 Debug.Log("Rejoining mesh");
-                var mesh = tuple.Item1.GetComponent<MeshFilter>().mesh;
-                mesh.Clear();
+                var mesh=new Mesh();
                 mesh.SetVertices(tuple.Item2);
                 mesh.SetTriangles(tuple.Item3, 0);
                 mesh.SetUVs(0, tuple.Item4);
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
+                tuple.Item1.SetMesh(mesh);
                 _meshes.Add(tuple.Item1);
+                
                 _meshesToGenerateTextures.Enqueue(tuple.Item1);
             }
-
+            
 
             yield return null;
         }
@@ -69,11 +67,9 @@ public class MeshProcessor : MonoBehaviour
     /**
      * receive an empty mesh with only vertices and indices
      */
-    public void OnNewMesh(NetworkMesh networkMesh)
+    public void EnqueueMesh(NetworkMesh networkMesh,Vector3[] vertices, int[] indices)
     {
-        _meshesToProcess.Enqueue(networkMesh);
-        /*var texture = GenerateTexture();
-        networkMesh.GetComponent<NetworkTexture>().SetTexture(texture);*/
+        _meshesToProcess.Enqueue(new(networkMesh, vertices, indices));
     }
 
 
