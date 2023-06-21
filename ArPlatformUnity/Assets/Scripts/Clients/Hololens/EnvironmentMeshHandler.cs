@@ -104,7 +104,7 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     }
 
     [ServerRpc]
-    void RequestNetworkMesh_ServerRpc(string gameObjectName, ServerRpcParams rpcParams = default)
+    public void RequestNetworkMesh_ServerRpc(string gameObjectName, ServerRpcParams rpcParams = default)
     {
         if (GameObject.Find(gameObjectName))
         {

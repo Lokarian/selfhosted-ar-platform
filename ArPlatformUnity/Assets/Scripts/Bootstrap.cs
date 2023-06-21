@@ -6,12 +6,18 @@ using UnityEngine.SceneManagement;
 public class Bootstrap : MonoBehaviour
 {
     public bool DetectBuildTarget = true;
+    public bool BootServer = false;
 
     private void Start()
     {
         if (DetectBuildTarget)
         {
 #if UNITY_EDITOR
+            if (BootServer)
+            {
+                StartServer();
+                return;
+            }
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WSAPlayer)
             {
                 StartHololens();

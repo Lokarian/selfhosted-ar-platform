@@ -6,7 +6,8 @@
       "scopes": [
         "com.atteneder",
         "com.de-panther",
-        "com.madsbangh.easybuttons"
+        "com.madsbangh.easybuttons",
+        "com.mainthreaddispatcher.unity"
       ]
     }
   ],

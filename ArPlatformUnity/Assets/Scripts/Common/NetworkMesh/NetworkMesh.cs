@@ -52,7 +52,7 @@ public class NetworkMesh : NetworkBehaviour
                 {
                     if (coroutine != null) StopCoroutine(coroutine);
                 });
-                
+
                 if (IsServer)
                 {
                     //send to all clients except owner
@@ -140,15 +140,6 @@ public class NetworkMesh : NetworkBehaviour
         ServerRpcParams serverRpcParams = default)
     {
         UpdateMeshChunk(vertices, triangles, chunkNumber, lastChunk);
-        var allClientIds = NetworkManager.Singleton.ConnectedClientsList.Select(x => x.ClientId);
-        ClientRpcParams clientRpcParams = new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-                //send to all clients except the owner
-                TargetClientIds = allClientIds.Except(new[] { OwnerClientId }).ToList()
-            }
-        };
     }
 
     [ClientRpc]
@@ -170,16 +161,56 @@ public class NetworkMesh : NetworkBehaviour
         _indicesChunks.AddRange(triangles);
         if (lastChunk)
         {
-            var mesh = new Mesh();
-            mesh.SetVertices(_verticesChunks);
-            mesh.SetTriangles(_indicesChunks, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            mesh.RecalculateTangents();
-            if (mesh != null)
-            {
-                GetComponent<MeshFilter>().mesh = mesh;
-            }
+            SetMesh(_verticesChunks, _indicesChunks);
+        }
+    }
+
+
+    public bool GetMeshRepresentation(out Vector3[] verices, out int[] triangles)
+    {
+        verices = null;
+        triangles = null;
+        var meshFilter = GetComponent<MeshFilter>();
+        var mesh = meshFilter.mesh;
+        if (mesh != null)
+        {
+            verices = mesh.vertices;
+            triangles = mesh.triangles;
+            return true;
+        }
+
+        return false;
+    }
+
+    public void SetMesh(List<Vector3> vertices, List<int> indices, Vector2[] uvs = null)
+    {
+        var meshFilter = GetComponent<MeshFilter>();
+        var mesh = meshFilter.mesh;
+        if (mesh == null)
+        {
+            mesh = new Mesh();
+            meshFilter.mesh = mesh;
+        }
+
+        mesh.Clear();
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(indices, 0);
+        if (uvs != null)
+        {
+            mesh.SetUVs(0, uvs);
+        }
+        else
+        {
+            mesh.SetUVs(0, new List<Vector2>());
+        }
+
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+Debug.Log($"Setting mesh with {vertices.Count} vertices and {indices.Count} indices {IsServer}");
+        if (IsServer)
+        {
+            var meshProcessor = FindObjectOfType<MeshProcessor>();
+            meshProcessor.OnNewMesh(this);
         }
     }
 }
