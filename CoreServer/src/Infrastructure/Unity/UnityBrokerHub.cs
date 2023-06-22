@@ -4,7 +4,9 @@ using CoreServer.Application.Common.Exceptions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.User.Commands.CreateUserConnection;
 using CoreServer.Application.User.Commands.UpdateUserConnection;
+using CoreServer.Domain.Entities;
 using CoreServer.Domain.Entities.AR;
+using CoreServer.Domain.Events.Ar;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -56,11 +58,23 @@ public class UnityBrokerHub : Hub
         return member.Id.ToString();
     }
 
-    public void RegisterAsServer(string serverId)
+    public async void RegisterAsServer(string serverId,CancellationToken cancellationToken)
     {
         Console.WriteLine($"Server {serverId} registered");
-        Groups.AddToGroupAsync(Context.ConnectionId, serverId);
-        //todo set arSession Ready
+        await Groups.AddToGroupAsync(Context.ConnectionId, serverId);
+        var user= await _context.AppUsers.FirstOrDefaultAsync(x => x.Id == Guid.Parse(Context.UserIdentifier!));
+        if (user?.AccountType != AppUserAccountType.Service)
+        {
+            throw new UnauthorizedAccessException();
+        }
+        var session = _context.ArSessions.AsTracking().FirstOrDefault(x => x.BaseSessionId == Guid.Parse(serverId));
+        if (session == null)
+        {
+            throw new NotFoundException(serverId);
+        }
+        session.ServerState=ArServerState.Running;
+        session.AddDomainEvent(new ArSessionUpdatedEvent(session));
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public void NotifyServerOfClient(string serverId, string memberId)

@@ -28,10 +28,8 @@ public class GetMyArSessionsQueryHandler : IRequestHandler<GetMyArSessionsQuery,
         CancellationToken cancellationToken)
     {
         Guid userId = _currentUserService.User!.Id;
-        return await _context.ArSessions
-            .Include(s => s.Members)
-            .ThenInclude(m => m.BaseMember)
-            .Where(x => x.Members.Any(m => m.BaseMember.UserId == userId))
+        return await _context.ArSessions.Include(s => s.Members)
+            .Where(x => x.BaseSession.Members.Any(y => y.UserId == userId))
             .ProjectTo<ArSessionDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
     }

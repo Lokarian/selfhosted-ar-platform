@@ -11,6 +11,8 @@ public class ArSessionDto : IMapFrom<ArSession>
     public Guid BaseSessionId { get; set; }
     public SessionDto? BaseSession { get; set; }
     public IList<ArMemberDto> Members { get; set; } = new List<ArMemberDto>();
+    public ArSessionType SessionType { get; set; }
+    public ArServerState ServerState { get; set; }
 
     public void Mapping(Profile profile)
     {

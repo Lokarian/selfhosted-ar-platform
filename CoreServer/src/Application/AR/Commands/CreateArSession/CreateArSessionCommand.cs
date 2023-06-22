@@ -12,6 +12,7 @@ namespace CoreServer.Application.AR.Commands.CreateArSession;
 public class CreateArSessionCommand : IRequest<ArSessionDto>
 {
     public Guid SessionId { get; set; }
+    public ArSessionType SessionType { get; set; }
 }
 
 public class CreateArSessionCommandHandler : IRequestHandler<CreateArSessionCommand, ArSessionDto>
@@ -29,7 +30,10 @@ public class CreateArSessionCommandHandler : IRequestHandler<CreateArSessionComm
     {
         BaseSession? baseSession = await _context.BaseSessions.Include(x => x.Members)
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
-        ArSession session = new ArSession { BaseSession = baseSession! };
+        ArSession session = new ArSession
+        {
+            BaseSession = baseSession!, ServerState = ArServerState.Starting, SessionType = request.SessionType
+        };
         session.AddDomainEvent(new ArSessionCreatedEvent(session));
         _context.ArSessions.Add(session);
         await _context.SaveChangesAsync(cancellationToken);

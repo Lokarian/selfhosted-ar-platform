@@ -1666,6 +1666,12 @@
             "items": {
               "$ref": "#/components/schemas/ArMemberDto"
             }
+          },
+          "sessionType": {
+            "$ref": "#/components/schemas/ArSessionType"
+          },
+          "serverState": {
+            "$ref": "#/components/schemas/ArServerState"
           }
         }
       },
@@ -1941,6 +1947,30 @@
           1
         ]
       },
+      "ArSessionType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "RemoteAssist"
+        ],
+        "enum": [
+          0
+        ]
+      },
+      "ArServerState": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Stopped",
+          "Starting",
+          "Running"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
       "CreateArSessionCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -1948,6 +1978,9 @@
           "sessionId": {
             "type": "string",
             "format": "guid"
+          },
+          "sessionType": {
+            "$ref": "#/components/schemas/ArSessionType"
           }
         }
       },

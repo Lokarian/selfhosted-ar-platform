@@ -2659,6 +2659,8 @@ export class ArSessionDto implements IArSessionDto {
     baseSessionId?: string;
     baseSession?: SessionDto | undefined;
     members?: ArMemberDto[];
+    sessionType?: ArSessionType;
+    serverState?: ArServerState;
 
     constructor(data?: IArSessionDto) {
         if (data) {
@@ -2678,6 +2680,8 @@ export class ArSessionDto implements IArSessionDto {
                 for (let item of _data["members"])
                     this.members!.push(ArMemberDto.fromJS(item));
             }
+            this.sessionType = _data["sessionType"];
+            this.serverState = _data["serverState"];
         }
     }
 
@@ -2697,6 +2701,8 @@ export class ArSessionDto implements IArSessionDto {
             for (let item of this.members)
                 data["members"].push(item.toJSON());
         }
+        data["sessionType"] = this.sessionType;
+        data["serverState"] = this.serverState;
         return data;
     }
 }
@@ -2705,6 +2711,8 @@ export interface IArSessionDto {
     baseSessionId?: string;
     baseSession?: SessionDto | undefined;
     members?: ArMemberDto[];
+    sessionType?: ArSessionType;
+    serverState?: ArServerState;
 }
 
 export class SessionDto implements ISessionDto {
@@ -3204,8 +3212,19 @@ export enum ArUserRole {
     Web = 1,
 }
 
+export enum ArSessionType {
+    RemoteAssist = 0,
+}
+
+export enum ArServerState {
+    Stopped = 0,
+    Starting = 1,
+    Running = 2,
+}
+
 export class CreateArSessionCommand implements ICreateArSessionCommand {
     sessionId?: string;
+    sessionType?: ArSessionType;
 
     constructor(data?: ICreateArSessionCommand) {
         if (data) {
@@ -3219,6 +3238,7 @@ export class CreateArSessionCommand implements ICreateArSessionCommand {
     init(_data?: any) {
         if (_data) {
             this.sessionId = _data["sessionId"];
+            this.sessionType = _data["sessionType"];
         }
     }
 
@@ -3232,12 +3252,14 @@ export class CreateArSessionCommand implements ICreateArSessionCommand {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["sessionId"] = this.sessionId;
+        data["sessionType"] = this.sessionType;
         return data;
     }
 }
 
 export interface ICreateArSessionCommand {
     sessionId?: string;
+    sessionType?: ArSessionType;
 }
 
 export class JoinArSessionCommand implements IJoinArSessionCommand {
