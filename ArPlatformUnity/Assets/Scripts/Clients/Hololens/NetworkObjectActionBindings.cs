@@ -11,14 +11,11 @@ public class NetworkObjectActionBindings : MonoBehaviour
     
     public void ToggleEnvironmentMesh(bool active)
     {
+        GlobalConfig.Singleton.ShowEnvironment = active;
         var environmentMeshHandler = GameObject.Find("EnvironmentMeshHandler");
         if (environmentMeshHandler)
         {
             environmentMeshHandler.GetComponent<EnvironmentMeshHandler>().StartTrackingEnvironment();
-        }
-        else
-        {
-            EnvironmentMeshHandler.allowStart = true;
         }
     }
 }

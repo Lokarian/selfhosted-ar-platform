@@ -8,7 +8,7 @@ using UnityEngine.Serialization;
 public class BandwidthAllocator : NetworkBehaviour
 {
     public NetworkVariable<int> BytesPerTimeFrame = new NetworkVariable<int>(30000);
-    public NetworkVariable<float> Timeframe = new NetworkVariable<float>(0.05f);
+    public NetworkVariable<float> Timeframe = new NetworkVariable<float>(0f);
     private Dictionary<ulong, int> _clientBytesUsed = new Dictionary<ulong, int>();
     public static BandwidthAllocator Singleton;
     private float _lastTimeframeBegin;

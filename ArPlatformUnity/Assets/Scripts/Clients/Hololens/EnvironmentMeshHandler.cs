@@ -9,7 +9,6 @@ using UnityEngine.XR.ARFoundation;
 
 public class EnvironmentMeshHandler : NetworkBehaviour
 {
-    public static bool allowStart = false;
 
     public ARMeshManager arMeshManager;
     public GameObject NetworkMeshPrefab;
@@ -25,15 +24,16 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     private readonly List<Vector3> _verticesChunks = new();
     private readonly List<int> _indicesChunks = new();
 
-    public void Start()
+    public override void OnNetworkSpawn()
     {
-        base.OnNetworkSpawn();
-        if ((NetworkManager.Singleton.LocalClient?.PlayerObject?.CompareTag("HololensPlayer") ?? false) && allowStart)
+        if (GlobalConfig.Singleton.ShowEnvironment)
         {
             arMeshManager = GameObject.Find("ARSpatialMeshManager").GetComponent<ARMeshManager>();
             RequestOwnership_ServerRpc();
         }
     }
+
+    
 
     public void StartTrackingEnvironment()
     {
@@ -149,9 +149,12 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     public NetworkMesh CreateNetworkMesh(string gameObjectName, ulong clientId)
     {
         GameObject go = Instantiate(NetworkMeshPrefab, Vector3.zero, Quaternion.identity);
+        
         go.name = gameObjectName;
+        go.GetComponent<NetworkObject>().CheckObjectVisibility=(id)=>id!=clientId;
         go.GetComponent<NetworkObject>().Spawn();
-        go.GetComponent<NetworkObject>().NetworkHide(clientId);
+        go.transform.parent = transform;
+        //go.GetComponent<NetworkObject>().NetworkHide(clientId);
         return go.GetComponent<NetworkMesh>();
     }
 
@@ -170,11 +173,16 @@ public class EnvironmentMeshHandler : NetworkBehaviour
 
     void AddPendingUpdate(MeshFilter meshFilter)
     {
-        //check if we already have a unique id for this mesh, if not create one and set it to -1
-        if (!_spatialMeshNameToUniqueMeshId.TryGetValue(meshFilter.gameObject.name, out _))
+        var gameObject=meshFilter.gameObject;
+        if (!gameObject)
         {
-            _spatialMeshNameToUniqueMeshId.Add(meshFilter.gameObject.name, -1);
-            RequestUniqueIdForMesh_ServerRpc(meshFilter.gameObject.name, meshFilter.gameObject.transform.position);
+            return;
+        }
+        //check if we already have a unique id for this mesh, if not create one and set it to -1
+        if (!_spatialMeshNameToUniqueMeshId.TryGetValue(gameObject.name, out _))
+        {
+            _spatialMeshNameToUniqueMeshId.Add(gameObject.name, -1);
+            RequestUniqueIdForMesh_ServerRpc(gameObject.name, gameObject.transform.position);
         }
 
         if (!_pendingUpdates.Contains(meshFilter))

@@ -337,8 +337,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bfa0bcb881909e643aa80e207695b4fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PhotoInterval:
+    m_InternalValue: 5
+  TakePhoto:
+    m_InternalValue: 1
   PositionedPhotoPrefab: {fileID: 1918153618219298030, guid: 690c9e3f1c76fb548abd670880a3b3c5, type: 3}
-  TakePhoto: 0
 --- !u!4 &385989662
 Transform:
   m_ObjectHideFlags: 0
@@ -546,8 +549,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1476235671}
-  - component: {fileID: 1476235670}
   - component: {fileID: 1476235669}
+  - component: {fileID: 1476235672}
   - component: {fileID: 1476235668}
   - component: {fileID: 1476235667}
   m_Layer: 0
@@ -606,23 +609,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9a3b1b4ea51590408a4ec16ba65d311, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1476235670
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1476235666}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6239484fe6c04afebd4c3c196158fb28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  BytesPerTimeFrame:
-    m_InternalValue: 30000
-  Timeframe:
-    m_InternalValue: 0.05
-  Traffic: 0
 --- !u!4 &1476235671
 Transform:
   m_ObjectHideFlags: 0
@@ -638,6 +624,23 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1476235672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1476235666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6239484fe6c04afebd4c3c196158fb28, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BytesPerTimeFrame:
+    m_InternalValue: 30000
+  Timeframe:
+    m_InternalValue: 0
+  Traffic: 0
 --- !u!1 &1668063169
 GameObject:
   m_ObjectHideFlags: 0
@@ -750,7 +753,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   StoreLocation: C:/temp/arplatform/unityStorage/environmentMeshes/
+  PhotoStoreLocation: C:/temp/arplatform/unityStorage/positionedPhotos/
   NetworkMeshPrefab: {fileID: 7504944971491767260, guid: e53d6e942c5d6434aac90f6f3a6a0298, type: 3}
+  PositionedPhotoPrefab: {fileID: 1918153618219298030, guid: 690c9e3f1c76fb548abd670880a3b3c5, type: 3}
   AlternativeMesh: {fileID: 0}
   LoadOnStart: 0
   SingleMeshMode: 0
