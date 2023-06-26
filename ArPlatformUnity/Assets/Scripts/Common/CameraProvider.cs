@@ -11,35 +11,40 @@ using UnityEngine.Windows.WebCam;
 
 public class CameraProvider : NetworkBehaviour
 {
+    public NetworkVariable<float> PhotoInterval = new NetworkVariable<float>(5f);
+    public NetworkVariable<bool> TakePhoto = new NetworkVariable<bool>(true);
     public GameObject PositionedPhotoPrefab;
     private Resolution cameraResolution;
     private List<byte> _imageBufferList = new List<byte>();
-    public bool TakePhoto = false;
     private Coroutine _sendPhotoCoroutine;
-    
+    private float _lastPhotoTime = 0f;
     // Start is called before the first frame update
     void Start()
     {
     }
-    #if !UNITY_WEBGL
+
+    [ClientRpc]
+    public void StartTakingPhoto_ClientRpc(ClientRpcParams param = default)
+    {
+#if !UNITY_WEBGL
+        PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
+#endif
+    }
+#if !UNITY_WEBGL
     private PhotoCapture photoCaptureObject = null;
+
     
     
     // Update is called once per frame
     void Update()
     {
-        if (TakePhoto)
+        if(GlobalConfig.Singleton.ShowEnvironment&&TakePhoto.Value&&_lastPhotoTime+PhotoInterval.Value<Time.realtimeSinceStartup)
         {
-            TakePhoto = false;
-            StartTakingPhoto();
+            _lastPhotoTime = Time.realtimeSinceStartup;
+            PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
         }
     }
 
-    [Button]
-    public void StartTakingPhoto()
-    {
-        PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
-    }
 
     void OnPhotoCaptureCreated(PhotoCapture captureObject)
     {
@@ -51,8 +56,7 @@ public class CameraProvider : NetworkBehaviour
         c.hologramOpacity = 0.0f;
         c.cameraResolutionWidth = cameraResolution.width;
         c.cameraResolutionHeight = cameraResolution.height;
-        c.pixelFormat = CapturePixelFormat.BGRA32;
-
+        c.pixelFormat = CapturePixelFormat.JPEG;
         captureObject.StartPhotoModeAsync(c, OnPhotoModeStarted);
     }
 
@@ -60,18 +64,19 @@ public class CameraProvider : NetworkBehaviour
     {
         if (result.success)
         {
+            
             string filename = string.Format(@"CapturedImage{0}_n.jpg", Time.time);
             string filePath = System.IO.Path.Combine(Application.persistentDataPath, filename);
 
-            photoCaptureObject.TakePhotoAsync(filePath, PhotoCaptureFileOutputFormat.JPG, OnCapturedPhotoToDisk);
-
-            //photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
+            //photoCaptureObject.TakePhotoAsync(filePath, PhotoCaptureFileOutputFormat.JPG, OnCapturedPhotoToDisk);
+            photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
         }
         else
         {
             Debug.LogError("Unable to start photo mode!");
         }
     }
+
     void OnCapturedPhotoToDisk(PhotoCapture.PhotoCaptureResult result)
     {
         if (result.success)
@@ -84,7 +89,7 @@ public class CameraProvider : NetworkBehaviour
             Debug.Log("Failed to save Photo to disk");
         }
     }
-    
+
     void OnCapturedPhotoToMemory(PhotoCapture.PhotoCaptureResult result, PhotoCaptureFrame photoCaptureFrame)
     {
         if (result.success)
@@ -104,25 +109,28 @@ public class CameraProvider : NetworkBehaviour
 
             Debug.Log("Image Buffer List Count: " + imageBufferList.Count);
             SendToServer(matrix, cameraToWorldMatrix, cameraResolution.width, cameraResolution.height,
-                imageBufferList.ToArray());
+                imageBufferList);
         }
 
         photoCaptureObject.StopPhotoModeAsync(OnStoppedPhotoMode);
     }
 
     private void SendToServer(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width, int height,
-        byte[] imageBufferList)
+        List<byte> imageBufferList)
     {
-        if (_sendPhotoCoroutine != null )
+        if (_sendPhotoCoroutine != null)
         {
             Debug.LogWarning("Did not finish sending previous photo!");
             return;
         }
+
         _sendPhotoCoroutine = StartCoroutine(SendPhotoCoroutine(projectionMatrix, cameraToWorldMatrix, width, height,
             imageBufferList));
     }
-    public IEnumerator SendPhotoCoroutine(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width, int height,
-        byte[] imageBufferList)
+
+    public IEnumerator SendPhotoCoroutine(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width,
+        int height,
+        List<byte> imageBufferList)
     {
         var bytesLeft = imageBufferList.ToList();
         var chunkNumber = 0;
@@ -130,7 +138,7 @@ public class CameraProvider : NetworkBehaviour
         {
             if (BandwidthAllocator.Singleton.TryAllocateBytesToClient(0, bytesLeft.Count, out var actualBytes))
             {
-                var bytesToSend= bytesLeft.Take(actualBytes).ToArray();
+                var bytesToSend = bytesLeft.Take(actualBytes).ToArray();
                 bytesLeft.RemoveRange(0, actualBytes);
                 var lastChunk = bytesLeft.Count == 0;
                 var projectionMatrixAsArray = Array.Empty<float>();
@@ -146,13 +154,17 @@ public class CameraProvider : NetworkBehaviour
                         cameraToWorldMatrixAsArray[i] = cameraToWorldMatrix[i];
                     }
                 }
-                SendImageChunk_ServerRpc(bytesToSend, chunkNumber, lastChunk, projectionMatrixAsArray, cameraToWorldMatrixAsArray, width, height);
+
+                SendImageChunk_ServerRpc(bytesToSend, chunkNumber, lastChunk, projectionMatrixAsArray,
+                    cameraToWorldMatrixAsArray, width, height);
                 chunkNumber++;
             }
+
             yield return null;
         }
+        _sendPhotoCoroutine = null;
     }
-    
+
 
     [ServerRpc(RequireOwnership = false)]
     void SendImageChunk_ServerRpc(byte[] bytes, int chunkNumber, bool lastChunk, float[] projectionMatrixAsArray,
@@ -165,21 +177,38 @@ public class CameraProvider : NetworkBehaviour
             _imageBufferList.AddRange(bytes);
             return;
         }
+
         _imageBufferList.AddRange(bytes);
-        
+
         var projectionMatrix = new Matrix4x4();
-        projectionMatrix.SetRow(0, new Vector4(projectionMatrixAsArray[0], projectionMatrixAsArray[1], projectionMatrixAsArray[2], projectionMatrixAsArray[3]));
-        projectionMatrix.SetRow(1, new Vector4(projectionMatrixAsArray[4], projectionMatrixAsArray[5], projectionMatrixAsArray[6], projectionMatrixAsArray[7]));
-        projectionMatrix.SetRow(2, new Vector4(projectionMatrixAsArray[8], projectionMatrixAsArray[9], projectionMatrixAsArray[10], projectionMatrixAsArray[11]));
-        projectionMatrix.SetRow(3, new Vector4(projectionMatrixAsArray[12], projectionMatrixAsArray[13], projectionMatrixAsArray[14], projectionMatrixAsArray[15]));
-        
+        projectionMatrix.SetColumn(0,
+            new Vector4(projectionMatrixAsArray[0], projectionMatrixAsArray[1], projectionMatrixAsArray[2],
+                projectionMatrixAsArray[3]));
+        projectionMatrix.SetColumn(1,
+            new Vector4(projectionMatrixAsArray[4], projectionMatrixAsArray[5], projectionMatrixAsArray[6],
+                projectionMatrixAsArray[7]));
+        projectionMatrix.SetColumn(2,
+            new Vector4(projectionMatrixAsArray[8], projectionMatrixAsArray[9], projectionMatrixAsArray[10],
+                projectionMatrixAsArray[11]));
+        projectionMatrix.SetColumn(3,
+            new Vector4(projectionMatrixAsArray[12], projectionMatrixAsArray[13], projectionMatrixAsArray[14],
+                projectionMatrixAsArray[15]));
+
         var cameraToWorldMatrix = new Matrix4x4();
-        cameraToWorldMatrix.SetRow(0, new Vector4(cameraToWorldMatrixAsArray[0], cameraToWorldMatrixAsArray[1], cameraToWorldMatrixAsArray[2], cameraToWorldMatrixAsArray[3]));
-        cameraToWorldMatrix.SetRow(1, new Vector4(cameraToWorldMatrixAsArray[4], cameraToWorldMatrixAsArray[5], cameraToWorldMatrixAsArray[6], cameraToWorldMatrixAsArray[7]));
-        cameraToWorldMatrix.SetRow(2, new Vector4(cameraToWorldMatrixAsArray[8], cameraToWorldMatrixAsArray[9], cameraToWorldMatrixAsArray[10], cameraToWorldMatrixAsArray[11]));
-        cameraToWorldMatrix.SetRow(3, new Vector4(cameraToWorldMatrixAsArray[12], cameraToWorldMatrixAsArray[13], cameraToWorldMatrixAsArray[14], cameraToWorldMatrixAsArray[15]));
-        
-        
+        cameraToWorldMatrix.SetColumn(0,
+            new Vector4(cameraToWorldMatrixAsArray[0], cameraToWorldMatrixAsArray[1], cameraToWorldMatrixAsArray[2],
+                cameraToWorldMatrixAsArray[3]));
+        cameraToWorldMatrix.SetColumn(1,
+            new Vector4(cameraToWorldMatrixAsArray[4], cameraToWorldMatrixAsArray[5], cameraToWorldMatrixAsArray[6],
+                cameraToWorldMatrixAsArray[7]));
+        cameraToWorldMatrix.SetColumn(2,
+            new Vector4(cameraToWorldMatrixAsArray[8], cameraToWorldMatrixAsArray[9], cameraToWorldMatrixAsArray[10],
+                cameraToWorldMatrixAsArray[11]));
+        cameraToWorldMatrix.SetColumn(3,
+            new Vector4(cameraToWorldMatrixAsArray[12], cameraToWorldMatrixAsArray[13], cameraToWorldMatrixAsArray[14],
+                cameraToWorldMatrixAsArray[15]));
+
+
         CreatePositionedPhoto(projectionMatrix, cameraToWorldMatrix, width, height,
             _imageBufferList.ToArray());
     }
@@ -192,6 +221,7 @@ public class CameraProvider : NetworkBehaviour
         texture.LoadImage(imageBufferList);
         texture.Apply();
         var positionedPhoto = Instantiate(PositionedPhotoPrefab);
+        positionedPhoto.transform.SetParent(transform,true);
         positionedPhoto.GetComponent<PositionedPhoto>()
             .Initialize(projectionMatrix, cameraToWorldMatrix, width, height, texture);
     }
@@ -201,5 +231,5 @@ public class CameraProvider : NetworkBehaviour
         photoCaptureObject.Dispose();
         photoCaptureObject = null;
     }
-    #endif
+#endif
 }

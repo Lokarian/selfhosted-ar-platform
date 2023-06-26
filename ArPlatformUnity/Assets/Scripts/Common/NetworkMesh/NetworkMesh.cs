@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class NetworkMesh : NetworkBehaviour
@@ -12,7 +13,8 @@ public class NetworkMesh : NetworkBehaviour
     private List<int> _indicesChunks = new();
     private List<Vector2> _uvChunks = new();
     private Dictionary<ulong, Coroutine> _sendMeshCoroutines = new();
-
+    
+    
 
     public override void OnNetworkSpawn()
     {
@@ -54,13 +56,11 @@ public class NetworkMesh : NetworkBehaviour
                 if (IsServer)
                 {
                     //send to all clients except owner
-                    foreach (var networkClient in NetworkManager.Singleton.ConnectedClientsList)
+                    HashSet<ulong>.Enumerator visibleClients = this.NetworkObject.GetObservers();
+                    while (visibleClients.MoveNext())
                     {
-                        if (networkClient.ClientId != OwnerClientId)
-                        {
-                            _sendMeshCoroutines.Add(networkClient.ClientId,
-                                StartCoroutine(SendMeshCoroutine(mesh, networkClient.ClientId)));
-                        }
+                        _sendMeshCoroutines.Add(visibleClients.Current,
+                            StartCoroutine(SendMeshCoroutine(mesh, visibleClients.Current)));
                     }
                 }
                 else
@@ -73,7 +73,7 @@ public class NetworkMesh : NetworkBehaviour
 
     public IEnumerator SendMeshCoroutine(Mesh mesh, ulong clientId)
     {
-        
+        Debug.Log("SendMeshCoroutine to client " + clientId);
         var verticesLeft = mesh.vertices.ToList();
         var trianglesLeft = mesh.triangles.ToList();
         var uvsLeft = mesh.uv.ToList();

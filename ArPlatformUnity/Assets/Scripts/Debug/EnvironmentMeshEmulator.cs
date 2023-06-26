@@ -6,7 +6,9 @@ using UnityEngine;
 public class EnvironmentMeshEmulator : MonoBehaviour
 {
     public string StoreLocation = "C:/temp/arplatform/unityStorage/environmentMeshes/";
+    public string PhotoStoreLocation = "C:/temp/arplatform/unityStorage/positionedPhotos/";
     public GameObject NetworkMeshPrefab;
+    public GameObject PositionedPhotoPrefab;
     public GameObject AlternativeMesh;
     
     public bool LoadOnStart = true;
@@ -84,11 +86,49 @@ public class EnvironmentMeshEmulator : MonoBehaviour
             //networkMesh.SetMesh(verticesVector3.ToList(), trianglesInt.ToList());
             FindObjectOfType<MeshProcessor>().EnqueueMesh(networkMesh, verticesVector3, trianglesInt);
         }
+        _importedMeshes = true;
     }
-
+    public void StorePositionedPhotos()
+    {
+        //store ProjectionMatrix, CameraMatrix and the mainTexture
+        var positionedPhotos = GameObject.FindObjectsOfType<PositionedPhoto>();
+        var counter = 0;
+        foreach (var positionedPhoto in positionedPhotos)
+        {
+            var meshName = positionedPhoto.gameObject.name+(counter++);
+            var meshPath = $"{PhotoStoreLocation}{meshName}";
+            System.IO.Directory.CreateDirectory(meshPath);
+            var projectionMatrix = positionedPhoto.ProjectionMatrix;
+            var cameraMatrix = positionedPhoto.CameraMatrix;
+            var texture = positionedPhoto.GetComponentInChildren<MeshRenderer>().material.mainTexture as Texture2D;
+            //store as json
+            System.IO.File.WriteAllText($"{meshPath}/projectionMatrix", JsonUtility.ToJson(projectionMatrix));
+            System.IO.File.WriteAllText($"{meshPath}/cameraMatrix", JsonUtility.ToJson(cameraMatrix));
+            System.IO.File.WriteAllBytes($"{meshPath}/width", System.BitConverter.GetBytes(texture.width));
+            System.IO.File.WriteAllBytes($"{meshPath}/height", System.BitConverter.GetBytes(texture.height));
+            System.IO.File.WriteAllBytes($"{meshPath}/texture", texture.EncodeToPNG());
+        }
+    }
     public void LoadPhotos()
     {
-        
+        //loop over all folder, request the mesh and apply it
+        foreach (var photoPath in System.IO.Directory.GetDirectories(PhotoStoreLocation))
+        {
+            var photoName = System.IO.Path.GetFileName(photoPath);
+            GameObject go = Instantiate(PositionedPhotoPrefab, Vector3.zero, Quaternion.identity);
+            go.name = photoName;
+            
+            var positionedPhoto = go.GetComponent<PositionedPhoto>();
+            var projectionMatrix = JsonUtility.FromJson<Matrix4x4>(System.IO.File.ReadAllText($"{photoPath}/projectionMatrix"));
+            var cameraMatrix = JsonUtility.FromJson<Matrix4x4>(System.IO.File.ReadAllText($"{photoPath}/cameraMatrix"));
+            var width = System.BitConverter.ToInt32(System.IO.File.ReadAllBytes($"{photoPath}/width"),0);
+            var height = System.BitConverter.ToInt32(System.IO.File.ReadAllBytes($"{photoPath}/height"),0);
+            
+            var texture = new Texture2D(width,height);
+            texture.LoadImage(System.IO.File.ReadAllBytes($"{photoPath}/texture"));
+            positionedPhoto.Initialize(projectionMatrix,cameraMatrix,width,height,texture);
+        }
+        _importedPhotos = true;
     }
     
     //ongui button to store the meshes
@@ -96,10 +136,11 @@ public class EnvironmentMeshEmulator : MonoBehaviour
     {
         if(LoadOnStart)
             return;
-        /*if (GUI.Button(new Rect(10, 10, 100, 20), "Store Environment Meshes"))
+        if (GUI.Button(new Rect(10, 50, 100, 20), "Store"))
         {
             StoreEnvironmentMeshes();
-        }*/
+            StorePositionedPhotos();
+        }
         if (!_importedMeshes)
         {
             if (GUI.Button(new Rect(10, 10, 100, 20), "Load Meshes"))

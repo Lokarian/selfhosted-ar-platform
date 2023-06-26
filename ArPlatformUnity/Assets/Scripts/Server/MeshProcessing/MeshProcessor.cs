@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -18,9 +19,9 @@ public class MeshProcessor : MonoBehaviour
 {
     private List<NetworkMesh> _meshes = new();
     public TextureSize textureSize = TextureSize.Large;
-    private Queue<Tuple<NetworkMesh, Vector3[], int[]>> _meshesToProcess = new();
-    private Queue<Tuple<NetworkMesh, Vector3[], int[], Vector2[]>> _meshesToRejoin = new();
-    private Queue<NetworkMesh> _meshesToGenerateTextures = new();
+    private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[]>> _meshesToProcess = new();
+    private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[], Vector2[]>> _meshesToRejoin = new();
+    private ConcurrentQueue<NetworkMesh> _meshesToGenerateTextures = new();
 
     public UVGenerator UvGenerator;
 
@@ -40,7 +41,8 @@ public class MeshProcessor : MonoBehaviour
                 Task.Run(() =>
                 {
                     ProcessMesh(tuple.Item2, tuple.Item3, out var newVertices, out var newIndices, out var uvs);
-                    _meshesToRejoin.Enqueue(new(tuple.Item1, newVertices, newIndices, uvs));
+                    Tuple<NetworkMesh, Vector3[], int[], Vector2[]> outgoingTuple=new(tuple.Item1, newVertices, newIndices, uvs);
+                    _meshesToRejoin.Enqueue(outgoingTuple);
                 });
             }
 
@@ -53,10 +55,15 @@ public class MeshProcessor : MonoBehaviour
                 mesh.SetUVs(0, tuple.Item4);
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
-                tuple.Item1.SetMesh(mesh);
-                _meshes.Add(tuple.Item1);
+                if (tuple.Item1)//todo actually check if deleted
+                {
+                    tuple.Item1.SetMesh(mesh); 
+                    _meshes.Add(tuple.Item1);
                 
-                _meshesToGenerateTextures.Enqueue(tuple.Item1);
+                    _meshesToGenerateTextures.Enqueue(tuple.Item1);
+                }
+                
+                
             }
             
 

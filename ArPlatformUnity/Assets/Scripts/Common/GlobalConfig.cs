@@ -26,6 +26,7 @@ public class GlobalConfig : MonoBehaviour
     public string certificateBase64;
     public string MyMemberId;
     public ArBuildTarget MyBuildTarget;
+    public bool ShowEnvironment = false;
     
 
 
