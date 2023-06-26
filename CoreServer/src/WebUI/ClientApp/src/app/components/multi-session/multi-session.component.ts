@@ -5,6 +5,7 @@ import {Observable} from "rxjs";
 import {ArFacade} from "../../services/ar-facade.service";
 import {ChatFacade} from "../../services/chat-facade.service";
 import {CurrentUserService} from "../../services/user/current-user.service";
+import {DomSanitizer} from "@angular/platform-browser";
 
 @Component({
   selector: 'app-multi-session',
@@ -28,7 +29,7 @@ export class MultiSessionComponent implements OnInit {
   public joinedVideoSession:boolean = false;
   public joinedArSession:boolean = false;
 
-  constructor(private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade,private currentUserService:CurrentUserService) {
+  constructor(private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade,private domsanitizer:DomSanitizer) {
   }
 
   ngOnInit(): void {

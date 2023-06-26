@@ -6,7 +6,7 @@ import {
   ChatSessionDto, CreateChatSessionCommand,
   UpdateChatSessionLastReadCommand
 } from "../web-api-client";
-import {BehaviorSubject, firstValueFrom, Observable, share, switchMap, tap} from "rxjs";
+import {BehaviorSubject, firstValueFrom, Observable, ReplaySubject, share, switchMap, tap} from "rxjs";
 import {CurrentUserService} from "./user/current-user.service";
 import {SessionFacade} from "./session-facade.service";
 import {filter, first, map} from "rxjs/operators";
@@ -23,7 +23,7 @@ export class ChatFacade {
   private sessionsSubject = new BehaviorSubject<BehaviorSubject<ChatSessionDto | undefined>[]>([]);
   public sessionObservables$: Observable<Observable<ChatSessionDto | undefined>[]>;
   public sessions$: Observable<ChatSessionDto[]>;
-
+  public initialized$ = new ReplaySubject<boolean>(1);
 
   constructor(private chatClient: ChatClient, private sessionFacade: SessionFacade, private currentUserService: CurrentUserService,private signalRService: SignalRService) {
     sessionFacade.registerCapabilityFacadeResolver('chatSession', (this as any as SessionFacade));
@@ -34,9 +34,9 @@ export class ChatFacade {
 
   }
   init(){
-    this.chatClient.getMyChatSessions().subscribe(sessions => {
+    this.chatClient.getMyChatSessions().pipe(tap(sessions => {
       sessions.forEach(session => this.addOrReplaceSession(session));
-    });
+    }),tap(_=>this.initialized$.next(true))).subscribe();
   }
 
   public get sessions() {

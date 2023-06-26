@@ -1,20 +1,43 @@
 <div class="flex flex-col items-center">
-  <button class="h-6 w-6 fill-text rounded-lg group group-hover:bg-background-highlight" (click)="joinSession()">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
-      <path
-        d="M795 936q-122 0-242.5-60T336 720q-96-96-156-216.5T120 261q0-19 13-32t32-13h140q14 0 24.5 9.5T343 251l27 126q2 14-.5 25.5T359 422L259 523q56 93 125.5 162T542 802l95-98q10-11 23-15.5t26-1.5l119 26q15 3 25 15t10 28v135q0 19-13 32t-32 13Z"/>
-    </svg>
-  </button>
-
-  <div class="flex flex-row gap-2 justify-center overflow-x-auto">
-    <div *ngFor="let member of session.members" class="flex flex-col justify-end">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 96 96" class="fill-text"
-           *ngIf="member.role==ArUserRole.Hololens">
-        <path
-          d="M 254,705 C 40,680 40,680 40,511 40,420 44,387 59,355 96,275 160,240 269,240 c 87,0 115,10 169,63 l 42,41 43,-41 c 53,-53 81,-63 170,-63 111,1 176,38 212,122 10,26 15,71 15,151 0,99 -3,118 -20,140 -24,30 -35,33 -202,52 -157,17 -291,17 -444,0 z M 505,590 c 0,-18 -8,-24.37739 -25,-26.37739 -19.19338,0 -29.4965,3.45679 -30.02743,26.82544 C 450.39476,617.60607 462.58219,617.40271 482,618 c 17,-2 23,-10 23,-28 z M 295,570 c 0,-24 -3,-25 -63,-28 -65,-3 -82,8 -68,43 4,13 19,15 68,13 60,-3 63,-4 63,-28 z m 500,0 c 0,-24 -3,-25 -63,-28 -49,-2 -64,0 -68,13 -14,35 3,46 68,43 60,-3 63,-4 63,-28 z"/>
-      </svg>
-      <app-avatar [user]="member.userId|user|async" class="h-6 w-6"></app-avatar>
+  <div [ngSwitch]="session.serverState">
+    <div class="flex items-center flex-col group cursor-pointer" *ngSwitchCase="ArServerState.Stopped" (click)="startServer()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" class="h-6 w-6 group-hover:fill-primary fill-white"><path d="M450-438v-406h60v406h-60Zm30 320q-74 0-139.5-28.5T226-224q-49-49-77.5-114.5T120-478q0-80 34-149.5T250-751l42 42q-53 43-82.5 102.5T180-478.022Q180-353 267.5-265.5 355-178 480-178q125.357 0 212.679-87.5Q780-353 780-478.022 780-547 750.5-607.5 721-668 670-709l43-42q60 51 93.5 122T840-478q0 74-28.5 139.5t-77 114.5q-48.5 49-114 77.5T480-118Z"/></svg>
+      <h2 class="text-center text-white group-hover:text-primary">Power on the AR Server</h2>
+    </div>
+    <div class="flex items-center flex-col group" *ngSwitchCase="ArServerState.Starting" class="">
+      <div role="status">
+        <svg aria-hidden="true" class="w-8 h-8 mr-2 text-primary animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+          <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="background-highlight"/>
+        </svg>
+        <span class="sr-only">Loading...</span>
+      </div>
+      <h2 class="text-white">Server is currently starting...</h2>
+    </div>
+    <div class="flex items-center flex-col" *ngSwitchCase="ArServerState.Running">
+      <button class="rounded-lg py-4 px-8 bg-background-secondary group group-hover:bg-background-highlight mb-12" (click)="joinSession()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 fill-white group-hover:fill-primary" viewBox="0 -960 960 960" >
+          <path
+            d="M40-160v-160q0-29 20.5-49.5T110-390h141q17 0 32.5 8.5T310-358q29 42 74 65t96 23q51 0 96-23t75-65q11-15 26-23.5t32-8.5h141q29 0 49.5 20.5T920-320v160H660v-119q-36 33-82.5 51T480-210q-51 0-97-18t-83-51v119H40Zm440-170q-35 0-67.5-16.5T360-392q-16-23-38.5-37T273-448q29-30 91-46t116-16q54 0 116.5 16t91.5 46q-26 5-48.5 19T601-392q-20 29-52.5 45.5T480-330ZM160-460q-45 0-77.5-32.5T50-570q0-46 32.5-78t77.5-32q46 0 78 32t32 78q0 45-32 77.5T160-460Zm640 0q-45 0-77.5-32.5T690-570q0-46 32.5-78t77.5-32q46 0 78 32t32 78q0 45-32 77.5T800-460ZM480-580q-45 0-77.5-32.5T370-690q0-46 32.5-78t77.5-32q46 0 78 32t32 78q0 45-32 77.5T480-580Z"/>
+        </svg>
+        <h2 class="text-white group-hover:text-primary">Join</h2>
+      </button>
+      <h2 class="text-white mb-2">Users:</h2>
+      <div class="flex flex-row gap-2 justify-center overflow-x-auto">
+        <div *ngFor="let member of session.members" class="flex flex-col justify-end">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 96 96" class="fill-text"
+               *ngIf="member.role==ArUserRole.Hololens">
+            <path
+              d="M 254,705 C 40,680 40,680 40,511 40,420 44,387 59,355 96,275 160,240 269,240 c 87,0 115,10 169,63 l 42,41 43,-41 c 53,-53 81,-63 170,-63 111,1 176,38 212,122 10,26 15,71 15,151 0,99 -3,118 -20,140 -24,30 -35,33 -202,52 -157,17 -291,17 -444,0 z M 505,590 c 0,-18 -8,-24.37739 -25,-26.37739 -19.19338,0 -29.4965,3.45679 -30.02743,26.82544 C 450.39476,617.60607 462.58219,617.40271 482,618 c 17,-2 23,-10 23,-28 z M 295,570 c 0,-24 -3,-25 -63,-28 -65,-3 -82,8 -68,43 4,13 19,15 68,13 60,-3 63,-4 63,-28 z m 500,0 c 0,-24 -3,-25 -63,-28 -49,-2 -64,0 -68,13 -14,35 3,46 68,43 60,-3 63,-4 63,-28 z"/>
+          </svg>
+          <app-avatar [user]="member.userId|user|async" class="h-6 w-6"></app-avatar>
+        </div>
+        <h2 class="text-text" *ngIf="session.members.length==0">
+          There is currently no one in the session.
+        </h2>
+      </div>
     </div>
   </div>
+
 
 </div>

@@ -2,6 +2,7 @@
 using CoreServer.Application.AR.Commands.CreateArSession;
 using CoreServer.Application.AR.Commands.JoinArSession;
 using CoreServer.Application.AR.Commands.LeaveArSession;
+using CoreServer.Application.AR.Commands.StartArServer;
 using CoreServer.Application.AR.Queries.GetArSessionMembers;
 using CoreServer.Application.AR.Queries.GetMyArSessions;
 using Microsoft.AspNetCore.Authorization;
@@ -47,6 +48,13 @@ public class ArController : ApiControllerBase
 
     [HttpPost]
     public async Task<ActionResult> LeaveArSession(LeaveArSessionCommand command)
+    {
+        await Mediator.Send(command);
+        return Ok();
+    }
+    
+    [HttpPost]
+    public async Task<ActionResult> StartArServer(StartArServerCommand command)
     {
         await Mediator.Send(command);
         return Ok();

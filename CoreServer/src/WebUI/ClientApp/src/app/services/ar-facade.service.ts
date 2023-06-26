@@ -26,6 +26,7 @@ export class ArFacade {
   public sessionObservables$: Observable<Observable<ArSessionDto | undefined>[]>;
   public sessions$: Observable<ArSessionDto[]>;
 
+  public initialized$ = new ReplaySubject<boolean>(1);
 
   public session$(sessionId: string): Observable<ArSessionDto> {
     const existingSession = this.sessionSubjects[sessionId];
@@ -49,14 +50,16 @@ export class ArFacade {
     this.sessions$ = this.sessionsSubject.asObservable().pipe(map(sessions => sessions.map(s => s.value)));
     this.signalRService.connectionState$.pipe(filter(state => state === SignalRConnectionState.Connected)).subscribe(() => this.init());
   }
-  init(){
-    this.arClient.getMyArSessions().subscribe(sessions => {
+
+  init() {
+    this.arClient.getMyArSessions().pipe(tap(sessions => {
       sessions.forEach(session => this.addOrReplaceSession(session));
-    });
+    }), tap(() => this.initialized$.next(true))).subscribe();
   }
+
   public addOrReplaceSession(session: ArSessionDto) {
     if (this.sessionSubjects[session.baseSessionId]) {
-      session=this.wrapInProxy(session);
+      session = this.wrapInProxy(session);
       this.sessionSubjects[session.baseSessionId].next(session);
     } else {
       session = this.wrapInProxy(session);
@@ -78,7 +81,7 @@ export class ArFacade {
     const session = sessionSubject.value;
     if (!session) return;
 
-    if(arMember.deletedAt){
+    if (arMember.deletedAt) {
       session.members = session.members.filter(m => m.userId !== arMember.userId);
       sessionSubject.next(session);
       return;

@@ -12,7 +12,7 @@
       </as-split-area>
       <as-split-area *ngIf="showAr" [size]="initiallyShowVideo?50:100" [order]="1">
         <ng-container *ngIf="arSession$|async as arSession">
-          <iframe *ngIf="joinedArSession" class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          <iframe *ngIf="joinedArSession" class="w-full h-full" [cachedSrc]="'http://localhost:8000/index.html?arSession='+arSession.baseSessionId" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; xr-spatial-tracking" allowfullscreen></iframe>
           <div *ngIf="!joinedArSession"
                class="w-full h-full flex justify-center items-center">
             <app-ar-session-preview *ngIf="arSession" [session]="arSession" (join)="joinedArSession=true"></app-ar-session-preview>

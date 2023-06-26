@@ -1,5 +1,12 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {ArSessionDto, ArUserRole, VideoSessionDto} from "../../web-api-client";
+import {
+  ArClient,
+  ArServerState,
+  ArSessionDto,
+  ArUserRole,
+  StartArServerCommand,
+  VideoSessionDto
+} from "../../web-api-client";
 
 @Component({
   selector: 'app-ar-session-preview',
@@ -12,8 +19,9 @@ export class ArSessionPreviewComponent implements OnInit {
   @Output() join: EventEmitter<ArSessionDto> = new EventEmitter();
 
   public ArUserRole = ArUserRole
+  public ArServerState = ArServerState;
 
-  constructor() {
+  constructor(private arClient: ArClient) {
   }
 
   ngOnInit(): void {
@@ -24,4 +32,7 @@ export class ArSessionPreviewComponent implements OnInit {
   }
 
 
+  startServer() {
+    this.arClient.startArServer(new StartArServerCommand({arSessionId : this.session.baseSessionId}))
+  }
 }

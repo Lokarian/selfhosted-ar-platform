@@ -24,6 +24,9 @@ export class VideoFacade {
   public sessionObservables$: Observable<Observable<VideoSessionDto | undefined>[]>;
   public sessions$: Observable<VideoSessionDto[]>;
 
+  public initialized$ = new ReplaySubject<boolean>(1);
+
+
   private accessKeyStore: { [key: string]: string } = {};
 
   public session$(sessionId: string): Observable<VideoSessionDto> {
@@ -49,9 +52,9 @@ export class VideoFacade {
     this.signalRService.connectionState$.pipe(filter(state => state === SignalRConnectionState.Connected)).subscribe(() => this.init());
   }
   init(){
-    this.videoClient.getMyVideoSessions().subscribe(sessions => {
+    this.videoClient.getMyVideoSessions().pipe(tap(sessions => {
       sessions.forEach(session => this.addOrReplaceSession(session));
-    });
+    }),tap(_=>this.initialized$.next(true))).subscribe();
   }
   public addOrReplaceSession(session: VideoSessionDto) {
     let changedToActive = false;

@@ -10,6 +10,7 @@ import {RpcSessionService} from "../../services/rpc/rpc-session.service";
 import {ChatFacade} from "../../services/chat-facade.service";
 import {VideoFacade} from "../../services/video-facade.service";
 import {ArFacade} from "../../services/ar-facade.service";
+import {combineLatest} from "rxjs";
 
 @Component({
   selector: 'app-layout',
@@ -35,7 +36,7 @@ export class LayoutComponent {
   }
 
   public get loaded$() {
-    return this.currentUserService.user$.pipe(filter(user => !!user), switchMap(() => this.signalrService.connectionState$), filter(state=>state==SignalRConnectionState.Connected), map(() => true));
+    return combineLatest([this.currentUserService.user$.pipe(filter(user => !!user), switchMap(() => this.signalrService.connectionState$), filter(state=>state==SignalRConnectionState.Connected), map(() => true)),this.chatFacade.initialized$,this.videoFacade.initialized$,this.arFacade.initialized$]).pipe(map(([user,chat,video,ar])=>user&&chat&&video&&ar));
   }
 
 }

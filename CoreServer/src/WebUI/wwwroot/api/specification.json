@@ -185,6 +185,44 @@
         ]
       }
     },
+    "/api/Ar/StartArServer": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_StartArServer",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartArServerCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Chat/GetMyChatSessions": {
       "get": {
         "tags": [
@@ -2002,6 +2040,16 @@
         "additionalProperties": false,
         "properties": {
           "arMemberId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "StartArServerCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arSessionId": {
             "type": "string",
             "format": "guid"
           }

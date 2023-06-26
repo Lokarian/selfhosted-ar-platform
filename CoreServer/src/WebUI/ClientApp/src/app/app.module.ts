@@ -34,6 +34,7 @@ import { SessionListPageComponent } from './pages/session-list/session-list.comp
 import { MultiSessionComponent } from './components/multi-session/multi-session.component';
 import { ArSessionPreviewComponent } from './components/ar-session-preview/ar-session-preview.component';
 import { CallComponent } from './pages/call/call.component';
+import {CachedSrcDirective} from "./services/common/cachedSrc.directive";
 
 function baseUrlFactory() {
   if (environment.production) {
@@ -70,6 +71,7 @@ function baseUrlFactory() {
     VideoStreamComponent,
     VideoSessionComponent,
     ResizeDirective,
+    CachedSrcDirective,
     SessionListPageComponent,
     MultiSessionComponent,
     ArSessionPreviewComponent,
