@@ -13,8 +13,9 @@ public class NetworkMesh : NetworkBehaviour
     private List<int> _indicesChunks = new();
     private List<Vector2> _uvChunks = new();
     private Dictionary<ulong, Coroutine> _sendMeshCoroutines = new();
-    
-    
+    public bool SyncWithNetworkTexture = true;
+    public int CurrentVersion = 0;
+    private Mesh _waitingMesh;
 
     public override void OnNetworkSpawn()
     {
@@ -205,5 +206,19 @@ public class NetworkMesh : NetworkBehaviour
         var meshFilter = GetComponent<MeshFilter>();
         meshFilter.mesh = mesh;
     }
-    
+
+    private void OnDrawGizmos()
+    {
+        return;
+        var meshFilter = GetComponent<MeshFilter>();
+        var mesh = meshFilter.mesh;
+        if (mesh != null)
+        {
+            Gizmos.color = Color.red;
+            foreach (var vertex in mesh.vertices)
+            {
+                Gizmos.DrawSphere(vertex, 0.01f);
+            }
+        }
+    }
 }

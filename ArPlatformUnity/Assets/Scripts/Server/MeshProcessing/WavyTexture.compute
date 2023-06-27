@@ -1,14 +1,286 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel clear_rasterizer_texture
+#pragma kernel rasterize
+#pragma enable_d3d11_debug_symbols
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> Result;
+//types
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+
+//a point on the mesh that is 
+struct MeshHit
 {
-    // TODO: insert actual code here!
+    float2 uv; //the uv coordinate of texture of the mesh that was hit
+    uint depth; //the depth of the hit away from the camera
+    uint2 screenPos; //the pixel coordinate of the photo
+    uint meshIndex; //the index of the mesh that was hit
+};
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+struct Vertex
+{
+    float3 position;
+    float3 normal;
+    float2 uv;
+};
+
+struct Triangle
+{
+    uint vertexIndex1;
+    uint vertexIndex2;
+    uint vertexIndex3;
+};
+
+struct Mesh
+{
+    uint index;
+    uint vertexOffset;
+    uint triangleOffset;
+    uint vertexCount;
+    uint triangleCount;
+};
+
+//global buffers and properties
+
+
+StructuredBuffer<Mesh> meshes;
+StructuredBuffer<Vertex> vertices;
+StructuredBuffer<Triangle> triangles;
+
+RWTexture2D<float4> rasterizerDepthTexture; //debug view of the rasterizer meshHitsTexture
+StructuredBuffer<MeshHit> meshHitsTexture; //technically the output texture of the rasterizer
+int2 inputResolution; //the resolution of the input image
+float4x4 worldToCameraMatrix; //the world to camera matrix
+
+
+RWTexture2D<float3> meshTexture; //the texture of the mesh that will get new colors
+int2 meshTextureResolution; //the resolution of the mesh texture
+
+
+//helper functions
+
+uint index_of(uint x, uint y, int2 resolution)
+{
+    return y * resolution.x + x;
+}
+
+float3 barycentric(float3 v1, float3 v2, float3 v3, float2 p)
+{
+    float3 u = cross(
+        float3(v3.x - v1.x, v2.x - v1.x, v1.x - p.x),
+        float3(v3.y - v1.y, v2.y - v1.y, v1.y - p.y)
+    );
+
+    if (abs(u.z) < 1.0)
+    {
+        return float3(-1.0, 1.0, 1.0);
+    }
+
+    return float3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+}
+
+int4 get_min_max_screen_space(int2 v1, int2 v2, int2 v3)
+{
+    int4 min_max;
+
+    min_max.x = min(min(v1.x, v2.x), v3.x);
+    min_max.y = min(min(v1.y, v2.y), v3.y);
+    min_max.z = max(max(v1.x, v2.x), v3.x);
+    min_max.w = max(max(v1.y, v2.y), v3.y);
+
+    return min_max;
+}
+float4 get_min_max_unit_space(float2 v1, float2 v2, float2 v3)
+{
+    float4 min_max;
+    min_max.x = min(min(v1.x, v2.x), v3.x);
+    min_max.y = min(min(v1.y, v2.y), v3.y);
+    min_max.z = max(max(v1.x, v2.x), v3.x);
+    min_max.w = max(max(v1.y, v2.y), v3.y);
+    return min_max;
+}
+
+//returns a point that is in the view of the camera
+float3 fit_into_view(float3 point_in)
+{
+    float3 ret;
+    ret.x = clamp(point_in.x, -1.0, 1.0);
+    ret.y = clamp(point_in.y, -1.0, 1.0);
+    ret.z = clamp(point_in.z, -1.0, 1.0);
+    return ret;
+}
+
+void color_pixel(uint2 pos, float4 color)
+{
+    if (color.a < rasterizerDepthTexture[pos].a)
+    {
+        rasterizerDepthTexture[pos] = color;
+    }
+}
+
+float3 project(float3 v)
+{
+    return mul(worldToCameraMatrix, float4(v, 1.0)).xyz;
+}
+
+int2 to_screen_space(float2 v)
+{
+    return int2((v.x + 1.0) * 0.5 * inputResolution.x, (v.y + 1.0) * 0.5 * inputResolution.y);
+}
+float2 to_screen_space_float(float2 v)
+{
+    return float2((v.x + 1.0) * 0.5 * inputResolution.x, (v.y + 1.0) * 0.5 * inputResolution.y);
+}
+float2 from_screen_space(int2 v)
+{
+    return float2(v.x / (inputResolution.x * 0.5) - 1.0, v.y / (inputResolution.y * 0.5) - 1.0);
+}
+
+bool is_off_screen(float3 v)
+{
+    if (v.x < -1.0 || v.x > 1.0 || v.y < -1.0 || 1.0 < v.y)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//every value will have a unique color, output a color float3 in range [0,1]
+float3 RandomColor(uint value)
+{
+    float3 color;
+    color.x = (value & 0x000000FF) >> 0;
+    color.y = (value & 0x0000FF00) >> 8;
+    color.z = (value & 0x00FF0000) >> 16;
+    return color / 255.0;
+}
+
+void draw_triangle(float3 v1, float3 v2, float3 v3, Vertex vert1, Vertex ver2, Vertex vert3)
+{
+    v1.xy=to_screen_space_float(v1.xy);
+    v2.xy=to_screen_space_float(v2.xy);
+    v3.xy=to_screen_space_float(v3.xy);
+    float4 min_max =get_min_max_unit_space(v1.xy, v2.xy, v3.xy);
+    uint startX = min_max.x;
+    uint startY = min_max.y;
+    uint endX = min_max.z;
+    uint endY = min_max.w;
+    for (uint x = startX; x <= endX; x = x + 1u)
+    {
+        for (uint y = startY; y <= endY; y = y + 1u)
+        {
+            float3 bc = barycentric(v1, v2, v3, float2(float(x), float(y)));
+
+            if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0)
+            {
+                continue;
+            }
+            float3 color = normalize(vert1.normal + ver2.normal + vert3.normal);
+            rasterizerDepthTexture[uint2(x, y)] = float4(color, 1.0);
+            //color from normal
+            //float3 color = normalize(vert1.normal + ver2.normal + vert3.normal);
+            //get depth
+            //float depth = bc.x * v1.z + bc.y * v2.z + bc.z * v3.z;
+            //color_pixel(uint2(x, y), float4(color.rgb, depth));
+        }
+    }
+}
+void draw_circle(int2 center, int radius, float4 color)
+{
+    uint minX = max(0, center.x - radius);
+    uint maxX = min(inputResolution.x, center.x + radius);
+    uint minY = max(0, center.y - radius);
+    uint maxY = min(inputResolution.y, center.y + radius);
+
+    for (uint x = minX; x < maxX; x++)
+    {
+        for (uint y = minY; y < maxY; y++)
+        {
+            float2 pos = float2(float(x), float(y));
+            float dist = distance(float2(center.x, center.y), pos);
+            if (dist < float(radius))
+            {
+                rasterizerDepthTexture[uint2(x, y)] = color;
+            }
+        }
+    }
+}
+void draw_line(float3 v1, float3 v2)
+{
+    int2 v1Vec = to_screen_space(fit_into_view(v1).xy);
+    int2 v2Vec = to_screen_space(fit_into_view(v2).xy);
+    //draw line
+    uint4 min_max = get_min_max_screen_space(v1Vec, v2Vec, v2Vec);
+    int startX = min_max.x;
+    int startY = min_max.y;
+    int endX = min_max.z;
+    int endY = min_max.w;
+    int steps = max(abs(endX - startX), abs(endY - startY));
+    float stepX = float(v2Vec.x - v1Vec.x) / float(steps);
+    float stepY = float(v2Vec.y - v1Vec.y) / float(steps);
+    float2 pos = float2(float(v1Vec.x), float(v1Vec.y));
+    for (uint i = 0; i < steps; i++)
+    {
+        pos.x += stepX;
+        pos.y += stepY;
+        //color_pixel(uint2(pos.x, pos.y), float4(0, 1, 0, 1.0));
+        draw_circle(int2(pos.x, pos.y), 5, float4(0, 1, 0, 1.0));
+    }
+}
+
+
+
+//kernels
+
+
+//kernel index 3
+//clear stage for meshHits
+[numthreads(8, 8, 1)]
+void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
+{
+    //important that depth is 0, this indicates that the pixel was not hit
+    MeshHit notHit;
+    notHit.depth = 0;
+    notHit.uv = float2(0, 0);
+    notHit.screenPos = uint2(0, 0);
+    notHit.meshIndex = 0;
+
+    if (id.x < inputResolution.x && id.y < inputResolution.y)
+    {
+        //meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
+
+        rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
+    }
+}
+
+//rasterize the meshes
+[numthreads(64, 1, 1)]
+void rasterize(uint3 id : SV_DispatchThreadID)
+{
+    uint trianglesCount;
+    uint trianglesStride;
+    triangles.GetDimensions(trianglesCount, trianglesStride);
+    if (id.x >= trianglesCount)
+    {
+        return;
+    }
+
+
+    Triangle polygon = triangles[id.x];
+
+    float3 v1 = project(vertices[polygon.vertexIndex1].position);
+    float3 v2 = project(vertices[polygon.vertexIndex2].position);
+    float3 v3 = project(vertices[polygon.vertexIndex3].position);
+
+    draw_circle(to_screen_space(v1.xy), 10, float4(0, 1.0, 0, 1.0));
+    draw_circle(to_screen_space(v2.xy), 10, float4(0, 1.0, 0, 1.0));
+    draw_circle(to_screen_space(v3.xy), 10, float4(0, 1.0, 0, 1.0));
+    draw_line(v1, v2);
+    draw_line(v2, v3);
+    draw_line(v1, v3);
+
+    if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3))
+    {
+        return;
+    }
+    draw_triangle(v1, v2, v3,vertices[polygon.vertexIndex1],vertices[polygon.vertexIndex2],vertices[polygon.vertexIndex3]);
 }

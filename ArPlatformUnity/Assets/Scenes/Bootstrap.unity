@@ -165,13 +165,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2dfe428e80874c479044a9c2470ea63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  EmulateRelease: 1
+  EmulateRelease: 0
   AccessToken: 
   ArSessionId: 
   ServerUrl: 
   certificateBase64: 
   MyMemberId: 
   MyBuildTarget: 0
+  ShowEnvironment: 0
+  SessionType: 0
 --- !u!4 &234215984
 Transform:
   m_ObjectHideFlags: 0
@@ -551,6 +553,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 11414302, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_Value
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 11452418, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
+      propertyPath: startInPopupMode
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}

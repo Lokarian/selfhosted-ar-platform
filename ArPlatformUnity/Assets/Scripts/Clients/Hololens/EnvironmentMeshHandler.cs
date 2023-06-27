@@ -142,7 +142,7 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         if (lastChunk)
         {
             var networkMesh = _spatialMeshNameToNetworkMesh[_uniqueMeshIdToSpatialMeshName[meshId]];
-            FindObjectOfType<MeshProcessor>().EnqueueMesh(networkMesh, _verticesChunks.ToArray(), _indicesChunks.ToArray());
+            MeshProcessor.Singleton.EnqueueMesh(networkMesh, _verticesChunks.ToArray(), _indicesChunks.ToArray());
         }
     }
 
@@ -166,9 +166,8 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         {
             return;
         }
-
         Destroy(networkMesh);
-        //todo cleanup in processor
+        MeshProcessor.Singleton.RemoveMesh(gameObject.name);
     }
 
     void AddPendingUpdate(MeshFilter meshFilter)

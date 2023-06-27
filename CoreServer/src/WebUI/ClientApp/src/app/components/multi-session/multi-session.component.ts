@@ -6,6 +6,7 @@ import {ArFacade} from "../../services/ar-facade.service";
 import {ChatFacade} from "../../services/chat-facade.service";
 import {CurrentUserService} from "../../services/user/current-user.service";
 import {DomSanitizer} from "@angular/platform-browser";
+import {AuthorizeService} from "../../services/auth/authorize.service";
 
 @Component({
   selector: 'app-multi-session',
@@ -29,7 +30,7 @@ export class MultiSessionComponent implements OnInit {
   public joinedVideoSession:boolean = false;
   public joinedArSession:boolean = false;
 
-  constructor(private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade,private domsanitizer:DomSanitizer) {
+  constructor(private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade,private domsanitizer:DomSanitizer,private authorizeService:AuthorizeService) {
   }
 
   ngOnInit(): void {
@@ -40,6 +41,24 @@ export class MultiSessionComponent implements OnInit {
     this.showVideo = this.initiallyShowVideo;
     this.showAr = this.initiallyShowAr;
     this.joinedVideoSession=this.initiallyShowVideo;
+
+  }
+
+  joinArSession() {
+    (navigator as any).userAgentData.getHighEntropyValues(["platformVersion"])
+        .then(ua => {
+          if ((navigator as any).userAgentData.platform === "Windows") {
+            const majorPlatformVersion = parseInt(ua.platformVersion.split('.')[0]);
+            if (majorPlatformVersion == 12) {
+              this.authorizeService.getAccessToken().subscribe(token=>{
+                window.open(`arplatform://${location.host}/${this.baseSession.id}?token=${token}`, "_blank");
+              });
+              return;
+            }
+          }
+          this.joinedArSession=true;
+        });
+
 
   }
 }

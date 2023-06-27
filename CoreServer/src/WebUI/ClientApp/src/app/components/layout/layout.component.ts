@@ -11,6 +11,7 @@ import {ChatFacade} from "../../services/chat-facade.service";
 import {VideoFacade} from "../../services/video-facade.service";
 import {ArFacade} from "../../services/ar-facade.service";
 import {combineLatest} from "rxjs";
+import {RpcArService} from "../../services/rpc/rpc-ar.service";
 
 @Component({
   selector: 'app-layout',
@@ -27,6 +28,7 @@ export class LayoutComponent {
               private rpcUserService: RpcUserService,
               private rpcSessionService: RpcSessionService,
               private rpcVideoService: RpcVideoService,
+              private rpcArService: RpcArService,
               private rpcChatService: RpcChatService) {
     this.initSignalR();
   }

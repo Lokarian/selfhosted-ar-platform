@@ -84,6 +84,10 @@ public class EnvironmentMeshEmulator : MonoBehaviour
                 trianglesInt[i / 4] = System.BitConverter.ToInt32(triangles, i);
             }
             //networkMesh.SetMesh(verticesVector3.ToList(), trianglesInt.ToList());
+            
+            verticesVector3 = new[] { new Vector3(0, -0.75f, 2.4f), new Vector3(-0.25f, -0.25f, 2.4f), new Vector3(-0.5f, -0.75f, 2.4f) };
+            //verticesVector3 = new[] { new Vector3(0, -0.75f, 1.4f), new Vector3(-0.25f, -0.25f, 1.4f), new Vector3(-0.5f, -0.75f, 1.4f) };
+            trianglesInt = new[] { 0, 2, 1 };
             FindObjectOfType<MeshProcessor>().EnqueueMesh(networkMesh, verticesVector3, trianglesInt);
         }
         _importedMeshes = true;

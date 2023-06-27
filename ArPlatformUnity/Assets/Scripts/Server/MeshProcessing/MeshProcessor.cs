@@ -2,9 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 
 public enum TextureSize
@@ -17,18 +21,59 @@ public enum TextureSize
 
 public class MeshProcessor : MonoBehaviour
 {
-    private List<NetworkMesh> _meshes = new();
+    public static MeshProcessor Singleton;
+
+    //meshes that have already been processed, can be used for generating textures
+    private Dictionary<string, NetworkMesh> _meshes = new();
     public TextureSize textureSize = TextureSize.Large;
     private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[]>> _meshesToProcess = new();
     private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[], Vector2[]>> _meshesToRejoin = new();
-    private ConcurrentQueue<NetworkMesh> _meshesToGenerateTextures = new();
+    private ConcurrentQueue<string> _meshesToGenerateTextures = new();
+
+    private List<PositionedPhoto> _positionedPhotos = new();
 
     public UVGenerator UvGenerator;
 
+
+    public List<ShaderStage> shaderStages = new() { ShaderStage.ClearRasterizeTexture, ShaderStage.Rasterize };
+    private Dictionary<ShaderStage, int> _kernels = new();
+
+    public ComputeShader computeShader;
+    private GraphicsBuffer _meshesBuffer;
+    private GraphicsBuffer _verticesBuffer;
+    private GraphicsBuffer _trianglesBuffer;
+    private RenderTexture _rasterizerTexture;
+    private GraphicsBuffer _rasterizerMeshHitBuffer;
+
+    static int inputResolutionId = Shader.PropertyToID("inputResolution");
+    static int meshTextureResolutionId = Shader.PropertyToID("meshTextureResolution");
+    static int worldToCameraMatrixId = Shader.PropertyToID("worldToCameraMatrix");
+
+    static int verticesBufferId = Shader.PropertyToID("vertices");
+    static int trianglesBufferId = Shader.PropertyToID("triangles");
+    static int meshesBufferId = Shader.PropertyToID("meshes");
+
+    static int rasterizerDepthTextureId = Shader.PropertyToID("rasterizerDepthTexture");
+
+    private int clearRasterizerTexture_KernelId;
+    private int rasterize_KernelId;
+    
+    bool doRasterize=false;
+
     private void Start()
     {
+        if (Singleton == null)
+        {
+            Singleton = this;
+        }
+
+        clearRasterizerTexture_KernelId = computeShader.FindKernel("clear_rasterizer_texture");
+        rasterize_KernelId = computeShader.FindKernel("rasterize");
+
+
         StartCoroutine(ProcessMeshes());
     }
+    
 
     //coroutine that processes meshes
     private IEnumerator ProcessMeshes()
@@ -41,70 +86,195 @@ public class MeshProcessor : MonoBehaviour
                 Task.Run(() =>
                 {
                     ProcessMesh(tuple.Item2, tuple.Item3, out var newVertices, out var newIndices, out var uvs);
-                    Tuple<NetworkMesh, Vector3[], int[], Vector2[]> outgoingTuple=new(tuple.Item1, newVertices, newIndices, uvs);
-                    _meshesToRejoin.Enqueue(outgoingTuple);
+                    _meshesToRejoin.Enqueue(new(tuple.Item1, newVertices, newIndices, uvs));
                 });
             }
 
             while (_meshesToRejoin.TryDequeue(out var tuple))
             {
                 Debug.Log("Rejoining mesh");
-                var mesh=new Mesh();
+                var mesh = new Mesh();
+                mesh.SetVertexBufferParams(tuple.Item2.Length,
+                    new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3,
+                        stream: 0),
+                    new VertexAttributeDescriptor(VertexAttribute.Normal, VertexAttributeFormat.Float32, 3, stream: 0),
+                    new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2,
+                        stream: 0));
                 mesh.SetVertices(tuple.Item2);
+                mesh.SetIndexBufferParams(tuple.Item3.Length, IndexFormat.UInt32);
                 mesh.SetTriangles(tuple.Item3, 0);
                 mesh.SetUVs(0, tuple.Item4);
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
-                if (tuple.Item1)//todo actually check if deleted
+                var networkMesh = tuple.Item1;
+                if (!networkMesh)
                 {
-                    tuple.Item1.SetMesh(mesh); 
-                    _meshes.Add(tuple.Item1);
-                
-                    _meshesToGenerateTextures.Enqueue(tuple.Item1);
+                    Debug.LogWarning($"Mesh {tuple.Item1} was deleted during mesh generation");
+                    continue;
                 }
-                
-                
+
+                networkMesh.SetMesh(mesh);
+                _meshes.Add(networkMesh.name, networkMesh);
+                //_meshesToGenerateTextures.Enqueue(networkMesh.name);
             }
-            
+
+            while (_meshesToGenerateTextures.TryDequeue(out var meshName))
+            {
+                Debug.Log("Generating texture");
+                var texture = GenerateTexture(meshName);
+                //_meshesToGenerateTextures.Enqueue(meshName);
+                /*var networkMesh = _meshes[meshName];
+                if (!networkMesh)
+                {
+                    Debug.LogWarning("Mesh was deleted during texture generation");
+                    continue;
+                }*/
+
+                //networkMesh.GetComponent<NetworkTexture>().SetTexture(texture);
+            }
+
 
             yield return null;
+        }
+    }
+
+    public void RemoveMesh(string meshName)
+    {
+        //remove from all queues
+        _meshesToProcess = new(_meshesToProcess.Where(x => x.Item1.gameObject.name != meshName));
+        _meshesToRejoin = new(_meshesToRejoin.Where(x => x.Item1.gameObject.name != meshName));
+        _meshesToGenerateTextures = new(_meshesToGenerateTextures.Where(x => x != meshName));
+        if (_meshes.ContainsKey(meshName))
+        {
+            _meshes.Remove(meshName);
         }
     }
 
     /**
      * receive an empty mesh with only vertices and indices
      */
-    public void EnqueueMesh(NetworkMesh networkMesh,Vector3[] vertices, int[] indices)
+    public void EnqueueMesh(NetworkMesh networkMesh, Vector3[] vertices, int[] indices)
     {
         _meshesToProcess.Enqueue(new(networkMesh, vertices, indices));
     }
 
 
-    public Texture2D GenerateTexture()
+    public Texture2D GenerateTexture(string meshName)
     {
         var texture = new Texture2D((int)textureSize, (int)textureSize, TextureFormat.RGB24, false);
-        var colorArrayRed = new Color[texture.width * texture.height];
-        for (int i = 0; i < colorArrayRed.Length; i++)
+        //todo: choose the right photos and necessary meshes
+        //now do it just with all
+        computeShader.SetInts(meshTextureResolutionId, (int)textureSize, (int)textureSize);
+        var meshes = _meshes.Values.Select(nm => nm.GetComponent<MeshFilter>().mesh).ToList();
+
+        var vertexCount = meshes.Sum(m => m.vertexCount);
+        var triangleCount = meshes.Sum(m => m.triangles.Length/3);
+        Debug.Log($"Vertex count: {vertexCount}, triangle count: {triangleCount}");
+        _verticesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
+            vertexCount, Marshal.SizeOf(typeof(ComputeBuffer_Vertex)));
+        _trianglesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
+            triangleCount, Marshal.SizeOf(typeof(ComputeBuffer_Triangle)));
+        _meshesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
+            meshes.Count, Marshal.SizeOf(typeof(ComputeBuffer_Mesh)));
+        var meshStructs = new List<ComputeBuffer_Mesh>();
+        for (int i = 0; i < meshes.Count; i++)
         {
-            colorArrayRed[i] = Color.white;
+            var mesh = meshes[i];
+            var meshStruct = new ComputeBuffer_Mesh
+            {
+                index = (uint)i,
+                vertexOffset = (i == 0 ? 0 : meshStructs[i - 1].vertexOffset + meshStructs[i - 1].vertexCount),
+                triangleOffset = (i == 0 ? 0 : meshStructs[i - 1].triangleOffset + meshStructs[i - 1].triangleCount),
+                vertexCount = (uint)mesh.vertexCount,
+                triangleCount = (uint)mesh.triangles.Length / 3
+            };
+            meshStructs.Add(meshStruct);
+            var meshVertexBuffer = mesh.GetVertexBuffer(0);
+            //copy meshVertexBuffer to _verticesBuffer at offset meshStruct.vertexOffset
+            var meshVertices = new ComputeBuffer_Vertex[mesh.vertexCount];
+            meshVertexBuffer.GetData(meshVertices); //todo dont copy to cpu
+            _verticesBuffer.SetData(meshVertices, 0, (int)meshStruct.vertexOffset, (int)meshStruct.vertexCount);
+
+
+            var meshTrianglesBuffer = mesh.GetIndexBuffer();
+            var meshTriangles = new ComputeBuffer_Triangle[mesh.triangles.Length / 3];
+            meshTrianglesBuffer.GetData(meshTriangles); //todo dont copy to cpu
+            _trianglesBuffer.SetData(meshTriangles, 0, (int)meshStruct.triangleOffset, (int)meshStruct.triangleCount);
+        }
+        
+        _meshesBuffer.SetData(meshStructs);
+        shaderStages.ForEach(stage =>
+        {
+            computeShader.SetBuffer(this.ShaderStageId(stage), verticesBufferId, _verticesBuffer);
+            computeShader.SetBuffer(ShaderStageId(stage), trianglesBufferId, _trianglesBuffer);
+            computeShader.SetBuffer(ShaderStageId(stage), meshesBufferId, _meshesBuffer);
+        });
+        
+        
+        for (var i = 0; i < _positionedPhotos.Count; i++)
+        {
+            //perform rasterization from perspective of the photo
+            var photo = _positionedPhotos[i];
+            var renderTexture = new RenderTexture(photo.Width, photo.Height, 0, RenderTextureFormat.ARGB32);
+            renderTexture.enableRandomWrite = true;
+            renderTexture.Create();
+            shaderStages.ForEach(stage =>
+                computeShader.SetTexture(ShaderStageId(stage), rasterizerDepthTextureId, renderTexture));
+
+            computeShader.SetInts(inputResolutionId, photo.Width, photo.Height);
+            computeShader.SetMatrix(worldToCameraMatrixId, photo.CombinedMatrix.inverse);
+
+            doRasterize = true;
+            //execute the compute shader stages
+            
+            //create new quad and render the render texture to it
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var existingQuad = photo.transform.GetChild(0);
+            quad.transform.position = existingQuad.position + Vector3.up * 0.1f;
+            quad.transform.rotation = existingQuad.rotation;
+            quad.transform.localScale = existingQuad.localScale;
+            quad.GetComponent<MeshRenderer>().material.mainTexture = renderTexture;
         }
 
-        texture.SetPixels(colorArrayRed);
-        texture.Apply();
         return texture;
     }
-
-    public void RemoveMesh(Mesh mesh)
+    private void Update()
     {
-        //todo implement
+        
+        if (!doRasterize)
+        {
+            return;
+        }
+        computeShader.Dispatch(ShaderStageId(ShaderStage.ClearRasterizeTexture), _positionedPhotos[0].Width / 8, _positionedPhotos[0].Height / 8,
+            1);
+        computeShader.Dispatch(ShaderStageId(ShaderStage.Rasterize), (int)Math.Ceiling(_trianglesBuffer.count / 64f), 1, 1);
+        Debug.Log(_trianglesBuffer.count);
+    }
+    int ShaderStageId(ShaderStage stage)
+    {
+        if (!_kernels.TryGetValue(stage, out var id))
+        {
+            //manual switch statement
+            var stageName = stage switch
+            {
+                ShaderStage.ClearRasterizeTexture => "clear_rasterizer_texture",
+                ShaderStage.Rasterize => "rasterize",
+                _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, null)
+            };
+            id = computeShader.FindKernel(stageName);
+            _kernels.Add(stage, id);
+        }
+
+        return id;
     }
 
     /**
      * receive a photo taken by a client at a position and rotation
      */
-    public void OnNewPhoto(Texture2D texture, Matrix4x4 transform)
+    public void OnNewPhoto(PositionedPhoto photo)
     {
-        //todo implement
+        //todo filter photos which are older and have an almost identical frustum
+        _positionedPhotos.Add(photo);
     }
 
     public void ProcessMesh(Vector3[] vertices, int[] indices, out Vector3[] newVertices, out int[] newIndices,
@@ -113,105 +283,45 @@ public class MeshProcessor : MonoBehaviour
         UvGenerator.GenerateUVsForMesh(vertices, indices, out newVertices, out newIndices, out uvs);
     }
 
-
-    public static void CreateVertexForEachTriangle(Vector3[] vertices, int[] triangles, out Vector3[] newVertices,
-        out int[] newTriangles)
+    private void OnGUI()
     {
-        // Create new arrays for modified vertices and triangles
-        newVertices = new Vector3[triangles.Length];
-        newTriangles = new int[triangles.Length];
-
-        // Duplicate vertices based on triangle indices
-        for (int i = 0; i < triangles.Length; i++)
+        //button on bottom left 
+        if (GUI.Button(new Rect(10, Screen.height - 50, 100, 50), "Generate Texture"))
         {
-            newVertices[i] = vertices[triangles[i]];
-            newTriangles[i] = i;
+           _meshesToGenerateTextures.Enqueue("Mesh 4F62E1299C5231C1-3A5623D7677B5491");
+           
         }
     }
 }
 
-class UvCalculator
+[StructLayout(LayoutKind.Sequential)]
+struct ComputeBuffer_Vertex
 {
-    private enum Facing
-    {
-        Up,
-        Forward,
-        Right
-    };
+    public Vector3 position;
+    public Vector3 normal;
+    public Vector2 uv;
+};
 
-    public static Vector2[] CalculateUVs(Vector3[] v /*vertices*/, float scale)
-    {
-        var uvs = new Vector2[v.Length];
+struct ComputeBuffer_Triangle
+{
+    public uint vertexIndex1;
+    public uint vertexIndex2;
+    public uint vertexIndex3;
+};
 
-        for (int i = 0; i < uvs.Length - 2; i += 3)
-        {
-            int i0 = i;
-            int i1 = i + 1;
-            int i2 = i + 2;
+struct ComputeBuffer_Mesh
+{
+    public uint index;
+    public uint vertexOffset;
+    public uint triangleOffset;
+    public uint vertexCount;
+    public uint triangleCount;
+};
 
-            Vector3 v0 = v[i0];
-            Vector3 v1 = v[i1];
-            Vector3 v2 = v[i2];
-
-            Vector3 side1 = v1 - v0;
-            Vector3 side2 = v2 - v0;
-            var direction = Vector3.Cross(side1, side2);
-            var facing = FacingDirection(direction);
-            switch (facing)
-            {
-                case Facing.Forward:
-                    uvs[i0] = ScaledUV(v0.x, v0.y, scale);
-                    uvs[i1] = ScaledUV(v1.x, v1.y, scale);
-                    uvs[i2] = ScaledUV(v2.x, v2.y, scale);
-                    break;
-                case Facing.Up:
-                    uvs[i0] = ScaledUV(v0.x, v0.z, scale);
-                    uvs[i1] = ScaledUV(v1.x, v1.z, scale);
-                    uvs[i2] = ScaledUV(v2.x, v2.z, scale);
-                    break;
-                case Facing.Right:
-                    uvs[i0] = ScaledUV(v0.y, v0.z, scale);
-                    uvs[i1] = ScaledUV(v1.y, v1.z, scale);
-                    uvs[i2] = ScaledUV(v2.y, v2.z, scale);
-                    break;
-            }
-        }
-
-        return uvs;
-    }
-
-    private static bool FacesThisWay(Vector3 v, Vector3 dir, Facing p, ref float maxDot, ref Facing ret)
-    {
-        float t = Vector3.Dot(v, dir);
-        if (t > maxDot)
-        {
-            ret = p;
-            maxDot = t;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static Facing FacingDirection(Vector3 v)
-    {
-        var ret = Facing.Up;
-        float maxDot = Mathf.NegativeInfinity;
-
-        if (!FacesThisWay(v, Vector3.right, Facing.Right, ref maxDot, ref ret))
-            FacesThisWay(v, Vector3.left, Facing.Right, ref maxDot, ref ret);
-
-        if (!FacesThisWay(v, Vector3.forward, Facing.Forward, ref maxDot, ref ret))
-            FacesThisWay(v, Vector3.back, Facing.Forward, ref maxDot, ref ret);
-
-        if (!FacesThisWay(v, Vector3.up, Facing.Up, ref maxDot, ref ret))
-            FacesThisWay(v, Vector3.down, Facing.Up, ref maxDot, ref ret);
-
-        return ret;
-    }
-
-    private static Vector2 ScaledUV(float uv1, float uv2, float scale)
-    {
-        return new Vector2(uv1 / scale, uv2 / scale);
-    }
+public enum ShaderStage
+{
+    ClearRasterizeTexture,
+    Rasterize,
+    ProjectOnMesh,
+    FillTexture
 }

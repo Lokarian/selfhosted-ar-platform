@@ -1,6 +1,6 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {
-  ArClient,
+  ArClient, ArMemberDto,
   ArServerState,
   ArSessionDto,
   ArUserRole,
@@ -21,6 +21,7 @@ export class ArSessionPreviewComponent implements OnInit {
   public ArUserRole = ArUserRole
   public ArServerState = ArServerState;
 
+
   constructor(private arClient: ArClient) {
   }
 
@@ -31,8 +32,11 @@ export class ArSessionPreviewComponent implements OnInit {
     this.join.emit(this.session);
   }
 
+  public get displayMembers(): ArMemberDto[] {
+    return this.session.members.filter(m => m.deletedAt == null);
+  }
 
   startServer() {
-    this.arClient.startArServer(new StartArServerCommand({arSessionId : this.session.baseSessionId}))
+    this.arClient.startArServer(new StartArServerCommand({arSessionId : this.session.baseSessionId})).subscribe();
   }
 }

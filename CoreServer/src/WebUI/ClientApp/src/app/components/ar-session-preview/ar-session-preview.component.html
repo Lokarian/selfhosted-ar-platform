@@ -24,7 +24,7 @@
       </button>
       <h2 class="text-white mb-2">Users:</h2>
       <div class="flex flex-row gap-2 justify-center overflow-x-auto">
-        <div *ngFor="let member of session.members" class="flex flex-col justify-end">
+        <div *ngFor="let member of displayMembers" class="flex flex-col justify-end">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 96 96" class="fill-text"
                *ngIf="member.role==ArUserRole.Hololens">
             <path
@@ -32,7 +32,7 @@
           </svg>
           <app-avatar [user]="member.userId|user|async" class="h-6 w-6"></app-avatar>
         </div>
-        <h2 class="text-text" *ngIf="session.members.length==0">
+        <h2 class="text-text" *ngIf="displayMembers.length==0">
           There is currently no one in the session.
         </h2>
       </div>

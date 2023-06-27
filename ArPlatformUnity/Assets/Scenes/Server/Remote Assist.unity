@@ -806,6 +806,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textureSize: 2048
   UvGenerator: {fileID: 1972234615}
+  computeShader: {fileID: 7200000, guid: bfd981ea69412b545accae0a4ab4cc37, type: 3}
 --- !u!114 &1972234615
 MonoBehaviour:
   m_ObjectHideFlags: 0

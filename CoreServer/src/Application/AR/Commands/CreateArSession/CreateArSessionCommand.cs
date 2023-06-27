@@ -32,7 +32,7 @@ public class CreateArSessionCommandHandler : IRequestHandler<CreateArSessionComm
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
         ArSession session = new ArSession
         {
-            BaseSession = baseSession!, ServerState = ArServerState.Starting, SessionType = request.SessionType
+            BaseSession = baseSession!, ServerState = ArServerState.Stopped, SessionType = request.SessionType
         };
         session.AddDomainEvent(new ArSessionCreatedEvent(session));
         _context.ArSessions.Add(session);

@@ -37,7 +37,7 @@ public class UnityServerService : IUnityServerService
             {
                 FileName = "docker",
                 Arguments =
-                    $"run -d -e \"AR_SESSION_ID={arSessionId}\" -e \"AR_SESSION_TYPE={sessionType}\" -e \"TOKEN={result.Item2}\" --name arServer-{arSessionId} arPlatformUnityDedicatedServer:latest",
+                    $"run -d -e \"AR_SESSION_ID={arSessionId}\" -e \"AR_SESSION_TYPE={sessionType}\" -e \"ACCESS_TOKEN={result.Item2}\" --name arServer-{arSessionId} arPlatformUnityDedicatedServer:latest",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true

@@ -58,11 +58,11 @@ public class UnityBrokerHub : Hub
         return member.Id.ToString();
     }
 
-    public async void RegisterAsServer(string serverId,CancellationToken cancellationToken)
+    public async Task RegisterAsServer(string serverId)
     {
         Console.WriteLine($"Server {serverId} registered");
         await Groups.AddToGroupAsync(Context.ConnectionId, serverId);
-        var user= await _context.AppUsers.FirstOrDefaultAsync(x => x.Id == Guid.Parse(Context.UserIdentifier!));
+        var user= _context.AppUsers.FirstOrDefault(x => x.Id == Guid.Parse(Context.UserIdentifier!));
         if (user?.AccountType != AppUserAccountType.Service)
         {
             throw new UnauthorizedAccessException();
@@ -74,7 +74,8 @@ public class UnityBrokerHub : Hub
         }
         session.ServerState=ArServerState.Running;
         session.AddDomainEvent(new ArSessionUpdatedEvent(session));
-        await _context.SaveChangesAsync(cancellationToken);
+        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        await _context.SaveChangesAsync(cancellationTokenSource.Token);
     }
 
     public void NotifyServerOfClient(string serverId, string memberId)
@@ -169,6 +170,20 @@ public class UnityBrokerHub : Hub
         {
             Console.WriteLine($"Notifying Server {member.SessionId} of {member.Id} disconnection");
             await Clients.Group(member.SessionId.ToString()).SendAsync("ClientDisconnected", member.Id.ToString());
+        }
+        var appUser=await _context.AppUsers.FirstOrDefaultAsync(x => x.Id == Guid.Parse(Context.UserIdentifier!));
+        if (appUser?.AccountType == AppUserAccountType.Service)
+        {
+            //take everything between first and last "-"
+            var sessionId=Guid.Parse(appUser.UserName.Split("-")[1..^1].Aggregate((x, y) => x + "-" + y));
+            var session = await _context.ArSessions.FirstOrDefaultAsync(x => x.BaseSessionId == sessionId);
+            if (session != null)
+            {
+                session.ServerState = ArServerState.Stopped;
+                session.AddDomainEvent(new ArSessionUpdatedEvent(session));
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                await _context.SaveChangesAsync(cancellationTokenSource.Token);
+            }
         }
 
         await _mediator.Send(new DisconnectUserConnectionCommand() { ConnectionId = Context.ConnectionId });

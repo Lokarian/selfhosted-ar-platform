@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreServer.Application.AR.Events;
 
-public class ArSessionUpdatedEventHandler : INotificationHandler<ArSessionCreatedEvent>
+public class ArSessionUpdatedEventHandler : INotificationHandler<ArSessionUpdatedEvent>
 {
     private readonly IUserProxy<IRpcArService> _userProxy;
     private readonly IMapper _mapper;
@@ -23,7 +23,7 @@ public class ArSessionUpdatedEventHandler : INotificationHandler<ArSessionCreate
         _context = context;
     }
 
-    public async Task Handle(ArSessionCreatedEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(ArSessionUpdatedEvent notification, CancellationToken cancellationToken)
     {
         var session = await _context.ArSessions
             .Include(x => x.BaseSession)

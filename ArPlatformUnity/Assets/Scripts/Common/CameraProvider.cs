@@ -5,7 +5,7 @@ using System.Linq;
 using EasyButtons;
 using Unity.Netcode;
 using UnityEngine;
-#if !UNITY_WEBGL
+#if UNITY_WSA
 using UnityEngine.Windows.WebCam;
 #endif
 
@@ -26,11 +26,11 @@ public class CameraProvider : NetworkBehaviour
     [ClientRpc]
     public void StartTakingPhoto_ClientRpc(ClientRpcParams param = default)
     {
-#if !UNITY_WEBGL
+#if UNITY_WSA
         PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
 #endif
     }
-#if !UNITY_WEBGL
+#if UNITY_WSA
     private PhotoCapture photoCaptureObject = null;
 
     

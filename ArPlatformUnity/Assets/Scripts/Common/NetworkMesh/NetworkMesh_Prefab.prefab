@@ -149,8 +149,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efe3906ff77373e4b897272da7356140, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TotalBytesGenerated: 0
-  TotalBytesSent: 0
+  SyncWithNetworkTexture: 1
+  CurrentVersion: 0
 --- !u!114 &-6644030644556078525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -163,4 +163,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53fbbddc5b0dd4b47beb9f433cdac078, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _texture: {fileID: 0}
+  NetworkMesh: {fileID: 6490998480733202580}
+  CurrentVersion: 0

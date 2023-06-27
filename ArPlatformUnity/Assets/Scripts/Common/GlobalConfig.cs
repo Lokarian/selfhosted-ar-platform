@@ -27,7 +27,7 @@ public class GlobalConfig : MonoBehaviour
     public string MyMemberId;
     public ArBuildTarget MyBuildTarget;
     public bool ShowEnvironment = false;
-    
+    public ArSessionType SessionType = ArSessionType.RemoteAssist;
 
 
     private void Initialize()
@@ -80,10 +80,23 @@ public class GlobalConfig : MonoBehaviour
         MyBuildTarget = ArBuildTarget.Server;
         if (!editor)
         {
-            ServerUrl = "https://reithmeir.duckdns.org:5001";
-            ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+            AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN") ??
+                          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
+            ServerUrl = Environment.GetEnvironmentVariable("SERVER_URL") ?? "https://reithmeir.duckdns.org:5001";
+            ArSessionId = Environment.GetEnvironmentVariable("SESSION_ID") ?? "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+            SessionType = Environment.GetEnvironmentVariable("SESSION_TYPE") != null
+                ? (ArSessionType)Enum.Parse(typeof(ArSessionType), Environment.GetEnvironmentVariable("SESSION_TYPE")!)
+                : ArSessionType.RemoteAssist;
+        }
+        else
+        {
             AccessToken =
                 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
+            //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjBiMzVlYjE2LTRjMWMtNDNiZS05ZjIxLTUyZGExMWMwMjlhZiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MaVqJco8zg7v8X_Xl7iYmusgnfiKlNgZt_9vJCZKAK0";
+            ServerUrl = "https://reithmeir.duckdns.org:5001";
+            ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+            //ServerUrl= "https://localhost:5001";
+            //ArSessionId = "b1a511a9-2cdc-41c9-84d6-1d022f791b53";
         }
     }
 
@@ -101,26 +114,25 @@ public class GlobalConfig : MonoBehaviour
 
     private void ConfigureUWP(bool editor)
     {
-        
-
         if (editor)
         {
         }
         else
         {
-            //get params from launch url
-            /*var appUrl = Application.absoluteURL;
-            var url = new Uri(appUrl);
-            var query = url.Query;
-            var queryDictionary = WebUtility.
-            ServerUrl = queryDictionary["serverUrl"];
-            ArSessionId = queryDictionary["arSessionId"];
-            MyBuildTarget = ArBuildTarget.Hololens;
-            AccessToken = queryDictionary["token"];*/
-            ServerUrl = "https://reithmeir.duckdns.org:5001";
-            AccessToken =
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY3YmM2NDRkLTIwNDktNGQ0NS05YWUwLWYwMGYzOTMyODcyZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MZ3oi2wKz7dBwPR8LORbGxfr-PyUu2frnuYeZntdG2k";
-            ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+            var appUrl = Application.absoluteURL;
+            if (appUrl != null && appUrl.Length > 0)
+            {
+                Debug.Log("Launched App with url: " + appUrl);
+                //use raw regex to parse url
+                // var regex = new Regex(@"(?<protocol>https?)://(?<host>[^:/]+)(:(?<port>\d+))?");
+            }
+            else
+            {
+                ServerUrl = "https://reithmeir.duckdns.org:5001";
+                AccessToken =
+                    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY3YmM2NDRkLTIwNDktNGQ0NS05YWUwLWYwMGYzOTMyODcyZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MZ3oi2wKz7dBwPR8LORbGxfr-PyUu2frnuYeZntdG2k";
+                ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
+            }
         }
 
         MyBuildTarget = ArBuildTarget.Hololens;
@@ -148,4 +160,9 @@ public enum ArBuildTarget
     Hololens,
     Web,
     Server
+}
+
+public enum ArSessionType
+{
+    RemoteAssist,
 }
