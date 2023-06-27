@@ -211,7 +211,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!81 &374129508
 AudioListener:
   m_ObjectHideFlags: 0
@@ -370,6 +370,53 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DoTakePhoto: 0
+--- !u!1 &749902525
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 749902527}
+  - component: {fileID: 749902526}
+  m_Layer: 0
+  m_Name: Rasterizer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &749902526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749902525}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7af1439bc5dc8e43a2dbec369a0aeca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Meshes: []
+  computeShader: {fileID: 7200000, guid: bfd981ea69412b545accae0a4ab4cc37, type: 3}
+  shaderStages: 0000000001000000
+--- !u!4 &749902527
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749902525}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.0119534, y: -1.3741591, z: 1.3802189}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 11
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &901397221
 GameObject:
   m_ObjectHideFlags: 0
@@ -806,7 +853,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textureSize: 2048
   UvGenerator: {fileID: 1972234615}
+  shaderStages: 0000000001000000
   computeShader: {fileID: 7200000, guid: bfd981ea69412b545accae0a4ab4cc37, type: 3}
+  v1: {x: 0, y: -0.75, z: 2.4}
+  v2: {x: -0.25, y: -0.25, z: 2.4}
+  v3: {x: -0.5, y: -0.75, z: 2.4}
 --- !u!114 &1972234615
 MonoBehaviour:
   m_ObjectHideFlags: 0

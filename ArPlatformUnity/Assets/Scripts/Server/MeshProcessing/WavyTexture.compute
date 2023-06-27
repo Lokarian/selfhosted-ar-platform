@@ -55,11 +55,31 @@ RWTexture2D<float3> meshTexture; //the texture of the mesh that will get new col
 int2 meshTextureResolution; //the resolution of the mesh texture
 
 
-//helper functions
+float3 project(float3 v)
+{
+    float4 transformed = mul(worldToCameraMatrix, float4(v, 1));
+    float3 vector3 = transformed.xyz;
+    // Normalize the vector
+    float num = 1.0f / transformed.w;
+    vector3 *= num;
+    return vector3;
+}
 
 uint index_of(uint x, uint y, int2 resolution)
 {
     return y * resolution.x + x;
+}
+
+float4 get_min_max(float3 v1, float3 v2, float3 v3)
+{
+    float4 min_max;
+
+    min_max.x = min(min(v1.x, v2.x), v3.x);
+    min_max.y = min(min(v1.y, v2.y), v3.y);
+    min_max.z = max(max(v1.x, v2.x), v3.x);
+    min_max.w = max(max(v1.y, v2.y), v3.y);
+
+    return min_max;
 }
 
 float3 barycentric(float3 v1, float3 v2, float3 v3, float2 p)
@@ -77,162 +97,93 @@ float3 barycentric(float3 v1, float3 v2, float3 v3, float2 p)
     return float3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-int4 get_min_max_screen_space(int2 v1, int2 v2, int2 v3)
+bool is_on_screen(float3 v)
 {
-    int4 min_max;
-
-    min_max.x = min(min(v1.x, v2.x), v3.x);
-    min_max.y = min(min(v1.y, v2.y), v3.y);
-    min_max.z = max(max(v1.x, v2.x), v3.x);
-    min_max.w = max(max(v1.y, v2.y), v3.y);
-
-    return min_max;
-}
-float4 get_min_max_unit_space(float2 v1, float2 v2, float2 v3)
-{
-    float4 min_max;
-    min_max.x = min(min(v1.x, v2.x), v3.x);
-    min_max.y = min(min(v1.y, v2.y), v3.y);
-    min_max.z = max(max(v1.x, v2.x), v3.x);
-    min_max.w = max(max(v1.y, v2.y), v3.y);
-    return min_max;
+    return (v.x > -1 && v.x < 1 && v.y > -1 && v.y < 1 && v.z > -1 && v.z < 1);
 }
 
-//returns a point that is in the view of the camera
-float3 fit_into_view(float3 point_in)
+float2 to_screen_space(float2 v)
 {
-    float3 ret;
-    ret.x = clamp(point_in.x, -1.0, 1.0);
-    ret.y = clamp(point_in.y, -1.0, 1.0);
-    ret.z = clamp(point_in.z, -1.0, 1.0);
-    return ret;
+    return (v + 1.0f) / 2.0f * inputResolution;
 }
-
-void color_pixel(uint2 pos, float4 color)
+void color_pixel(uint2 pos,float4 color)
 {
-    if (color.a < rasterizerDepthTexture[pos].a)
+    if(rasterizerDepthTexture[pos].a>color.a)
     {
-        rasterizerDepthTexture[pos] = color;
+        rasterizerDepthTexture[pos]=color;
     }
 }
 
-float3 project(float3 v)
+void draw_circle(uint2 pos, int radius, float4 color)
 {
-    return mul(worldToCameraMatrix, float4(v, 1.0)).xyz;
-}
+    int2 topLeft = int2(pos) - radius;
+    int2 bottomRight = int2(pos) + radius;
+    topLeft = clamp(topLeft, 0, inputResolution);
+    bottomRight = clamp(bottomRight, 0, inputResolution);
 
-int2 to_screen_space(float2 v)
-{
-    return int2((v.x + 1.0) * 0.5 * inputResolution.x, (v.y + 1.0) * 0.5 * inputResolution.y);
-}
-float2 to_screen_space_float(float2 v)
-{
-    return float2((v.x + 1.0) * 0.5 * inputResolution.x, (v.y + 1.0) * 0.5 * inputResolution.y);
-}
-float2 from_screen_space(int2 v)
-{
-    return float2(v.x / (inputResolution.x * 0.5) - 1.0, v.y / (inputResolution.y * 0.5) - 1.0);
-}
-
-bool is_off_screen(float3 v)
-{
-    if (v.x < -1.0 || v.x > 1.0 || v.y < -1.0 || 1.0 < v.y)
+    float2 center = float2(pos);
+    for (int x = topLeft.x; x < bottomRight.x; x++)
     {
-        return true;
+        for (int y = topLeft.y; y < bottomRight.y; y++)
+        {
+            float2 pixel = float2(x, y);
+            float dist = distance(pixel, center);
+            if (dist < radius)
+            {
+                rasterizerDepthTexture[pixel] = color;
+            }
+        }
     }
-
-    return false;
 }
 
-//every value will have a unique color, output a color float3 in range [0,1]
-float3 RandomColor(uint value)
+void draw_line(uint2 p1, uint2 p2, float4 color)
 {
-    float3 color;
-    color.x = (value & 0x000000FF) >> 0;
-    color.y = (value & 0x0000FF00) >> 8;
-    color.z = (value & 0x00FF0000) >> 16;
-    return color / 255.0;
+    int2 pos1 = clamp(p1, 0, inputResolution);
+    int2 pos2 = clamp(p2, 0, inputResolution);
+    int steps = max(abs(pos1.x - pos2.x), abs(pos1.y - pos2.y));
+    float2 position = float2(pos1);
+    float2 step = (float2(pos2) - float2(pos1)) / steps;
+    for (int i = 0; i < steps; i++)
+    {
+        rasterizerDepthTexture[position] = color;
+        rasterizerDepthTexture[uint2(position.x, position.y + 1)] = color;
+        rasterizerDepthTexture[uint2(position.x, position.y - 1)] = color;
+        rasterizerDepthTexture[uint2(position.x + 1, position.y)] = color;
+        rasterizerDepthTexture[uint2(position.x - 1, position.y)] = color;
+        position += step;
+    }
 }
 
-void draw_triangle(float3 v1, float3 v2, float3 v3, Vertex vert1, Vertex ver2, Vertex vert3)
+void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3)
 {
-    v1.xy=to_screen_space_float(v1.xy);
-    v2.xy=to_screen_space_float(v2.xy);
-    v3.xy=to_screen_space_float(v3.xy);
-    float4 min_max =get_min_max_unit_space(v1.xy, v2.xy, v3.xy);
-    uint startX = min_max.x;
-    uint startY = min_max.y;
-    uint endX = min_max.z;
-    uint endY = min_max.w;
+    p1 = float3(to_screen_space(p1.xy),p1.z);
+    p2 = float3(to_screen_space(p2.xy),p2.z);
+    p3 = float3(to_screen_space(p3.xy),p3.z);
+    float4 min_max = get_min_max(p1, p2, p3);
+    uint startX = uint(min_max.x);
+    uint startY = uint(min_max.y);
+    uint endX = uint(min_max.z);
+    uint endY = uint(min_max.w);
     for (uint x = startX; x <= endX; x = x + 1u)
     {
         for (uint y = startY; y <= endY; y = y + 1u)
         {
-            float3 bc = barycentric(v1, v2, v3, float2(float(x), float(y)));
+            float3 bc = barycentric(p1, p2, p3, float2(float(x), float(y)));
 
             if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0)
             {
                 continue;
             }
-            float3 color = normalize(vert1.normal + ver2.normal + vert3.normal);
-            rasterizerDepthTexture[uint2(x, y)] = float4(color, 1.0);
             //color from normal
-            //float3 color = normalize(vert1.normal + ver2.normal + vert3.normal);
-            //get depth
-            //float depth = bc.x * v1.z + bc.y * v2.z + bc.z * v3.z;
-            //color_pixel(uint2(x, y), float4(color.rgb, depth));
+            float3 color = normalize(v1.normal + v2.normal + v3.normal);
+            float depth = bc.x * p1.z + bc.y * p2.z + bc.z * p3.z;
+            color_pixel(uint2(x, y), float4(color, depth));
         }
     }
 }
-void draw_circle(int2 center, int radius, float4 color)
-{
-    uint minX = max(0, center.x - radius);
-    uint maxX = min(inputResolution.x, center.x + radius);
-    uint minY = max(0, center.y - radius);
-    uint maxY = min(inputResolution.y, center.y + radius);
-
-    for (uint x = minX; x < maxX; x++)
-    {
-        for (uint y = minY; y < maxY; y++)
-        {
-            float2 pos = float2(float(x), float(y));
-            float dist = distance(float2(center.x, center.y), pos);
-            if (dist < float(radius))
-            {
-                rasterizerDepthTexture[uint2(x, y)] = color;
-            }
-        }
-    }
-}
-void draw_line(float3 v1, float3 v2)
-{
-    int2 v1Vec = to_screen_space(fit_into_view(v1).xy);
-    int2 v2Vec = to_screen_space(fit_into_view(v2).xy);
-    //draw line
-    uint4 min_max = get_min_max_screen_space(v1Vec, v2Vec, v2Vec);
-    int startX = min_max.x;
-    int startY = min_max.y;
-    int endX = min_max.z;
-    int endY = min_max.w;
-    int steps = max(abs(endX - startX), abs(endY - startY));
-    float stepX = float(v2Vec.x - v1Vec.x) / float(steps);
-    float stepY = float(v2Vec.y - v1Vec.y) / float(steps);
-    float2 pos = float2(float(v1Vec.x), float(v1Vec.y));
-    for (uint i = 0; i < steps; i++)
-    {
-        pos.x += stepX;
-        pos.y += stepY;
-        //color_pixel(uint2(pos.x, pos.y), float4(0, 1, 0, 1.0));
-        draw_circle(int2(pos.x, pos.y), 5, float4(0, 1, 0, 1.0));
-    }
-}
-
 
 
 //kernels
-
-
-//kernel index 3
 //clear stage for meshHits
 [numthreads(8, 8, 1)]
 void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
@@ -247,10 +198,10 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
     if (id.x < inputResolution.x && id.y < inputResolution.y)
     {
         //meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
-
         rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
     }
 }
+
 
 //rasterize the meshes
 [numthreads(64, 1, 1)]
@@ -263,24 +214,24 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     {
         return;
     }
+    Triangle triang = triangles[id.x];
+    Vertex v1 = vertices[triang.vertexIndex1];
+    Vertex v2 = vertices[triang.vertexIndex2];
+    Vertex v3 = vertices[triang.vertexIndex3];
+    float3 p1 = project(v1.position);
+    float3 p2 = project(v2.position);
+    float3 p3 = project(v3.position);
 
-
-    Triangle polygon = triangles[id.x];
-
-    float3 v1 = project(vertices[polygon.vertexIndex1].position);
-    float3 v2 = project(vertices[polygon.vertexIndex2].position);
-    float3 v3 = project(vertices[polygon.vertexIndex3].position);
-
-    draw_circle(to_screen_space(v1.xy), 10, float4(0, 1.0, 0, 1.0));
-    draw_circle(to_screen_space(v2.xy), 10, float4(0, 1.0, 0, 1.0));
-    draw_circle(to_screen_space(v3.xy), 10, float4(0, 1.0, 0, 1.0));
-    draw_line(v1, v2);
-    draw_line(v2, v3);
-    draw_line(v1, v3);
-
-    if (is_off_screen(v1) || is_off_screen(v2) || is_off_screen(v3))
+    if (!is_on_screen(p1) && !is_on_screen(p2) && !is_on_screen(p3))
     {
         return;
     }
-    draw_triangle(v1, v2, v3,vertices[polygon.vertexIndex1],vertices[polygon.vertexIndex2],vertices[polygon.vertexIndex3]);
+    //draw_circle(to_screen_space(p1.xy), 20, float4(0, 1, 0, 1));
+    //draw_circle(to_screen_space(p2.xy), 20, float4(0, 1, 0, 1));
+    //draw_circle(to_screen_space(p3.xy), 20, float4(0, 1, 0, 1));
+    draw_line(to_screen_space(p1.xy), to_screen_space(p2.xy), float4(0, 1, 0, 1));
+    draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
+    draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
+
+    draw_triangle(p1, p2, p3, v1, v2, v3);
 }

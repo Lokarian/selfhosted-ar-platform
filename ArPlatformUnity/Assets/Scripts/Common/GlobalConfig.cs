@@ -116,6 +116,7 @@ public class GlobalConfig : MonoBehaviour
     {
         if (editor)
         {
+            
         }
         else
         {

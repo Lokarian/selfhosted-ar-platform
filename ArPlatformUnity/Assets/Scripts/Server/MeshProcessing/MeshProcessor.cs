@@ -54,21 +54,20 @@ public class MeshProcessor : MonoBehaviour
     static int meshesBufferId = Shader.PropertyToID("meshes");
 
     static int rasterizerDepthTextureId = Shader.PropertyToID("rasterizerDepthTexture");
-
-    private int clearRasterizerTexture_KernelId;
-    private int rasterize_KernelId;
+    
     
     bool doRasterize=false;
 
+    public Vector3 v1=new Vector3(0, -0.75f, 2.4f);
+    public Vector3 v2=new Vector3(-0.25f, -0.25f, 2.4f);
+    public Vector3 v3=new Vector3(-0.5f, -0.75f, 2.4f);
+    
     private void Start()
     {
         if (Singleton == null)
         {
             Singleton = this;
         }
-
-        clearRasterizerTexture_KernelId = computeShader.FindKernel("clear_rasterizer_texture");
-        rasterize_KernelId = computeShader.FindKernel("rasterize");
 
 
         StartCoroutine(ProcessMeshes());
@@ -114,7 +113,11 @@ public class MeshProcessor : MonoBehaviour
                 }
 
                 networkMesh.SetMesh(mesh);
-                _meshes.Add(networkMesh.name, networkMesh);
+
+                if (!_meshes.ContainsKey(networkMesh.name))
+                {
+                    _meshes.Add(networkMesh.name, networkMesh);
+                }
                 //_meshesToGenerateTextures.Enqueue(networkMesh.name);
             }
 
@@ -223,7 +226,6 @@ public class MeshProcessor : MonoBehaviour
 
             computeShader.SetInts(inputResolutionId, photo.Width, photo.Height);
             computeShader.SetMatrix(worldToCameraMatrixId, photo.CombinedMatrix.inverse);
-
             doRasterize = true;
             //execute the compute shader stages
             
@@ -245,10 +247,20 @@ public class MeshProcessor : MonoBehaviour
         {
             return;
         }
+        /*ComputeBuffer_Vertex[] vertices = new ComputeBuffer_Vertex[_verticesBuffer.count];
+        _verticesBuffer.GetData(vertices);
+        vertices[0].position=v1;
+        vertices[1].position=v2;
+        vertices[2].position=v3;
+        _meshes["Mesh 4F62E1299C5231C1-3A5623D7677B5491"].GetComponent<MeshFilter>().mesh.SetVertices(new []{v1,v2,v3});
+        _meshes["Mesh 4F62E1299C5231C1-3A5623D7677B5491"].GetComponent<MeshFilter>().mesh.SetTriangles(new []{0,2,1},0);
+        _verticesBuffer.SetData(vertices);
+        */
+        
         computeShader.Dispatch(ShaderStageId(ShaderStage.ClearRasterizeTexture), _positionedPhotos[0].Width / 8, _positionedPhotos[0].Height / 8,
             1);
         computeShader.Dispatch(ShaderStageId(ShaderStage.Rasterize), (int)Math.Ceiling(_trianglesBuffer.count / 64f), 1, 1);
-        Debug.Log(_trianglesBuffer.count);
+        
     }
     int ShaderStageId(ShaderStage stage)
     {
@@ -288,7 +300,7 @@ public class MeshProcessor : MonoBehaviour
         //button on bottom left 
         if (GUI.Button(new Rect(10, Screen.height - 50, 100, 50), "Generate Texture"))
         {
-           _meshesToGenerateTextures.Enqueue("Mesh 4F62E1299C5231C1-3A5623D7677B5491");
+           _meshesToGenerateTextures.Enqueue("Mesh 4F8198E77ED61BB9-91B42239FE7753BC");
            
         }
     }

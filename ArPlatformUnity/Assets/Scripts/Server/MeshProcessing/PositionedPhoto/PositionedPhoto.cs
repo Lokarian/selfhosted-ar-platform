@@ -15,11 +15,11 @@ public class PositionedPhoto : MonoBehaviour
     public int Width;
     public int Height;
     
-    [Range(-1,1)]
+    [Range(-10,10)]
     public float X;
-    [Range(-1,1)]
+    [Range(-10,10)]
     public float Y;
-    [Range(-1,1)]
+    [Range(-10,10)]
     public float Z;
 
     public void Initialize(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width, int height,
@@ -63,7 +63,7 @@ public class PositionedPhoto : MonoBehaviour
         }
         //draw the frustum
         Gizmos.color = Color.yellow;
-        Gizmos.DrawSphere(CombinedMatrix.MultiplyPoint(new Vector3(X,Y,Z)),0.1f);
+        Gizmos.DrawSphere(CombinedMatrix.MultiplyPoint(new Vector3(X,Y,Z)),0.02f);
         Gizmos.DrawLine(CombinedMatrix.MultiplyPoint(new Vector3(-1, -1, -1)),
             CombinedMatrix.MultiplyPoint(new Vector3(-1, -1, 1)));
         Gizmos.DrawLine(CombinedMatrix.MultiplyPoint(new Vector3(-1, -1, -1)),

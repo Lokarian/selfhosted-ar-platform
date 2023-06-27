@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2dfe428e80874c479044a9c2470ea63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  EmulateRelease: 0
+  EmulateRelease: 1
   AccessToken: 
   ArSessionId: 
   ServerUrl: 
@@ -405,7 +405,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DetectBuildTarget: 1
-  BootServer: 0
+  BootServer: 1
 --- !u!4 &1118936199
 Transform:
   m_ObjectHideFlags: 0

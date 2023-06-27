@@ -217,7 +217,7 @@ public class NetworkMesh : NetworkBehaviour
             Gizmos.color = Color.red;
             foreach (var vertex in mesh.vertices)
             {
-                Gizmos.DrawSphere(vertex, 0.01f);
+                Gizmos.DrawSphere(vertex, 0.001f);
             }
         }
     }
