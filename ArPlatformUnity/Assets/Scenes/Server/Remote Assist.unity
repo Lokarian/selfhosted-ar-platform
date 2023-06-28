@@ -853,11 +853,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textureSize: 2048
   UvGenerator: {fileID: 1972234615}
-  shaderStages: 0000000001000000
+  shaderStages: 000000000100000002000000
   computeShader: {fileID: 7200000, guid: bfd981ea69412b545accae0a4ab4cc37, type: 3}
-  v1: {x: 0, y: -0.75, z: 2.4}
-  v2: {x: -0.25, y: -0.25, z: 2.4}
-  v3: {x: -0.5, y: -0.75, z: 2.4}
 --- !u!114 &1972234615
 MonoBehaviour:
   m_ObjectHideFlags: 0

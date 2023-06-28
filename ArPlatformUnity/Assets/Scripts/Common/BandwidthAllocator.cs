@@ -13,8 +13,6 @@ public class BandwidthAllocator : NetworkBehaviour
     public static BandwidthAllocator Singleton;
     private float _lastTimeframeBegin;
 
-    [DebugGUIGraph()]
-    public float Traffic = 0.0f;
     private void Start()
     {
         _lastTimeframeBegin = Time.realtimeSinceStartup;
@@ -26,14 +24,6 @@ public class BandwidthAllocator : NetworkBehaviour
         {
             _lastTimeframeBegin = Time.realtimeSinceStartup;
             //loop through all clients and add to DebugGUI graph
-            if(_clientBytesUsed.Keys.Count> 0)
-            {
-                Traffic = _clientBytesUsed.Values.Max();
-            }
-            else
-            {
-                Traffic = 0;
-            }
             _clientBytesUsed.Clear();
         }
     }

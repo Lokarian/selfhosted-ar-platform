@@ -31,13 +31,22 @@ public class MeshProcessor : MonoBehaviour
     private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[]>> _meshesToProcess = new();
     private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[], Vector2[]>> _meshesToRejoin = new();
     private ConcurrentQueue<string> _meshesToGenerateTextures = new();
+    private ConcurrentQueue<Tuple<string, Texture2D>> _texturesToRejoin = new();
+
+    [DebugGUIGraph()] public float CurrentMeshesToProcess => _meshesToProcess.Count;
+    [DebugGUIGraph()] public float CurrentMeshesToRejoin => _meshesToRejoin.Count;
+    [DebugGUIGraph()] public float CurrentMeshesToGenerateTextures => _meshesToGenerateTextures.Count;
+    [DebugGUIGraph()] public float CurrentTexturesToRejoin => _texturesToRejoin.Count;
+
 
     private List<PositionedPhoto> _positionedPhotos = new();
 
     public UVGenerator UvGenerator;
 
 
-    public List<ShaderStage> shaderStages = new() { ShaderStage.ClearRasterizeTexture, ShaderStage.Rasterize };
+    public List<ShaderStage> shaderStages = new()
+        { ShaderStage.ClearRasterizeTexture, ShaderStage.Rasterize, ShaderStage.ProjectOnMesh };
+
     private Dictionary<ShaderStage, int> _kernels = new();
 
     public ComputeShader computeShader;
@@ -130,16 +139,31 @@ public class MeshProcessor : MonoBehaviour
                 {
                     Debug.Log("Generating texture");
                     var texture = GenerateTexture(meshName);
-                    var networkMesh = _meshes[meshName];
-                    if (!networkMesh)
-                    {
-                        Debug.LogWarning("Mesh was deleted during texture generation");
-                        continue;
-                    }
-                    networkMesh.GetComponent<NetworkTexture>().SetTexture(texture);
+                    var width = texture.width;
+                    var height = texture.height;
+                    Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                    RenderTexture.active = texture;
+                    tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                    tex.Apply();
+                    RenderTexture.active = null;
+                    texture.Release();
+                    texture.DiscardContents();
+                    _texturesToRejoin.Enqueue(new(meshName, tex));
                 }
             }
 
+            while (_texturesToRejoin.TryDequeue(out var tuple))
+            {
+                Debug.Log("Rejoining texture");
+                var networkMesh = _meshes[tuple.Item1];
+                if (!networkMesh)
+                {
+                    Debug.LogWarning("Mesh was deleted during texture generation");
+                    continue;
+                }
+
+                networkMesh.GetComponent<NetworkTexture>().SetTexture(tuple.Item2);
+            }
 
             yield return null;
         }
@@ -183,59 +207,87 @@ public class MeshProcessor : MonoBehaviour
         return mesh;
     }
 
-    public Texture2D GenerateTexture(string meshName)
+    public RenderTexture GenerateTexture(string meshName)
     {
-        
-        var texture = new RenderTexture((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
-        texture.enableRandomWrite = true;
-        texture.Create();
-        //todo: choose the right photos and necessary meshes
-        var id = _meshes.Values.ToList().FindIndex(x => x.name == meshName);
-        computeShader.SetInt(meshIdId, id);
-        computeShader.SetInts(meshTextureResolutionId, (int)textureSize, (int)textureSize);
-        shaderStages.ForEach(stage => computeShader.SetTexture(ShaderStageId(stage), meshTextureId, texture));
-        
-        
-        for (var i = 0; i < _positionedPhotos.Count; i++)
+        RenderTexture texture = null;
+        try
         {
-            //perform rasterization from perspective of the photo
-            var photo = _positionedPhotos[i];
-            var renderTexture = new RenderTexture(photo.Width, photo.Height, 0, RenderTextureFormat.ARGB32);
-            renderTexture.enableRandomWrite = true;
-            renderTexture.Create();
-            
-            
-            var meshHitBuffer = new ComputeBuffer(photo.Width * photo.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
-            shaderStages.ForEach(stage =>
+            texture = new RenderTexture((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
+            texture.enableRandomWrite = true;
+            texture.Create();
+            //todo: choose the right photos and necessary meshes
+            var id = _meshes.Values.ToList().FindIndex(x => x.name == meshName);
+            computeShader.SetInt(meshIdId, id);
+            computeShader.SetInts(meshTextureResolutionId, (int)textureSize, (int)textureSize);
+            shaderStages.ForEach(stage => computeShader.SetTexture(ShaderStageId(stage), meshTextureId, texture));
+
+
+            foreach (var photo in _positionedPhotos)
             {
-                computeShader.SetTexture(ShaderStageId(stage), inputPhotoId, photo.Texture);
-                computeShader.SetTexture(ShaderStageId(stage), rasterizerDepthTextureId, renderTexture);
-                computeShader.SetBuffer(ShaderStageId(stage), meshHitsTextureId, meshHitBuffer);
-            });
+                //perform rasterization from perspective of the photo
+                RenderTexture depthDebugTexture = null;
+                GraphicsBuffer meshHitBuffer = null;
+                try
+                {
+                    depthDebugTexture =
+                        RenderTexture.GetTemporary(photo.Width, photo.Height, 0, RenderTextureFormat.ARGB32);
+                    depthDebugTexture.enableRandomWrite = true;
+                    depthDebugTexture.Create();
 
-            computeShader.SetInts(inputResolutionId, photo.Width, photo.Height);
-            computeShader.SetMatrix(worldToCameraMatrixId, photo.CombinedMatrix.inverse);
+                    meshHitBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
+                        photo.Width * photo.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
 
-            //execute the compute shader stages
-            computeShader.Dispatch(ShaderStageId(ShaderStage.ClearRasterizeTexture), _positionedPhotos[0].Width / 8,
-                _positionedPhotos[0].Height / 8,
-                1);
-            computeShader.Dispatch(ShaderStageId(ShaderStage.Rasterize),
-                (int)Math.Ceiling(_trianglesBuffer.count / 64f), 1, 1);
+                    shaderStages.ForEach(stage =>
+                    {
+                        computeShader.SetTexture(ShaderStageId(stage), inputPhotoId, photo.Texture);
+                        computeShader.SetTexture(ShaderStageId(stage), rasterizerDepthTextureId, depthDebugTexture);
+                        computeShader.SetBuffer(ShaderStageId(stage), meshHitsTextureId, meshHitBuffer);
+                    });
 
-            //create new quad and render the render texture to it
-            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            var existingQuad = photo.transform.GetChild(0);
-            quad.transform.position = existingQuad.position + Vector3.up * 0.1f;
-            quad.transform.rotation = existingQuad.rotation;
-            quad.transform.localScale = existingQuad.localScale;
-            quad.GetComponent<MeshRenderer>().material.mainTexture = renderTexture;
+                    computeShader.SetInts(inputResolutionId, photo.Width, photo.Height);
+                    computeShader.SetMatrix(worldToCameraMatrixId, photo.CombinedMatrix.inverse);
+
+                    //execute the compute shader stages
+                    computeShader.Dispatch(ShaderStageId(ShaderStage.ClearRasterizeTexture), photo.Width / 8,
+                        photo.Height / 8, 1);
+                    computeShader.Dispatch(ShaderStageId(ShaderStage.Rasterize),
+                        (int)Math.Ceiling(_trianglesBuffer.count / 64f), 1, 1);
+                    computeShader.Dispatch(ShaderStageId(ShaderStage.ProjectOnMesh), photo.Width / 8,
+                        photo.Height / 8, 1);
+
+                    //create new quad and render the render texture to it
+                    var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    var existingQuad = photo.transform.GetChild(0);
+                    quad.transform.position = existingQuad.position + Vector3.up * 0.1f;
+                    quad.transform.rotation = existingQuad.rotation;
+                    quad.transform.localScale = existingQuad.localScale;
+                    quad.GetComponent<MeshRenderer>().material.mainTexture = depthDebugTexture;
+                }
+                finally
+                {
+                    if (depthDebugTexture)
+                    {
+                        depthDebugTexture.Release();
+                        depthDebugTexture.DiscardContents();
+                        RenderTexture.ReleaseTemporary(depthDebugTexture);
+                    }
+
+                    if (meshHitBuffer != null)
+                    {
+                        meshHitBuffer.Release();
+                        meshHitBuffer.Dispose();
+                    }
+                }
+            }
         }
-        
-        //create texture from render texture
-        var texture2D = new Texture2D(texture.width, texture.height, TextureFormat.ARGB32, false);
-        Graphics.CopyTexture(texture, texture2D);
-        return texture2D;
+        catch (Exception e)
+        {
+            texture?.Release();
+            Debug.LogError(e);
+            return null;
+        }
+
+        return texture;
     }
 
     private void SetupMeshBuffers()
@@ -304,6 +356,7 @@ public class MeshProcessor : MonoBehaviour
             {
                 ShaderStage.ClearRasterizeTexture => "clear_rasterizer_texture",
                 ShaderStage.Rasterize => "rasterize",
+                ShaderStage.ProjectOnMesh => "project_hits_on_texture",
                 _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, null)
             };
             id = computeShader.FindKernel(stageName);
@@ -369,7 +422,7 @@ struct ComputeBuffer_Mesh
 struct ComputeBuffer_MeshHit
 {
     public Vector2 uv; //the uv coordinate of texture of the mesh that was hit
-    public uint depth; //the depth of the hit away from the camera
+    public float depth; //the depth of the hit away from the camera
     public uint screenPosX; //the pixel coordinate of the photo
     public uint screenPosY; //the pixel coordinate of the photo
     public uint meshIndex; //the index of the mesh that was hit

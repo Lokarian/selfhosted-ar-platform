@@ -1,6 +1,7 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel clear_rasterizer_texture
 #pragma kernel rasterize
+#pragma kernel project_hits_on_texture
 #pragma enable_d3d11_debug_symbols
 
 //types
@@ -10,7 +11,7 @@
 struct MeshHit
 {
     float2 uv; //the uv coordinate of texture of the mesh that was hit
-    uint depth; //the depth of the hit away from the camera
+    float depth; //the depth of the hit away from the camera
     uint2 screenPos; //the pixel coordinate of the photo
     uint meshIndex; //the index of the mesh that was hit
 };
@@ -48,7 +49,7 @@ StructuredBuffer<Triangle> triangles;
 
 Texture2D<float3> inputPhoto; //the photo that will be projected onto the mesh
 RWTexture2D<float4> rasterizerDepthTexture; //debug view of the rasterizer meshHitsTexture
-StructuredBuffer<MeshHit> meshHitsTexture; //technically the output texture of the rasterizer
+RWStructuredBuffer<MeshHit> meshHitsTexture; //technically the output texture of the rasterizer
 int2 inputResolution; //the resolution of the input image
 float4x4 worldToCameraMatrix; //the world to camera matrix
 
@@ -108,11 +109,12 @@ float2 to_screen_space(float2 v)
 {
     return (v + 1.0f) / 2.0f * inputResolution;
 }
-void color_pixel(uint2 pos,float4 color)
+
+void color_pixel(uint2 pos, float4 color)
 {
-    if(rasterizerDepthTexture[pos].a>color.a)
+    if (rasterizerDepthTexture[pos].a > color.a)
     {
-        rasterizerDepthTexture[pos]=color;
+        rasterizerDepthTexture[pos] = color;
     }
 }
 
@@ -156,11 +158,11 @@ void draw_line(uint2 p1, uint2 p2, float4 color)
     }
 }
 
-void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3,bool is_correct_mesh)
+void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3, int mesh_id)
 {
-    p1 = float3(to_screen_space(p1.xy),p1.z);
-    p2 = float3(to_screen_space(p2.xy),p2.z);
-    p3 = float3(to_screen_space(p3.xy),p3.z);
+    p1 = float3(to_screen_space(p1.xy), p1.z);
+    p2 = float3(to_screen_space(p2.xy), p2.z);
+    p3 = float3(to_screen_space(p3.xy), p3.z);
     float4 min_max = get_min_max(p1, p2, p3);
     uint startX = uint(min_max.x);
     uint startY = uint(min_max.y);
@@ -179,15 +181,17 @@ void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex
             //color from normal
             float3 color = normalize(v1.normal + v2.normal + v3.normal);
             float depth = bc.x * p1.z + bc.y * p2.z + bc.z * p3.z;
-            //color_pixel(uint2(x, y), float4(color, depth));
-            
+            color_pixel(uint2(x, y), float4(color, depth));
+
             float2 uv = v1.uv * bc.x + v2.uv * bc.y + v3.uv * bc.z;
-            uint2 mesh_texture_coord = uint2(uv * float2(meshTextureResolution));
-            if(is_correct_mesh)
+            MeshHit hit;
+            hit.depth = depth;
+            hit.uv = uv;
+            hit.screenPos = uint2(x, y);
+            hit.meshIndex = mesh_id;
+            if(meshHitsTexture[index_of(x, y, inputResolution)].depth > depth)
             {
-                //meshTexture[mesh_texture_coord] = float4(color, 1);
-                float3 input_color=inputPhoto[uint2(x,y)];
-                meshTexture[mesh_texture_coord] = float4(input_color, 1);
+                meshHitsTexture[index_of(x, y, inputResolution)] = hit;
             }
         }
     }
@@ -199,21 +203,18 @@ void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex
 [numthreads(8, 8, 1)]
 void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
 {
-    //important that depth is 0, this indicates that the pixel was not hit
+    //important that depth is higher than 1, this indicates that the pixel was not hit
     MeshHit notHit;
-    notHit.depth = 0;
+    notHit.depth = 2;
     notHit.uv = float2(0, 0);
     notHit.screenPos = uint2(0, 0);
     notHit.meshIndex = 0;
 
     if (id.x < inputResolution.x && id.y < inputResolution.y)
     {
-        //meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
-        //rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
+        meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
+        rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
     }
-    //give texture 2d sine wave color
-    //meshTexture[id.xy] = float4(sin(id.x / 10.0), sin(id.y / 10.0), 0, 1.0);
-    meshTexture[id.xy] = float4(1,1,1, 1.0);
 }
 
 
@@ -231,21 +232,21 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     //get mesh that the current vertex belongs to
     Mesh mesh;
     int meshIndex = 0;
-    meshes.GetDimensions(count,stride);
-    for(int i=0;i<count;i++)
+    meshes.GetDimensions(count, stride);
+    for (int i = 0; i < count; i++)
     {
-        mesh=meshes[i];
-        meshIndex=i;
-        if(mesh.triangleOffset<=id.x&&mesh.triangleOffset+mesh.triangleCount>id.x)
+        mesh = meshes[i];
+        meshIndex = i;
+        if (mesh.triangleOffset <= id.x && mesh.triangleOffset + mesh.triangleCount > id.x)
         {
             break;
         }
     }
     Triangle triang = triangles[id.x];
-    Vertex v1 = vertices[triang.vertexIndex1+mesh.vertexOffset];
-    Vertex v2 = vertices[triang.vertexIndex2+mesh.vertexOffset];
-    Vertex v3 = vertices[triang.vertexIndex3+mesh.vertexOffset];
-    
+    Vertex v1 = vertices[triang.vertexIndex1 + mesh.vertexOffset];
+    Vertex v2 = vertices[triang.vertexIndex2 + mesh.vertexOffset];
+    Vertex v3 = vertices[triang.vertexIndex3 + mesh.vertexOffset];
+
     float3 p1 = project(v1.position);
     float3 p2 = project(v2.position);
     float3 p3 = project(v3.position);
@@ -261,5 +262,30 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     //draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
     //draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
 
-    draw_triangle(p1, p2, p3, v1, v2, v3,meshIndex==meshId);
+    draw_triangle(p1, p2, p3, v1, v2, v3, meshIndex);
+}
+
+//kernels
+//clear stage for meshHits
+[numthreads(8, 8, 1)]
+void project_hits_on_texture(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= inputResolution.x || id.y >= inputResolution.y)
+    {
+        return;
+    }
+    MeshHit hit = meshHitsTexture[index_of(id.x, id.y, inputResolution)];
+    if (hit.depth < 1.0)
+    {
+        rasterizerDepthTexture[id.xy] = float4(inputPhoto[hit.screenPos], 1);
+        if (hit.meshIndex == meshId)
+        {
+            meshTexture[hit.uv * meshTextureResolution] = float4(inputPhoto[hit.screenPos],1);
+        }
+    }
+    else
+    {
+        float4 color = float4(0, 0, 1, 1.0);
+        rasterizerDepthTexture[id.xy] = color;
+    }
 }
