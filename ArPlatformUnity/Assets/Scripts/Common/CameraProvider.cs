@@ -166,6 +166,13 @@ public class CameraProvider : NetworkBehaviour
     }
 
 
+    void OnStoppedPhotoMode(PhotoCapture.PhotoCaptureResult result)
+    {
+        photoCaptureObject.Dispose();
+        photoCaptureObject = null;
+    }
+#endif
+    
     [ServerRpc(RequireOwnership = false)]
     void SendImageChunk_ServerRpc(byte[] bytes, int chunkNumber, bool lastChunk, float[] projectionMatrixAsArray,
         float[] cameraToWorldMatrixAsArray, int width, int height)
@@ -225,11 +232,4 @@ public class CameraProvider : NetworkBehaviour
         positionedPhoto.GetComponent<PositionedPhoto>()
             .Initialize(projectionMatrix, cameraToWorldMatrix, width, height, texture);
     }
-
-    void OnStoppedPhotoMode(PhotoCapture.PhotoCaptureResult result)
-    {
-        photoCaptureObject.Dispose();
-        photoCaptureObject = null;
-    }
-#endif
 }

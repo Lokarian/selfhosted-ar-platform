@@ -8,7 +8,7 @@ public class PositionedPhoto : MonoBehaviour
     public Matrix4x4 ProjectionMatrix;
     public Matrix4x4 CameraMatrix;
     public Matrix4x4 CombinedMatrix;
-
+    public Texture2D Texture;
     public float QuadZDistance = 0.75f;
     public bool DrawGizmos = true;
 
@@ -45,7 +45,7 @@ public class PositionedPhoto : MonoBehaviour
         transform.GetChild(0).transform.localScale = new Vector3(scaleWidth, scaleHeight, 1);
 
         GetComponentInChildren<MeshRenderer>().material.mainTexture = texture;
-
+        Texture = texture;
         MeshProcessor.Singleton.OnNewPhoto(this);
     }
 

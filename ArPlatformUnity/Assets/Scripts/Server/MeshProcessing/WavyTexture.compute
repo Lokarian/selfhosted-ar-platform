@@ -45,15 +45,17 @@ StructuredBuffer<Mesh> meshes;
 StructuredBuffer<Vertex> vertices;
 StructuredBuffer<Triangle> triangles;
 
+
+Texture2D<float3> inputPhoto; //the photo that will be projected onto the mesh
 RWTexture2D<float4> rasterizerDepthTexture; //debug view of the rasterizer meshHitsTexture
 StructuredBuffer<MeshHit> meshHitsTexture; //technically the output texture of the rasterizer
 int2 inputResolution; //the resolution of the input image
 float4x4 worldToCameraMatrix; //the world to camera matrix
 
 
-RWTexture2D<float3> meshTexture; //the texture of the mesh that will get new colors
+RWTexture2D<float4> meshTexture; //the texture of the mesh that will get new colors
 int2 meshTextureResolution; //the resolution of the mesh texture
-
+int meshId; //the id of the mesh that will be modified
 
 float3 project(float3 v)
 {
@@ -154,7 +156,7 @@ void draw_line(uint2 p1, uint2 p2, float4 color)
     }
 }
 
-void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3)
+void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3,bool is_correct_mesh)
 {
     p1 = float3(to_screen_space(p1.xy),p1.z);
     p2 = float3(to_screen_space(p2.xy),p2.z);
@@ -177,7 +179,16 @@ void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex
             //color from normal
             float3 color = normalize(v1.normal + v2.normal + v3.normal);
             float depth = bc.x * p1.z + bc.y * p2.z + bc.z * p3.z;
-            color_pixel(uint2(x, y), float4(color, depth));
+            //color_pixel(uint2(x, y), float4(color, depth));
+            
+            float2 uv = v1.uv * bc.x + v2.uv * bc.y + v3.uv * bc.z;
+            uint2 mesh_texture_coord = uint2(uv * float2(meshTextureResolution));
+            if(is_correct_mesh)
+            {
+                //meshTexture[mesh_texture_coord] = float4(color, 1);
+                float3 input_color=inputPhoto[uint2(x,y)];
+                meshTexture[mesh_texture_coord] = float4(input_color, 1);
+            }
         }
     }
 }
@@ -198,8 +209,11 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
     if (id.x < inputResolution.x && id.y < inputResolution.y)
     {
         //meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
-        rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
+        //rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
     }
+    //give texture 2d sine wave color
+    //meshTexture[id.xy] = float4(sin(id.x / 10.0), sin(id.y / 10.0), 0, 1.0);
+    meshTexture[id.xy] = float4(1,1,1, 1.0);
 }
 
 
@@ -216,10 +230,12 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     }
     //get mesh that the current vertex belongs to
     Mesh mesh;
+    int meshIndex = 0;
     meshes.GetDimensions(count,stride);
     for(int i=0;i<count;i++)
     {
         mesh=meshes[i];
+        meshIndex=i;
         if(mesh.triangleOffset<=id.x&&mesh.triangleOffset+mesh.triangleCount>id.x)
         {
             break;
@@ -245,5 +261,5 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     //draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
     //draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
 
-    draw_triangle(p1, p2, p3, v1, v2, v3);
+    draw_triangle(p1, p2, p3, v1, v2, v3,meshIndex==meshId);
 }

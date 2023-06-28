@@ -24,7 +24,7 @@ public class MeshProcessor : MonoBehaviour
     public static MeshProcessor Singleton;
 
     //meshes that have already been processed, can be used for generating textures
-    private Dictionary<string, NetworkMesh> _meshes = new();
+    private SortedDictionary<string, NetworkMesh> _meshes = new();
     public TextureSize textureSize = TextureSize.Large;
     private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[]>> _meshesToProcess = new();
     private ConcurrentQueue<Tuple<NetworkMesh, Vector3[], int[], Vector2[]>> _meshesToRejoin = new();
@@ -54,10 +54,11 @@ public class MeshProcessor : MonoBehaviour
     static int meshesBufferId = Shader.PropertyToID("meshes");
 
     static int rasterizerDepthTextureId = Shader.PropertyToID("rasterizerDepthTexture");
+    static int meshHitsTextureId = Shader.PropertyToID("meshHitsTexture");
+    static int inputPhotoId = Shader.PropertyToID("inputPhoto");
+    static int meshTextureId = Shader.PropertyToID("meshTexture");
+    static int meshIdId = Shader.PropertyToID("meshId");
 
-    public Vector3 v1 = new Vector3(0, -0.75f, 2.4f);
-    public Vector3 v2 = new Vector3(-0.25f, -0.25f, 2.4f);
-    public Vector3 v3 = new Vector3(-0.5f, -0.75f, 2.4f);
     private bool doRasterize;
 
     private void Start()
@@ -84,8 +85,10 @@ public class MeshProcessor : MonoBehaviour
                     ProcessMesh(tuple.Item2, tuple.Item3, out var newVertices, out var newIndices, out var uvs);
                     if (newVertices.Length == 0)
                     {
-                        Debug.LogError($"No vertices generated, from {tuple.Item2.Length} vertices on mesh {tuple.Item1.name}");
+                        Debug.LogError(
+                            $"No vertices generated, from {tuple.Item2.Length} vertices on mesh {tuple.Item1.name}");
                     }
+
                     _meshesToRejoin.Enqueue(new(tuple.Item1, newVertices, newIndices, uvs));
                 });
             }
@@ -94,14 +97,15 @@ public class MeshProcessor : MonoBehaviour
             while (_meshesToRejoin.TryDequeue(out var tuple))
             {
                 Debug.Log("Rejoining mesh");
-                
+
                 var networkMesh = tuple.Item1;
                 if (!networkMesh)
                 {
                     Debug.LogWarning($"Mesh {tuple.Item1} was deleted during mesh generation");
                     continue;
                 }
-                var mesh=RejoinMesh(tuple.Item2,tuple.Item3,tuple.Item4);
+
+                var mesh = RejoinMesh(tuple.Item2, tuple.Item3, tuple.Item4);
                 networkMesh.SetMesh(mesh);
 
                 if (!_meshes.ContainsKey(networkMesh.name))
@@ -124,17 +128,15 @@ public class MeshProcessor : MonoBehaviour
                 {
                     Debug.Log("Generating texture");
                     var texture = GenerateTexture(meshName);
-                    /*var networkMesh = _meshes[meshName];
+                    var networkMesh = _meshes[meshName];
                     if (!networkMesh)
                     {
                         Debug.LogWarning("Mesh was deleted during texture generation");
                         continue;
-                    }*/
-
-                    //networkMesh.GetComponent<NetworkTexture>().SetTexture(texture);
+                    }
+                    networkMesh.GetComponent<NetworkTexture>().SetTexture(texture);
                 }
             }
-            
 
 
             yield return null;
@@ -161,7 +163,7 @@ public class MeshProcessor : MonoBehaviour
         _meshesToProcess.Enqueue(new(networkMesh, vertices, indices));
     }
 
-    public Mesh RejoinMesh(Vector3[] vertices,int[] indices,Vector2[] uvs)
+    public Mesh RejoinMesh(Vector3[] vertices, int[] indices, Vector2[] uvs)
     {
         var mesh = new Mesh();
         mesh.SetVertexBufferParams(vertices.Length,
@@ -181,11 +183,16 @@ public class MeshProcessor : MonoBehaviour
 
     public Texture2D GenerateTexture(string meshName)
     {
-        var texture = new Texture2D((int)textureSize, (int)textureSize, TextureFormat.RGB24, false);
+        var texture = new RenderTexture((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
+        texture.enableRandomWrite = true;
+        texture.Create();
         //todo: choose the right photos and necessary meshes
-        //now do it just with all
+        var id = _meshes.Values.ToList().FindIndex(x => x.name == meshName);
+        computeShader.SetInt(meshIdId, id);
         computeShader.SetInts(meshTextureResolutionId, (int)textureSize, (int)textureSize);
-
+        shaderStages.ForEach(stage => computeShader.SetTexture(ShaderStageId(stage), meshTextureId, texture));
+        
+        
         for (var i = 0; i < _positionedPhotos.Count; i++)
         {
             //perform rasterization from perspective of the photo
@@ -193,8 +200,15 @@ public class MeshProcessor : MonoBehaviour
             var renderTexture = new RenderTexture(photo.Width, photo.Height, 0, RenderTextureFormat.ARGB32);
             renderTexture.enableRandomWrite = true;
             renderTexture.Create();
+            
+            
+            var meshHitBuffer = new ComputeBuffer(photo.Width * photo.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
             shaderStages.ForEach(stage =>
-                computeShader.SetTexture(ShaderStageId(stage), rasterizerDepthTextureId, renderTexture));
+            {
+                computeShader.SetTexture(ShaderStageId(stage), inputPhotoId, photo.Texture);
+                computeShader.SetTexture(ShaderStageId(stage), rasterizerDepthTextureId, renderTexture);
+                computeShader.SetBuffer(ShaderStageId(stage), meshHitsTextureId, meshHitBuffer);
+            });
 
             computeShader.SetInts(inputResolutionId, photo.Width, photo.Height);
             computeShader.SetMatrix(worldToCameraMatrixId, photo.CombinedMatrix.inverse);
@@ -214,8 +228,14 @@ public class MeshProcessor : MonoBehaviour
             quad.transform.localScale = existingQuad.localScale;
             quad.GetComponent<MeshRenderer>().material.mainTexture = renderTexture;
         }
-
-        return texture;
+        
+        //create texture from render texture
+        var texture2D = new Texture2D(texture.width, texture.height, TextureFormat.ARGB32, false);
+        RenderTexture.active = texture;
+        texture2D.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
+        texture2D.Apply();
+        RenderTexture.active = null;
+        return texture2D;
     }
 
     private void SetupMeshBuffers()
@@ -228,14 +248,14 @@ public class MeshProcessor : MonoBehaviour
 
         var vertexCount = meshes.Sum(m => m.vertexCount);
         var triangleCount = meshes.Sum(m => m.triangles.Length / 3);
-        
+
         _verticesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
             vertexCount, Marshal.SizeOf(typeof(ComputeBuffer_Vertex)));
         _trianglesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
             triangleCount, Marshal.SizeOf(typeof(ComputeBuffer_Triangle)));
         _meshesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
             meshes.Count, Marshal.SizeOf(typeof(ComputeBuffer_Mesh)));
-        
+
         var meshStructs = new List<ComputeBuffer_Mesh>();
         for (int i = 0; i < meshes.Count; i++)
         {
@@ -249,7 +269,7 @@ public class MeshProcessor : MonoBehaviour
                 triangleCount = (uint)mesh.triangles.Length / 3
             };
             meshStructs.Add(meshStruct);
-            
+
             //copy meshVertexBuffer to _verticesBuffer at offset meshStruct.vertexOffset
             var meshVertexBuffer = mesh.GetVertexBuffer(0);
             var meshVertices = new ComputeBuffer_Vertex[mesh.vertexCount];
@@ -324,6 +344,7 @@ struct ComputeBuffer_Vertex
     public Vector2 uv;
 };
 
+[StructLayout(LayoutKind.Sequential)]
 struct ComputeBuffer_Triangle
 {
     public uint vertexIndex1;
@@ -331,6 +352,7 @@ struct ComputeBuffer_Triangle
     public uint vertexIndex3;
 };
 
+[StructLayout(LayoutKind.Sequential)]
 struct ComputeBuffer_Mesh
 {
     public uint index;
@@ -338,6 +360,16 @@ struct ComputeBuffer_Mesh
     public uint triangleOffset;
     public uint vertexCount;
     public uint triangleCount;
+};
+
+[StructLayout(LayoutKind.Sequential)]
+struct ComputeBuffer_MeshHit
+{
+    public Vector2 uv; //the uv coordinate of texture of the mesh that was hit
+    public uint depth; //the depth of the hit away from the camera
+    public uint screenPosX; //the pixel coordinate of the photo
+    public uint screenPosY; //the pixel coordinate of the photo
+    public uint meshIndex; //the index of the mesh that was hit
 };
 
 public enum ShaderStage
