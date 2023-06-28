@@ -10,11 +10,12 @@ public class EnvironmentMeshEmulator : MonoBehaviour
     public GameObject NetworkMeshPrefab;
     public GameObject PositionedPhotoPrefab;
     public GameObject AlternativeMesh;
-    
+
     public bool LoadOnStart = true;
     public bool SingleMeshMode = false;
     private bool _importedMeshes = false;
     private bool _importedPhotos = false;
+
     private void Start()
     {
         if (LoadOnStart)
@@ -51,13 +52,15 @@ public class EnvironmentMeshEmulator : MonoBehaviour
             //FindObjectOfType<MeshProcessor>().ProcessMesh(AlternativeMesh.GetComponent<MeshFilter>().mesh);
             return;
         }
+
         //loop over all folder, request the mesh and apply it
         foreach (var meshPath in System.IO.Directory.GetDirectories(StoreLocation))
         {
-            if (SingleMeshMode&&!meshPath.Contains("EnvironmentNetworkMesh_Mesh 420F8852C6BAB179-738D0BADE72BB38A"))
+            if (SingleMeshMode && !meshPath.Contains("Mesh 4F8198E77ED61BB9-91B42239FE7753BC"))
             {
                 continue;
             }
+
             var meshName = System.IO.Path.GetFileName(meshPath);
             GameObject go = Instantiate(NetworkMeshPrefab, Vector3.zero, Quaternion.identity);
             go.name = meshName;
@@ -72,27 +75,28 @@ public class EnvironmentMeshEmulator : MonoBehaviour
             {
                 verticesFloat[i / 4] = System.BitConverter.ToSingle(vertices, i);
             }
+
             //vertices to vector3 array
             var verticesVector3 = new Vector3[verticesFloat.Length / 3];
             for (int i = 0; i < verticesFloat.Length; i += 3)
             {
                 verticesVector3[i / 3] = new Vector3(verticesFloat[i], verticesFloat[i + 1], verticesFloat[i + 2]);
             }
+
             //triangles to int array
             for (int i = 0; i < triangles.Length; i += 4)
             {
                 trianglesInt[i / 4] = System.BitConverter.ToInt32(triangles, i);
             }
-            //networkMesh.SetMesh(verticesVector3.ToList(), trianglesInt.ToList());
-            
-            var yOffSet = -0.5f;
-            var xOffSet = -1f;
-           // verticesVector3 = new[] { new Vector3(0+xOffSet, -0.75f+yOffSet, 2.4f), new Vector3(-0.25f+xOffSet, -0.25f+yOffSet, 2.4f), new Vector3(-0.5f+xOffSet, -0.75f+yOffSet, 2.4f) };
-            //trianglesInt = new[] { 0, 2, 1 };
+
+            if (vertices.Length == 0 || triangles.Length == 0)
+                continue;
             FindObjectOfType<MeshProcessor>().EnqueueMesh(networkMesh, verticesVector3, trianglesInt);
         }
+
         _importedMeshes = true;
     }
+
     public void StorePositionedPhotos()
     {
         //store ProjectionMatrix, CameraMatrix and the mainTexture
@@ -100,7 +104,7 @@ public class EnvironmentMeshEmulator : MonoBehaviour
         var counter = 0;
         foreach (var positionedPhoto in positionedPhotos)
         {
-            var meshName = positionedPhoto.gameObject.name+(counter++);
+            var meshName = positionedPhoto.gameObject.name + (counter++);
             var meshPath = $"{PhotoStoreLocation}{meshName}";
             System.IO.Directory.CreateDirectory(meshPath);
             var projectionMatrix = positionedPhoto.ProjectionMatrix;
@@ -114,6 +118,7 @@ public class EnvironmentMeshEmulator : MonoBehaviour
             System.IO.File.WriteAllBytes($"{meshPath}/texture", texture.EncodeToPNG());
         }
     }
+
     public void LoadPhotos()
     {
         //loop over all folder, request the mesh and apply it
@@ -122,30 +127,33 @@ public class EnvironmentMeshEmulator : MonoBehaviour
             var photoName = System.IO.Path.GetFileName(photoPath);
             GameObject go = Instantiate(PositionedPhotoPrefab, Vector3.zero, Quaternion.identity);
             go.name = photoName;
-            
+
             var positionedPhoto = go.GetComponent<PositionedPhoto>();
-            var projectionMatrix = JsonUtility.FromJson<Matrix4x4>(System.IO.File.ReadAllText($"{photoPath}/projectionMatrix"));
+            var projectionMatrix =
+                JsonUtility.FromJson<Matrix4x4>(System.IO.File.ReadAllText($"{photoPath}/projectionMatrix"));
             var cameraMatrix = JsonUtility.FromJson<Matrix4x4>(System.IO.File.ReadAllText($"{photoPath}/cameraMatrix"));
-            var width = System.BitConverter.ToInt32(System.IO.File.ReadAllBytes($"{photoPath}/width"),0);
-            var height = System.BitConverter.ToInt32(System.IO.File.ReadAllBytes($"{photoPath}/height"),0);
-            
-            var texture = new Texture2D(width,height);
+            var width = System.BitConverter.ToInt32(System.IO.File.ReadAllBytes($"{photoPath}/width"), 0);
+            var height = System.BitConverter.ToInt32(System.IO.File.ReadAllBytes($"{photoPath}/height"), 0);
+
+            var texture = new Texture2D(width, height);
             texture.LoadImage(System.IO.File.ReadAllBytes($"{photoPath}/texture"));
-            positionedPhoto.Initialize(projectionMatrix,cameraMatrix,width,height,texture);
+            positionedPhoto.Initialize(projectionMatrix, cameraMatrix, width, height, texture);
         }
+
         _importedPhotos = true;
     }
-    
+
     //ongui button to store the meshes
     private void OnGUI()
     {
-        if(LoadOnStart)
+        if (LoadOnStart)
             return;
         if (GUI.Button(new Rect(10, 50, 100, 20), "Store"))
         {
             StoreEnvironmentMeshes();
             StorePositionedPhotos();
         }
+
         if (!_importedMeshes)
         {
             if (GUI.Button(new Rect(10, 10, 100, 20), "Load Meshes"))
@@ -162,5 +170,4 @@ public class EnvironmentMeshEmulator : MonoBehaviour
             }
         }
     }
-
 }

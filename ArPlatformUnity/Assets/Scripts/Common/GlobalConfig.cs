@@ -91,8 +91,8 @@ public class GlobalConfig : MonoBehaviour
         else
         {
             AccessToken =
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
-            //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjBiMzVlYjE2LTRjMWMtNDNiZS05ZjIxLTUyZGExMWMwMjlhZiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MaVqJco8zg7v8X_Xl7iYmusgnfiKlNgZt_9vJCZKAK0";
+                //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjBiMzVlYjE2LTRjMWMtNDNiZS05ZjIxLTUyZGExMWMwMjlhZiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.MaVqJco8zg7v8X_Xl7iYmusgnfiKlNgZt_9vJCZKAK0";
             ServerUrl = "https://reithmeir.duckdns.org:5001";
             ArSessionId = "c3b66fb7-7322-46be-8c19-020b64aa89ea";
             //ServerUrl= "https://localhost:5001";

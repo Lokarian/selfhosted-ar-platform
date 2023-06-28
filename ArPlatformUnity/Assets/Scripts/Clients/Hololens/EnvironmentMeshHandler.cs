@@ -9,7 +9,6 @@ using UnityEngine.XR.ARFoundation;
 
 public class EnvironmentMeshHandler : NetworkBehaviour
 {
-
     public ARMeshManager arMeshManager;
     public GameObject NetworkMeshPrefab;
     private readonly Queue<MeshFilter> _pendingUpdates = new();
@@ -21,8 +20,10 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     private readonly IDictionary<int, string> _uniqueMeshIdToSpatialMeshName = new Dictionary<int, string>();
     private int _uniqueMeshIdCounter = 0;
 
-    private readonly List<Vector3> _verticesChunks = new();
-    private readonly List<int> _indicesChunks = new();
+    
+    
+    public Dictionary<int,List<Vector3>> _verticesChunks = new Dictionary<int, List<Vector3>>();
+    public Dictionary<int,List<int>> _indicesChunks = new Dictionary<int, List<int>>();
 
     public override void OnNetworkSpawn()
     {
@@ -33,7 +34,6 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         }
     }
 
-    
 
     public void StartTrackingEnvironment()
     {
@@ -133,25 +133,40 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     {
         if (chunkNumber == 0)
         {
-            _verticesChunks.Clear();
-            _indicesChunks.Clear();
+            if (_verticesChunks.ContainsKey(meshId))
+            {
+                if (_verticesChunks[meshId].Count > 0)
+                {
+                    Debug.LogError($"Received first chunk of mesh {_uniqueMeshIdToSpatialMeshName[meshId]}, but previous chunk was not yet processed");
+                    _verticesChunks[meshId].Clear();
+                    _indicesChunks[meshId].Clear();
+                }
+            }
+            else
+            {
+                _verticesChunks.Add(meshId, new List<Vector3>());
+                _indicesChunks.Add(meshId, new List<int>());
+            }
         }
 
-        _verticesChunks.AddRange(vertices);
-        _indicesChunks.AddRange(triangles);
+        _verticesChunks[meshId].AddRange(vertices);
+        _indicesChunks[meshId].AddRange(triangles);
         if (lastChunk)
         {
             var networkMesh = _spatialMeshNameToNetworkMesh[_uniqueMeshIdToSpatialMeshName[meshId]];
-            MeshProcessor.Singleton.EnqueueMesh(networkMesh, _verticesChunks.ToArray(), _indicesChunks.ToArray());
+            if (_verticesChunks.Count > 0)
+                MeshProcessor.Singleton.EnqueueMesh(networkMesh, _verticesChunks[meshId].ToArray(), _indicesChunks[meshId].ToArray());
+            _verticesChunks[meshId].Clear();
+            _indicesChunks[meshId].Clear();
         }
     }
 
     public NetworkMesh CreateNetworkMesh(string gameObjectName, ulong clientId)
     {
         GameObject go = Instantiate(NetworkMeshPrefab, Vector3.zero, Quaternion.identity);
-        
+
         go.name = gameObjectName;
-        go.GetComponent<NetworkObject>().CheckObjectVisibility=(id)=>id!=clientId;
+        go.GetComponent<NetworkObject>().CheckObjectVisibility = (id) => id != clientId;
         go.GetComponent<NetworkObject>().Spawn();
         go.transform.parent = transform;
         //go.GetComponent<NetworkObject>().NetworkHide(clientId);
@@ -166,17 +181,19 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         {
             return;
         }
+
         Destroy(networkMesh);
         MeshProcessor.Singleton.RemoveMesh(gameObject.name);
     }
 
     void AddPendingUpdate(MeshFilter meshFilter)
     {
-        var gameObject=meshFilter.gameObject;
+        var gameObject = meshFilter.gameObject;
         if (!gameObject)
         {
             return;
         }
+
         //check if we already have a unique id for this mesh, if not create one and set it to -1
         if (!_spatialMeshNameToUniqueMeshId.TryGetValue(gameObject.name, out _))
         {

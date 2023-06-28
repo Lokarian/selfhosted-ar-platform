@@ -207,17 +207,29 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
 [numthreads(64, 1, 1)]
 void rasterize(uint3 id : SV_DispatchThreadID)
 {
-    uint trianglesCount;
-    uint trianglesStride;
-    triangles.GetDimensions(trianglesCount, trianglesStride);
-    if (id.x >= trianglesCount)
+    uint count;
+    uint stride;
+    triangles.GetDimensions(count, stride);
+    if (id.x >= count)
     {
         return;
     }
+    //get mesh that the current vertex belongs to
+    Mesh mesh;
+    meshes.GetDimensions(count,stride);
+    for(int i=0;i<count;i++)
+    {
+        mesh=meshes[i];
+        if(mesh.triangleOffset<=id.x&&mesh.triangleOffset+mesh.triangleCount>id.x)
+        {
+            break;
+        }
+    }
     Triangle triang = triangles[id.x];
-    Vertex v1 = vertices[triang.vertexIndex1];
-    Vertex v2 = vertices[triang.vertexIndex2];
-    Vertex v3 = vertices[triang.vertexIndex3];
+    Vertex v1 = vertices[triang.vertexIndex1+mesh.vertexOffset];
+    Vertex v2 = vertices[triang.vertexIndex2+mesh.vertexOffset];
+    Vertex v3 = vertices[triang.vertexIndex3+mesh.vertexOffset];
+    
     float3 p1 = project(v1.position);
     float3 p2 = project(v2.position);
     float3 p3 = project(v3.position);
@@ -229,9 +241,9 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     //draw_circle(to_screen_space(p1.xy), 20, float4(0, 1, 0, 1));
     //draw_circle(to_screen_space(p2.xy), 20, float4(0, 1, 0, 1));
     //draw_circle(to_screen_space(p3.xy), 20, float4(0, 1, 0, 1));
-    draw_line(to_screen_space(p1.xy), to_screen_space(p2.xy), float4(0, 1, 0, 1));
-    draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
-    draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
+    //draw_line(to_screen_space(p1.xy), to_screen_space(p2.xy), float4(0, 1, 0, 1));
+    //draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
+    //draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
 
     draw_triangle(p1, p2, p3, v1, v2, v3);
 }
