@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Debug = UnityEngine.Debug;
 
 
 public enum TextureSize
@@ -124,7 +126,7 @@ public class MeshProcessor : MonoBehaviour
 
             if (doRasterize)
             {
-                while (_meshesToGenerateTextures.TryDequeue(out var meshName))
+                if (_meshesToGenerateTextures.TryDequeue(out var meshName))
                 {
                     Debug.Log("Generating texture");
                     var texture = GenerateTexture(meshName);
@@ -183,6 +185,7 @@ public class MeshProcessor : MonoBehaviour
 
     public Texture2D GenerateTexture(string meshName)
     {
+        
         var texture = new RenderTexture((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
         texture.enableRandomWrite = true;
         texture.Create();
@@ -231,18 +234,18 @@ public class MeshProcessor : MonoBehaviour
         
         //create texture from render texture
         var texture2D = new Texture2D(texture.width, texture.height, TextureFormat.ARGB32, false);
-        RenderTexture.active = texture;
-        texture2D.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
-        texture2D.Apply();
-        RenderTexture.active = null;
+        Graphics.CopyTexture(texture, texture2D);
         return texture2D;
     }
 
     private void SetupMeshBuffers()
     {
         _verticesBuffer?.Release();
+        _verticesBuffer?.Dispose();
         _trianglesBuffer?.Release();
+        _trianglesBuffer?.Dispose();
         _meshesBuffer?.Release();
+        _meshesBuffer?.Dispose();
 
         var meshes = _meshes.Values.Select(nm => nm.GetComponent<MeshFilter>().mesh).ToList();
 
