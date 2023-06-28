@@ -405,7 +405,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DetectBuildTarget: 1
-  BootServer: 1
+  BootServer: 0
 --- !u!4 &1118936199
 Transform:
   m_ObjectHideFlags: 0

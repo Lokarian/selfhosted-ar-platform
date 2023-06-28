@@ -70,7 +70,7 @@ public class MeshProcessor : MonoBehaviour
     static int meshTextureId = Shader.PropertyToID("meshTexture");
     static int meshIdId = Shader.PropertyToID("meshId");
 
-    private bool doRasterize;
+    private bool doRasterize=true;
 
     private void Start()
     {
@@ -78,7 +78,6 @@ public class MeshProcessor : MonoBehaviour
         {
             Singleton = this;
         }
-
 
         StartCoroutine(ProcessMeshes());
     }
@@ -130,6 +129,11 @@ public class MeshProcessor : MonoBehaviour
 
             if (modifiedMeshes)
             {
+                //filter disabled meshes
+                foreach (var item in _meshes.Where(item => !item.Value).ToList())
+                {
+                    _meshes.Remove(item.Key);
+                }
                 SetupMeshBuffers();
             }
 
@@ -255,13 +259,13 @@ public class MeshProcessor : MonoBehaviour
                     computeShader.Dispatch(ShaderStageId(ShaderStage.ProjectOnMesh), photo.Width / 8,
                         photo.Height / 8, 1);
 
-                    //create new quad and render the render texture to it
+                    /*//create new quad and render the render texture to it
                     var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
                     var existingQuad = photo.transform.GetChild(0);
                     quad.transform.position = existingQuad.position + Vector3.up * 0.1f;
                     quad.transform.rotation = existingQuad.rotation;
                     quad.transform.localScale = existingQuad.localScale;
-                    quad.GetComponent<MeshRenderer>().material.mainTexture = depthDebugTexture;
+                    quad.GetComponent<MeshRenderer>().material.mainTexture = depthDebugTexture;*/
                 }
                 finally
                 {
