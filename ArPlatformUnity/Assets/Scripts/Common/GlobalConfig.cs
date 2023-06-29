@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using Unity.Netcode;
@@ -80,6 +81,7 @@ public class GlobalConfig : MonoBehaviour
         MyBuildTarget = ArBuildTarget.Server;
         if (!editor)
         {
+            Debug.Log("ACCESS_TOKEN: " + Environment.GetEnvironmentVariable("ACCESS_TOKEN"));
             AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN") ??
                           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
             ServerUrl = Environment.GetEnvironmentVariable("SERVER_URL") ?? "https://reithmeir.duckdns.org:5001";
@@ -125,7 +127,14 @@ public class GlobalConfig : MonoBehaviour
             {
                 Debug.Log("Launched App with url: " + appUrl);
                 //use raw regex to parse url
-                // var regex = new Regex(@"(?<protocol>https?)://(?<host>[^:/]+)(:(?<port>\d+))?");
+                // var regex = arplatform://(.*)/(.*)?access_token=(.*) the slash being the session id
+                var split = appUrl.Split("//").ToList().Last();
+                ServerUrl = "https://"+split.Split("/").First();
+                ArSessionId = split.Split("/").Last().Split("?").First();
+                AccessToken = split.Split("?").Last().Split("=").Last();
+                Debug.Log("ServerUrl: " + ServerUrl);
+                Debug.Log("ArSessionId: " + ArSessionId);
+                Debug.Log("AccessToken: " + AccessToken);
             }
             else
             {

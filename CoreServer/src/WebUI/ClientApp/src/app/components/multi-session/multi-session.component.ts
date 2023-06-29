@@ -27,10 +27,10 @@ export class MultiSessionComponent implements OnInit {
   public showVideo: boolean;
   public showAr: boolean;
 
-  public joinedVideoSession:boolean = false;
-  public joinedArSession:boolean = false;
+  public joinedVideoSession: boolean = false;
+  public joinedArSession: boolean = false;
 
-  constructor(private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade,private domsanitizer:DomSanitizer,private authorizeService:AuthorizeService) {
+  constructor(private chatFacade: ChatFacade, private videoFacade: VideoFacade, private arFacade: ArFacade, private domsanitizer: DomSanitizer, private authorizeService: AuthorizeService) {
   }
 
   ngOnInit(): void {
@@ -40,25 +40,34 @@ export class MultiSessionComponent implements OnInit {
     this.showChat = this.initiallyShowChat;
     this.showVideo = this.initiallyShowVideo;
     this.showAr = this.initiallyShowAr;
-    this.joinedVideoSession=this.initiallyShowVideo;
+    this.joinedVideoSession = this.initiallyShowVideo;
 
   }
 
-  joinArSession() {
-    (navigator as any).userAgentData.getHighEntropyValues(["platformVersion"])
-        .then(ua => {
-          if ((navigator as any).userAgentData.platform === "Windows") {
-            const majorPlatformVersion = parseInt(ua.platformVersion.split('.')[0]);
-            if (majorPlatformVersion == 12) {
-              this.authorizeService.getAccessToken().subscribe(token=>{
-                window.open(`arplatform://${location.host}/${this.baseSession.id}?token=${token}`, "_blank");
-              });
-              return;
-            }
-          }
-          this.joinedArSession=true;
-        });
-
+  joinArSession(asHololens: boolean) {
+    /*
+        (navigator as any).userAgentData.getHighEntropyValues(["platformVersion"])
+            .then(ua => {
+              if ((navigator as any).userAgentData.platform === "Windows") {
+                const majorPlatformVersion = parseInt(ua.platformVersion.split('.')[0]);
+                if (majorPlatformVersion == 12) {
+                  this.authorizeService.getAccessToken().subscribe(token=>{
+                    window.open(`arplatform://${location.host}/${this.baseSession.id}?token=${token}`, "_blank");
+                  });
+                  return;
+                }
+              }
+              this.joinedArSession=true;
+            });
+    */
+    if (asHololens) {
+      this.authorizeService.getAccessToken().subscribe(token => {
+        window.open(`arplatform://${location.host}/${this.baseSession.id}?token=${token}`, "_blank");
+      });
+      return;
+    } else {
+      this.joinedArSession = true;
+    }
 
   }
 }

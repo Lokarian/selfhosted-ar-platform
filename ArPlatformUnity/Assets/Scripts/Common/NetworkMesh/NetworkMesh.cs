@@ -210,15 +210,8 @@ public class NetworkMesh : NetworkBehaviour
     private void OnDrawGizmos()
     {
         return;
-        var meshFilter = GetComponent<MeshFilter>();
-        var mesh = meshFilter.mesh;
-        if (mesh != null)
-        {
-            Gizmos.color = Color.red;
-            foreach (var vertex in mesh.vertices)
-            {
-                Gizmos.DrawSphere(vertex, 0.001f);
-            }
-        }
+        var bounds = GetComponent<MeshFilter>().mesh.bounds;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
     }
 }

@@ -15,7 +15,7 @@
           <iframe *ngIf="joinedArSession" class="w-full h-full" [cachedSrc]="'/webgl/index.html?arSessionId='+arSession.baseSessionId" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; xr-spatial-tracking" allowfullscreen></iframe>
           <div *ngIf="!joinedArSession"
                class="w-full h-full flex justify-center items-center">
-            <app-ar-session-preview *ngIf="arSession" [session]="arSession" (join)="joinArSession()"></app-ar-session-preview>
+            <app-ar-session-preview *ngIf="arSession" [session]="arSession" (join)="joinArSession($event)"></app-ar-session-preview>
           </div>
         </ng-container>
       </as-split-area>

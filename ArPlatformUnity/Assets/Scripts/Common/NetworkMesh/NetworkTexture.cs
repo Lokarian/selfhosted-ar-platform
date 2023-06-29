@@ -27,6 +27,11 @@ public class NetworkTexture : NetworkBehaviour
 
     public void SetTexture(Texture2D texture, int? version = null)
     {
+        if (Texture)
+        {
+            Destroy(Texture);
+        }
+
         Texture = texture;
         GetComponent<MeshRenderer>().material.mainTexture = Texture;
         if (IsServer && IsOwner)
@@ -62,6 +67,7 @@ public class NetworkTexture : NetworkBehaviour
         }
     }
     
+
     public IEnumerator SendTextureCoroutine(Texture2D texture, ulong clientId)
     {
         Debug.Log("SendTextureCoroutine to client " + clientId);
@@ -108,6 +114,7 @@ public class NetworkTexture : NetworkBehaviour
             _receivedBytes.Clear();
         }
     }
+
     [ServerRpc(RequireOwnership = false)]
     public void RequestInitialTexture_ServerRpc(ServerRpcParams serverRpcParams = default)
     {
@@ -117,6 +124,7 @@ public class NetworkTexture : NetworkBehaviour
                 StartCoroutine(SendTextureCoroutine(Texture, serverRpcParams.Receive.SenderClientId)));
         }
     }
+
     public List<byte> ToBytes(Texture2D texture)
     {
         return texture.EncodeToPNG().ToList();
@@ -149,7 +157,7 @@ public class ByteListWrapper : INetworkSerializable
     {
         Bytes = bytes;
     }
-    
+
     public ByteListWrapper()
     {
     }

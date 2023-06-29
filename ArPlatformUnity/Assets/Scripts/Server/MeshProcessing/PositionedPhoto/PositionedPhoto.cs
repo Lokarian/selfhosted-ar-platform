@@ -9,6 +9,7 @@ public class PositionedPhoto : MonoBehaviour
     public Matrix4x4 CameraMatrix;
     public Matrix4x4 CombinedMatrix;
     public Texture2D Texture;
+    public Plane[] Planes;
     public float QuadZDistance = 0.75f;
     public bool DrawGizmos = true;
 
@@ -46,6 +47,7 @@ public class PositionedPhoto : MonoBehaviour
 
         GetComponentInChildren<MeshRenderer>().material.mainTexture = texture;
         Texture = texture;
+        Planes = GeometryUtility.CalculateFrustumPlanes(CombinedMatrix.inverse);
         MeshProcessor.Singleton.OnNewPhoto(this);
     }
 
@@ -88,5 +90,23 @@ public class PositionedPhoto : MonoBehaviour
             CombinedMatrix.MultiplyPoint(new Vector3(1, 1, 1)));
         Gizmos.DrawLine(CombinedMatrix.MultiplyPoint(new Vector3(1, 1, -1)),
             CombinedMatrix.MultiplyPoint(new Vector3(1, 1, 1)));
+        
+        Gizmos.color = Color.red;
+        foreach (var plane in Planes)
+        {
+            //get two perpendicular vectors on the plane
+            var v1 = Vector3.Normalize(Vector3.Cross(plane.normal, Vector3.up));
+            var v2 = Vector3.Normalize(Vector3.Cross(plane.normal, v1));
+            //draw a rectangle on the plane with center at plane.normal*plane.distance
+            //Gizmos.DrawLine(plane.normal * plane.distance + v1 + v2,
+            //    plane.normal * plane.distance + v1 - v2);
+            //Gizmos.DrawLine(plane.normal * plane.distance + v1 + v2,
+            //    plane.normal * plane.distance - v1 + v2);
+            //Gizmos.DrawLine(plane.normal * plane.distance - v1 - v2,
+            //    plane.normal * plane.distance - v1 + v2);
+            //Gizmos.DrawLine(plane.normal * plane.distance - v1 - v2,
+            //    plane.normal * plane.distance + v1 - v2);
+            
+        }
     }
 }

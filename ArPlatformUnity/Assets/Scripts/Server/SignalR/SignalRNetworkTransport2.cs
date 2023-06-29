@@ -33,9 +33,9 @@ public class SignalRNetworkTransport2 : NetworkTransport
     public override ulong ServerClientId => 0;
     public Dictionary<ulong, ulong> ClientIdToRtt = new();
 
-    [DebugGUIGraph(r:0.27f,g:0.933f,b:0.27f,group:1,max:10000,min:0)]
+    //[DebugGuiGraph(r:0.27f,g:0.933f,b:0.27f,group:1,max:10000,min:0)]
     public float OutGoingTrafficBytes = 0;
-    [DebugGUIGraph(r:0.27f,g:0.27f,b:0.933f,group:2,max:0,min:-10000)]
+    //[DebugGuiGraph(r:0.27f,g:0.27f,b:0.933f,group:2,max:0,min:-10000)]
     public float IncomingTrafficBytes => -_incomingTrafficBytes;
     public float _incomingTrafficBytes = 0;
 

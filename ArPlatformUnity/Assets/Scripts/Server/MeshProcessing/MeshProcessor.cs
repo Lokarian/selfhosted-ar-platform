@@ -33,9 +33,9 @@ public class MeshProcessor : MonoBehaviour
     private ConcurrentQueue<string> _meshesToGenerateTextures = new();
     private ConcurrentQueue<Tuple<string, Texture2D>> _texturesToRejoin = new();
 
-    [DebugGUIGraph()] public float CurrentMeshesToProcess => _meshesToProcess.Count;
-    [DebugGUIGraph()] public float CurrentMeshesToRejoin => _meshesToRejoin.Count;
-    [DebugGUIGraph()] public float CurrentMeshesToGenerateTextures => _meshesToGenerateTextures.Count;
+    [DebugGUIGraph(1,0,0)] public float CurrentMeshesToProcess => _meshesToProcess.Count;
+    [DebugGUIGraph(0,1,0)] public float CurrentMeshesToRejoin => _meshesToRejoin.Count;
+    [DebugGUIGraph(0,0,1)] public float CurrentMeshesToGenerateTextures => _meshesToGenerateTextures.Count;
     [DebugGUIGraph()] public float CurrentTexturesToRejoin => _texturesToRejoin.Count;
 
 
@@ -69,8 +69,9 @@ public class MeshProcessor : MonoBehaviour
     static int inputPhotoId = Shader.PropertyToID("inputPhoto");
     static int meshTextureId = Shader.PropertyToID("meshTexture");
     static int meshIdId = Shader.PropertyToID("meshId");
+    static int triangleCountId = Shader.PropertyToID("triangleCount");
 
-    private bool doRasterize=true;
+    private bool doRasterize = false;
 
     private void Start()
     {
@@ -88,6 +89,8 @@ public class MeshProcessor : MonoBehaviour
     {
         while (true)
         {
+            var Stopwatch = new Stopwatch();
+            Stopwatch.Start();
             while (_meshesToProcess.TryDequeue(out var tuple))
             {
                 Task.Run(() =>
@@ -103,6 +106,8 @@ public class MeshProcessor : MonoBehaviour
                 });
             }
 
+            var elapsed1 = Stopwatch.ElapsedMilliseconds;
+            Stopwatch.Restart();
             var modifiedMeshes = false;
             while (_meshesToRejoin.TryDequeue(out var tuple))
             {
@@ -127,47 +132,62 @@ public class MeshProcessor : MonoBehaviour
                 modifiedMeshes = true;
             }
 
-            if (modifiedMeshes)
+            var elapsed2 = Stopwatch.ElapsedMilliseconds;
+            Stopwatch.Restart();
+
+            var elapsed3 = Stopwatch.ElapsedMilliseconds;
+            Stopwatch.Restart();
+
+            if (doRasterize)
             {
                 //filter disabled meshes
                 foreach (var item in _meshes.Where(item => !item.Value).ToList())
                 {
                     _meshes.Remove(item.Key);
                 }
-                SetupMeshBuffers();
-            }
 
-            if (doRasterize)
-            {
                 if (_meshesToGenerateTextures.TryDequeue(out var meshName))
                 {
+                    //_meshesToGenerateTextures.Enqueue(meshName);
                     Debug.Log("Generating texture");
                     var texture = GenerateTexture(meshName);
+                    _texturesToRejoin.Enqueue(new(meshName, texture));
                     var width = texture.width;
                     var height = texture.height;
-                    Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                    RenderTexture.active = texture;
-                    tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                    tex.Apply();
-                    RenderTexture.active = null;
-                    texture.Release();
-                    texture.DiscardContents();
-                    _texturesToRejoin.Enqueue(new(meshName, tex));
+                    /*AsyncGPUReadback.Request(texture, 0, TextureFormat.RGBA32, (request) =>
+                    {
+                        if (request.hasError)
+                        {
+                            Debug.LogError("GPU readback error detected.");
+                            return;
+                        }
+                        Debug.Log($"Texture generated {request.width}x{request.height}");
+                    });*/
                 }
             }
+
+            var elapsed4 = Stopwatch.ElapsedMilliseconds;
+            Stopwatch.Restart();
 
             while (_texturesToRejoin.TryDequeue(out var tuple))
             {
                 Debug.Log("Rejoining texture");
-                var networkMesh = _meshes[tuple.Item1];
-                if (!networkMesh)
+                if (_meshes.TryGetValue(tuple.Item1, out var networkMesh))
                 {
-                    Debug.LogWarning("Mesh was deleted during texture generation");
-                    continue;
-                }
+                    if (!networkMesh)
+                    {
+                        Debug.LogWarning("Mesh was deleted during texture generation");
+                        continue;
+                    }
 
-                networkMesh.GetComponent<NetworkTexture>().SetTexture(tuple.Item2);
+                    networkMesh.GetComponent<NetworkTexture>().SetTexture(tuple.Item2);
+                }
             }
+
+            var elapsed5 = Stopwatch.ElapsedMilliseconds;
+            Stopwatch.Stop();
+
+            Debug.Log($"ProcessMeshes: {elapsed1}ms, RejoinMeshes: {elapsed2}ms, SetupMeshBuffers: {elapsed3}ms, GenerateTexture: {elapsed4}ms, RejoinTexture: {elapsed5}ms");
 
             yield return null;
         }
@@ -205,151 +225,104 @@ public class MeshProcessor : MonoBehaviour
         mesh.SetVertices(vertices);
         mesh.SetIndexBufferParams(indices.Length, IndexFormat.UInt32);
         mesh.SetTriangles(indices, 0);
+        var buffer = mesh.GetIndexBuffer();
         mesh.SetUVs(0, uvs);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
         return mesh;
     }
 
-    public RenderTexture GenerateTexture(string meshName)
+    public Texture2D GenerateTexture(string meshName)
     {
-        RenderTexture texture = null;
-        try
+        var meshes=_meshes.Values.ToList();
+        var desiredMeshId= meshes.FindIndex(x => x.name == meshName);
+        
+        
+        var outputTexture = new Texture2D((int)textureSize,(int)textureSize, TextureFormat.RGBA32, false);
+        if (_positionedPhotos.Count == 0)
         {
-            texture = new RenderTexture((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
-            texture.enableRandomWrite = true;
-            texture.Create();
-            //todo: choose the right photos and necessary meshes
-            var id = _meshes.Values.ToList().FindIndex(x => x.name == meshName);
-            computeShader.SetInt(meshIdId, id);
-            computeShader.SetInts(meshTextureResolutionId, (int)textureSize, (int)textureSize);
-            shaderStages.ForEach(stage => computeShader.SetTexture(ShaderStageId(stage), meshTextureId, texture));
-
-
-            foreach (var photo in _positionedPhotos)
-            {
-                //perform rasterization from perspective of the photo
-                RenderTexture depthDebugTexture = null;
-                GraphicsBuffer meshHitBuffer = null;
-                try
-                {
-                    depthDebugTexture =
-                        RenderTexture.GetTemporary(photo.Width, photo.Height, 0, RenderTextureFormat.ARGB32);
-                    depthDebugTexture.enableRandomWrite = true;
-                    depthDebugTexture.Create();
-
-                    meshHitBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
-                        photo.Width * photo.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
-
-                    shaderStages.ForEach(stage =>
-                    {
-                        computeShader.SetTexture(ShaderStageId(stage), inputPhotoId, photo.Texture);
-                        computeShader.SetTexture(ShaderStageId(stage), rasterizerDepthTextureId, depthDebugTexture);
-                        computeShader.SetBuffer(ShaderStageId(stage), meshHitsTextureId, meshHitBuffer);
-                    });
-
-                    computeShader.SetInts(inputResolutionId, photo.Width, photo.Height);
-                    computeShader.SetMatrix(worldToCameraMatrixId, photo.CombinedMatrix.inverse);
-
-                    //execute the compute shader stages
-                    computeShader.Dispatch(ShaderStageId(ShaderStage.ClearRasterizeTexture), photo.Width / 8,
-                        photo.Height / 8, 1);
-                    computeShader.Dispatch(ShaderStageId(ShaderStage.Rasterize),
-                        (int)Math.Ceiling(_trianglesBuffer.count / 64f), 1, 1);
-                    computeShader.Dispatch(ShaderStageId(ShaderStage.ProjectOnMesh), photo.Width / 8,
-                        photo.Height / 8, 1);
-
-                    /*//create new quad and render the render texture to it
-                    var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                    var existingQuad = photo.transform.GetChild(0);
-                    quad.transform.position = existingQuad.position + Vector3.up * 0.1f;
-                    quad.transform.rotation = existingQuad.rotation;
-                    quad.transform.localScale = existingQuad.localScale;
-                    quad.GetComponent<MeshRenderer>().material.mainTexture = depthDebugTexture;*/
-                }
-                finally
-                {
-                    if (depthDebugTexture)
-                    {
-                        depthDebugTexture.Release();
-                        depthDebugTexture.DiscardContents();
-                        RenderTexture.ReleaseTemporary(depthDebugTexture);
-                    }
-
-                    if (meshHitBuffer != null)
-                    {
-                        meshHitBuffer.Release();
-                        meshHitBuffer.Dispose();
-                    }
-                }
-            }
+            return outputTexture;
         }
-        catch (Exception e)
-        {
-            texture?.Release();
-            Debug.LogError(e);
-            return null;
-        }
+        //the temporary texture
+        var renderTexture = RenderTexture.GetTemporary((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
+        renderTexture.enableRandomWrite = true;
+        renderTexture.Create();
 
-        return texture;
-    }
-
-    private void SetupMeshBuffers()
-    {
-        _verticesBuffer?.Release();
-        _verticesBuffer?.Dispose();
-        _trianglesBuffer?.Release();
-        _trianglesBuffer?.Dispose();
-        _meshesBuffer?.Release();
-        _meshesBuffer?.Dispose();
-
-        var meshes = _meshes.Values.Select(nm => nm.GetComponent<MeshFilter>().mesh).ToList();
-
-        var vertexCount = meshes.Sum(m => m.vertexCount);
-        var triangleCount = meshes.Sum(m => m.triangles.Length / 3);
-
-        _verticesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
-            vertexCount, Marshal.SizeOf(typeof(ComputeBuffer_Vertex)));
-        _trianglesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
-            triangleCount, Marshal.SizeOf(typeof(ComputeBuffer_Triangle)));
-        _meshesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
-            meshes.Count, Marshal.SizeOf(typeof(ComputeBuffer_Mesh)));
-
-        var meshStructs = new List<ComputeBuffer_Mesh>();
-        for (int i = 0; i < meshes.Count; i++)
-        {
-            var mesh = meshes[i];
-            var meshStruct = new ComputeBuffer_Mesh
-            {
-                index = (uint)i,
-                vertexOffset = (i == 0 ? 0 : meshStructs[i - 1].vertexOffset + meshStructs[i - 1].vertexCount),
-                triangleOffset = (i == 0 ? 0 : meshStructs[i - 1].triangleOffset + meshStructs[i - 1].triangleCount),
-                vertexCount = (uint)mesh.vertexCount,
-                triangleCount = (uint)mesh.triangles.Length / 3
-            };
-            meshStructs.Add(meshStruct);
-
-            //copy meshVertexBuffer to _verticesBuffer at offset meshStruct.vertexOffset
-            var meshVertexBuffer = mesh.GetVertexBuffer(0);
-            var meshVertices = new ComputeBuffer_Vertex[mesh.vertexCount];
-            meshVertexBuffer.GetData(meshVertices); //todo dont copy to cpu, but needs its own gpu stage
-            _verticesBuffer.SetData(meshVertices, 0, (int)meshStruct.vertexOffset, (int)meshStruct.vertexCount);
-
-
-            var meshTrianglesBuffer = mesh.GetIndexBuffer();
-            var meshTriangles = new ComputeBuffer_Triangle[mesh.triangles.Length / 3];
-            meshTrianglesBuffer.GetData(meshTriangles); //todo dont copy to cpu, but needs its own gpu stage
-            _trianglesBuffer.SetData(meshTriangles, 0, (int)meshStruct.triangleOffset, (int)meshStruct.triangleCount);
-        }
-
-        _meshesBuffer.SetData(meshStructs);
+        // we assume all photos have the same size, so we can use the first one
+        var samplePhoto = _positionedPhotos.First();
+        
+        var depthDebugTexture = RenderTexture.GetTemporary(samplePhoto.Width, samplePhoto.Height, 0, RenderTextureFormat.ARGB32);
+        depthDebugTexture.enableRandomWrite = true;
+        depthDebugTexture.Create();
+        
+        var meshHitBuffer=new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
+            samplePhoto.Width * samplePhoto.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
+        
+        CommandBuffer commandBuffer = new CommandBuffer();
+        commandBuffer.name = "GenerateTexture";
+        
+        //give clear and rasterize shaders access to the temporary textures
         shaderStages.ForEach(stage =>
         {
-            computeShader.SetBuffer(this.ShaderStageId(stage), verticesBufferId, _verticesBuffer);
-            computeShader.SetBuffer(ShaderStageId(stage), trianglesBufferId, _trianglesBuffer);
-            computeShader.SetBuffer(ShaderStageId(stage), meshesBufferId, _meshesBuffer);
+            commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(stage), rasterizerDepthTextureId, depthDebugTexture);
+            commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(stage), meshHitsTextureId, meshHitBuffer);
         });
+        
+        _positionedPhotos.ForEach(photo =>
+        {
+            //set params
+            commandBuffer.SetComputeTextureParam(computeShader, ShaderStageId(ShaderStage.ProjectOnMesh), inputPhotoId, photo.Texture);
+            commandBuffer.SetComputeIntParams(computeShader,inputResolutionId,photo.Width,photo.Height);
+            commandBuffer.SetComputeMatrixParam(computeShader, worldToCameraMatrixId, photo.CombinedMatrix.inverse);
+            //clear hit texture
+            commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.ClearRasterizeTexture),photo.Width/8,photo.Height/8,1);
+            //rasterize each mesh
+            int meshId = 0;
+            meshes.Select(x => x.GetComponent<MeshFilter>().mesh).ToList().ForEach(mesh =>
+            {
+                mesh.vertexBufferTarget|=GraphicsBuffer.Target.Raw;
+                mesh.indexBufferTarget|=GraphicsBuffer.Target.Raw;
+                var vertexBuffer = mesh.GetVertexBuffer(0);
+                var triangleBuffer = mesh.GetIndexBuffer();
+                var vertices = new int[triangleBuffer.count];
+                triangleBuffer.GetData(vertices);
+                var indices = mesh.GetIndices(0);
+                commandBuffer.SetComputeIntParam(computeShader, meshIdId, meshId);
+                commandBuffer.SetComputeIntParam(computeShader, triangleCountId, mesh.triangles.Length/3);
+                commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.Rasterize),verticesBufferId,vertexBuffer);
+                commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.Rasterize),trianglesBufferId,triangleBuffer);
+
+                Debug.Log($"Rasterizing mesh {meshId} {vertexBuffer.count} {triangleBuffer.count}: {(int)Math.Ceiling(mesh.triangles.Length/3f/64)}");
+                commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.Rasterize),(int)Math.Ceiling(mesh.triangles.Length/3f/64),1,1);
+                
+                meshId++;
+            });
+            //give project shader access to the photo texture
+            commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(ShaderStage.ProjectOnMesh),inputPhotoId,photo.Texture);
+            commandBuffer.SetComputeIntParams(computeShader,meshTextureResolutionId,(int)textureSize,(int)textureSize);
+            //tell project shader for which meshId to generate the texture
+            
+            commandBuffer.SetComputeIntParam(computeShader,meshIdId,desiredMeshId);
+            commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(ShaderStage.ProjectOnMesh),meshTextureId,renderTexture);
+            //project on mesh
+            commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.ProjectOnMesh),photo.Width/8,photo.Height/8,1);
+        });
+        //copy render texture to output texture
+        commandBuffer.CopyTexture(renderTexture, outputTexture);
+        
+        //execute command buffer
+        Graphics.ExecuteCommandBuffer(commandBuffer);
+        
+        //release temporary textures
+        RenderTexture.ReleaseTemporary(renderTexture);
+        meshHitBuffer.Release();
+        meshHitBuffer.Dispose();
+        RenderTexture.ReleaseTemporary(depthDebugTexture);
+        
+        return outputTexture;
+        
     }
+   
 
     int ShaderStageId(ShaderStage stage)
     {

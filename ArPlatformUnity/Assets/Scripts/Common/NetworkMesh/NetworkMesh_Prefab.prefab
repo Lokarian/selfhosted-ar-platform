@@ -115,7 +115,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0fb79dd35443bf64c837996ad3f6f954, type: 2}
+  - {fileID: 2100000, guid: 013217fcf4bba4f3380d9159876fa8ea, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -164,4 +164,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkMesh: {fileID: 6490998480733202580}
-  CurrentVersion: 0
+  TextureSize:
+    m_InternalValue: 2048

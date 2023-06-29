@@ -4,9 +4,67 @@
 #pragma kernel project_hits_on_texture
 #pragma enable_d3d11_debug_symbols
 
+// "PrintValue" function by P.Malin
+float PrintValue(float2 vCoords, float fValue, float fMaxDigits, float fDecimalPlaces)
+{
+    if ((vCoords.y < 0.0) || (vCoords.y >= 1.0)) return 0.0;
+    bool bNeg = (fValue < 0.0);
+    fValue = abs(fValue);
+    float fBiggestIndex = max(floor(log2(abs(fValue)) / log2(10.0)), 0.0);
+    float fDigitIndex = fMaxDigits - floor(vCoords.x);
+    float fCharBin = 0.0;
+    if (fDigitIndex > (-fDecimalPlaces - 1.01))
+    {
+        if (fDigitIndex > fBiggestIndex)
+        {
+            if ((bNeg) && (fDigitIndex < (fBiggestIndex + 1.5))) fCharBin = 1792.0;
+        }
+        else
+        {
+            if (fDigitIndex == -1.0)
+            {
+                if (fDecimalPlaces > 0.0) fCharBin = 2.0;
+            }
+            else
+            {
+                float fReducedRangeValue = fValue;
+                if (fDigitIndex < 0.0)
+                {
+                    fReducedRangeValue = frac(fValue);
+                    fDigitIndex += 1.0;
+                }
+                float fDigitValue = (abs(fReducedRangeValue / (pow(10.0, fDigitIndex))));
+                int x = int(floor(fDigitValue - 10.0 * floor(fDigitValue / 10.0)));
+                fCharBin = x == 0
+                               ? 480599.0
+                               : x == 1
+                               ? 139810.0
+                               : x == 2
+                               ? 476951.0
+                               : x == 3
+                               ? 476999.0
+                               : x == 4
+                               ? 350020.0
+                               : x == 5
+                               ? 464711.0
+                               : x == 6
+                               ? 464727.0
+                               : x == 7
+                               ? 476228.0
+                               : x == 8
+                               ? 481111.0
+                               : x == 9
+                               ? 481095.0
+                               : 0.0;
+            }
+        }
+    }
+    float result = (fCharBin / pow(2.0, floor(frac(vCoords.x) * 4.0) + (floor(vCoords.y * 5.0) * 4.0)));
+    return floor(result - 2.0 * floor(result / 2.0));
+}
+
+
 //types
-
-
 //a point on the mesh that is 
 struct MeshHit
 {
@@ -42,9 +100,11 @@ struct Mesh
 //global buffers and properties
 
 
-StructuredBuffer<Mesh> meshes;
 StructuredBuffer<Vertex> vertices;
-StructuredBuffer<Triangle> triangles;
+StructuredBuffer<int> triangles;
+int triangleCount;
+
+int meshId; //the id of the mesh that will be modified
 
 
 Texture2D<float3> inputPhoto; //the photo that will be projected onto the mesh
@@ -56,7 +116,6 @@ float4x4 worldToCameraMatrix; //the world to camera matrix
 
 RWTexture2D<float4> meshTexture; //the texture of the mesh that will get new colors
 int2 meshTextureResolution; //the resolution of the mesh texture
-int meshId; //the id of the mesh that will be modified
 
 float3 project(float3 v)
 {
@@ -158,7 +217,7 @@ void draw_line(uint2 p1, uint2 p2, float4 color)
     }
 }
 
-void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3, int mesh_id)
+void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3)
 {
     p1 = float3(to_screen_space(p1.xy), p1.z);
     p2 = float3(to_screen_space(p2.xy), p2.z);
@@ -188,8 +247,8 @@ void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex
             hit.depth = depth;
             hit.uv = uv;
             hit.screenPos = uint2(x, y);
-            hit.meshIndex = mesh_id;
-            if(meshHitsTexture[index_of(x, y, inputResolution)].depth > depth)
+            hit.meshIndex = meshId;
+            if (meshHitsTexture[index_of(x, y, inputResolution)].depth > depth)
             {
                 meshHitsTexture[index_of(x, y, inputResolution)] = hit;
             }
@@ -213,7 +272,39 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
     if (id.x < inputResolution.x && id.y < inputResolution.y)
     {
         meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
-        rasterizerDepthTexture[id.xy] = float4(1.0, 0, 0, 1.0);
+        rasterizerDepthTexture[id.xy] = float4(1, 0, 0, 1.0);
+        /*
+        float2 uv = float2(id.xy) / inputResolution;
+        float4 debugValue = float4(1.234, 2.003, 4.321,0);
+        if (uv.x > 0.8 && uv.y > 0.8)
+        {
+            float2 font = float2(36.0, 45.0);
+            float2 position = float2(0.65, 0.9);
+            float3 base = PrintValue((uv - position) * font, debugValue.x, 6.0, 4.0).xxx;
+            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
+        }
+        else if (uv.x > 0.8 && uv.y > 0.6)
+        {
+            float2 font = float2(36.0, 45.0);
+            float2 position = float2(0.65, 0.7);
+            float3 base = PrintValue((uv - position) * font, debugValue.y, 6.0, 4.0).xxx;
+            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
+        }
+        else if (uv.x > 0.8 && uv.y > 0.4)
+        {
+            float2 font = float2(36.0, 45.0);
+            float2 position = float2(0.65, 0.5);
+            float3 base = PrintValue((uv - position) * font, debugValue.z, 6.0, 4.0).xxx;
+            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
+        }
+        else if (uv.x > 0.8 && uv.y > 0.2)
+        {
+            float2 font = float2(36.0, 45.0);
+            float2 position = float2(0.65, 0.3);
+            float3 base = PrintValue((uv - position) * font, debugValue.w, 6.0, 4.0).xxx;
+            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
+        }
+        */
     }
 }
 
@@ -222,34 +313,18 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
 [numthreads(64, 1, 1)]
 void rasterize(uint3 id : SV_DispatchThreadID)
 {
-    uint count;
-    uint stride;
-    triangles.GetDimensions(count, stride);
-    if (id.x >= count)
+    if (id.x >= triangleCount)
     {
         return;
     }
-    //get mesh that the current vertex belongs to
-    Mesh mesh;
-    int meshIndex = 0;
-    meshes.GetDimensions(count, stride);
-    for (int i = 0; i < count; i++)
-    {
-        mesh = meshes[i];
-        meshIndex = i;
-        if (mesh.triangleOffset <= id.x && mesh.triangleOffset + mesh.triangleCount > id.x)
-        {
-            break;
-        }
-    }
-    Triangle triang = triangles[id.x];
-    Vertex v1 = vertices[triang.vertexIndex1 + mesh.vertexOffset];
-    Vertex v2 = vertices[triang.vertexIndex2 + mesh.vertexOffset];
-    Vertex v3 = vertices[triang.vertexIndex3 + mesh.vertexOffset];
 
+    Vertex v1 = vertices[triangles[id.x * 3 + 0]];
+    Vertex v2 = vertices[triangles[id.x * 3 + 1]];
+    Vertex v3 = vertices[triangles[id.x * 3 + 2]];
     float3 p1 = project(v1.position);
     float3 p2 = project(v2.position);
     float3 p3 = project(v3.position);
+
 
     if (!is_on_screen(p1) && !is_on_screen(p2) && !is_on_screen(p3))
     {
@@ -262,7 +337,7 @@ void rasterize(uint3 id : SV_DispatchThreadID)
     //draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
     //draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
 
-    draw_triangle(p1, p2, p3, v1, v2, v3, meshIndex);
+    draw_triangle(p1, p2, p3, v1, v2, v3);
 }
 
 //kernels
@@ -278,14 +353,17 @@ void project_hits_on_texture(uint3 id : SV_DispatchThreadID)
     if (hit.depth < 1.0)
     {
         rasterizerDepthTexture[id.xy] = float4(inputPhoto[hit.screenPos], 1);
+        //rasterizerDepthTexture[id.xy] = float4(inputPhoto[hit.screenPos], 1);
         if (hit.meshIndex == meshId)
         {
-            meshTexture[hit.uv * meshTextureResolution] = float4(inputPhoto[hit.screenPos],1);
+            meshTexture[hit.uv * meshTextureResolution] = float4(inputPhoto[hit.screenPos], 1);
         }
+
     }
     else
     {
         float4 color = float4(0, 0, 1, 1.0);
         rasterizerDepthTexture[id.xy] = color;
     }
+    //meshTexture[id.xy] = rasterizerDepthTexture[id.xy];
 }

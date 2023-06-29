@@ -91,6 +91,11 @@ public class EnvironmentMeshEmulator : MonoBehaviour
 
             if (vertices.Length == 0 || triangles.Length == 0)
                 continue;
+            
+            //var yOffSet = 0.5f;
+            //var xOffSet = 0;
+            //verticesVector3 = new[] { new Vector3(0+xOffSet, -0.75f+yOffSet, 2.4f), new Vector3(-0.25f+xOffSet, -0.25f+yOffSet, 2.4f), new Vector3(-0.5f+xOffSet, -0.75f+yOffSet, 2.4f) };
+            //trianglesInt = new[] { 0, 2, 1 };
             FindObjectOfType<MeshProcessor>().EnqueueMesh(networkMesh, verticesVector3, trianglesInt);
         }
 

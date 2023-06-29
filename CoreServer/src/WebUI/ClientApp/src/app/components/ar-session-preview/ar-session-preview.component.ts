@@ -16,7 +16,7 @@ import {
 export class ArSessionPreviewComponent implements OnInit {
 
   @Input() session: ArSessionDto;
-  @Output() join: EventEmitter<ArSessionDto> = new EventEmitter();
+  @Output() join: EventEmitter<boolean> = new EventEmitter();
 
   public ArUserRole = ArUserRole
   public ArServerState = ArServerState;
@@ -28,8 +28,8 @@ export class ArSessionPreviewComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  joinSession() {
-    this.join.emit(this.session);
+  joinSession(asHololens:boolean) {
+    this.join.emit(asHololens);
   }
 
   public get displayMembers(): ArMemberDto[] {

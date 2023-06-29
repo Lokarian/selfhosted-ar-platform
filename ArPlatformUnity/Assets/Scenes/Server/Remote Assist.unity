@@ -211,7 +211,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!81 &374129508
 AudioListener:
   m_ObjectHideFlags: 0
@@ -687,7 +687,6 @@ MonoBehaviour:
     m_InternalValue: 30000
   Timeframe:
     m_InternalValue: 0
-  Traffic: 0
 --- !u!1 &1668063169
 GameObject:
   m_ObjectHideFlags: 0
