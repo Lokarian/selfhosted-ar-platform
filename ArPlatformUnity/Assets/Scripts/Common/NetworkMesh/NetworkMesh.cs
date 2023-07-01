@@ -207,9 +207,13 @@ public class NetworkMesh : NetworkBehaviour
         meshFilter.mesh = mesh;
     }
 
+    public bool DrawGizmos = false;
     private void OnDrawGizmos()
     {
-        return;
+        if (!DrawGizmos)
+        {
+            return;
+        } 
         var bounds = GetComponent<MeshFilter>().mesh.bounds;
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(bounds.center, bounds.size);

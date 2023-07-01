@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PositionedPhoto : MonoBehaviour
@@ -48,9 +49,14 @@ public class PositionedPhoto : MonoBehaviour
         GetComponentInChildren<MeshRenderer>().material.mainTexture = texture;
         Texture = texture;
         Planes = GeometryUtility.CalculateFrustumPlanes(CombinedMatrix.inverse);
+        
         MeshProcessor.Singleton.OnNewPhoto(this);
     }
-
+    //if mesh is in frustum
+    public bool IsMeshInFrustum(Mesh mesh)
+    {
+        return GeometryUtility.TestPlanesAABB(Planes, mesh.bounds);
+    }
 
     public Texture2D GetTexture()
     {

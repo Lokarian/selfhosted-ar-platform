@@ -235,6 +235,8 @@ public class MeshProcessor : MonoBehaviour
     public Texture2D GenerateTexture(string meshName)
     {
         var meshes=_meshes.Values.ToList();
+        var targetMesh=meshes.Find(x => x.name == meshName).GetComponent<MeshFilter>().mesh;
+        
         var desiredMeshId= meshes.FindIndex(x => x.name == meshName);
         
         
@@ -268,7 +270,7 @@ public class MeshProcessor : MonoBehaviour
             commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(stage), meshHitsTextureId, meshHitBuffer);
         });
         
-        _positionedPhotos.ForEach(photo =>
+        _positionedPhotos.Where(x=>x.IsMeshInFrustum(targetMesh)).ToList().ForEach(photo =>
         {
             //set params
             commandBuffer.SetComputeTextureParam(computeShader, ShaderStageId(ShaderStage.ProjectOnMesh), inputPhotoId, photo.Texture);
@@ -277,16 +279,15 @@ public class MeshProcessor : MonoBehaviour
             //clear hit texture
             commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.ClearRasterizeTexture),photo.Width/8,photo.Height/8,1);
             //rasterize each mesh
-            int meshId = 0;
-            meshes.Select(x => x.GetComponent<MeshFilter>().mesh).ToList().ForEach(mesh =>
+            
+            meshes.Where(x=>photo.IsMeshInFrustum(x.GetComponent<MeshFilter>().mesh)).Select(x => x.GetComponent<MeshFilter>().mesh).ToList().ForEach(mesh =>
             {
+                int meshId = meshes.FindIndex(x => x.GetComponent<MeshFilter>().mesh==mesh);
                 mesh.vertexBufferTarget|=GraphicsBuffer.Target.Raw;
                 mesh.indexBufferTarget|=GraphicsBuffer.Target.Raw;
                 var vertexBuffer = mesh.GetVertexBuffer(0);
                 var triangleBuffer = mesh.GetIndexBuffer();
-                var vertices = new int[triangleBuffer.count];
-                triangleBuffer.GetData(vertices);
-                var indices = mesh.GetIndices(0);
+                
                 commandBuffer.SetComputeIntParam(computeShader, meshIdId, meshId);
                 commandBuffer.SetComputeIntParam(computeShader, triangleCountId, mesh.triangles.Length/3);
                 commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.Rasterize),verticesBufferId,vertexBuffer);
@@ -295,7 +296,6 @@ public class MeshProcessor : MonoBehaviour
                 Debug.Log($"Rasterizing mesh {meshId} {vertexBuffer.count} {triangleBuffer.count}: {(int)Math.Ceiling(mesh.triangles.Length/3f/64)}");
                 commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.Rasterize),(int)Math.Ceiling(mesh.triangles.Length/3f/64),1,1);
                 
-                meshId++;
             });
             //give project shader access to the photo texture
             commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(ShaderStage.ProjectOnMesh),inputPhotoId,photo.Texture);
@@ -311,7 +311,7 @@ public class MeshProcessor : MonoBehaviour
         commandBuffer.CopyTexture(renderTexture, outputTexture);
         
         //execute command buffer
-        Graphics.ExecuteCommandBuffer(commandBuffer);
+        Graphics.ExecuteCommandBufferAsync(commandBuffer,ComputeQueueType.Background);
         
         //release temporary textures
         RenderTexture.ReleaseTemporary(renderTexture);
@@ -322,7 +322,7 @@ public class MeshProcessor : MonoBehaviour
         return outputTexture;
         
     }
-   
+    
 
     int ShaderStageId(ShaderStage stage)
     {

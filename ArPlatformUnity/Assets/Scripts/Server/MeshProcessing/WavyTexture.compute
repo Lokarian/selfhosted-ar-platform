@@ -273,38 +273,6 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
     {
         meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
         rasterizerDepthTexture[id.xy] = float4(1, 0, 0, 1.0);
-        /*
-        float2 uv = float2(id.xy) / inputResolution;
-        float4 debugValue = float4(1.234, 2.003, 4.321,0);
-        if (uv.x > 0.8 && uv.y > 0.8)
-        {
-            float2 font = float2(36.0, 45.0);
-            float2 position = float2(0.65, 0.9);
-            float3 base = PrintValue((uv - position) * font, debugValue.x, 6.0, 4.0).xxx;
-            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
-        }
-        else if (uv.x > 0.8 && uv.y > 0.6)
-        {
-            float2 font = float2(36.0, 45.0);
-            float2 position = float2(0.65, 0.7);
-            float3 base = PrintValue((uv - position) * font, debugValue.y, 6.0, 4.0).xxx;
-            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
-        }
-        else if (uv.x > 0.8 && uv.y > 0.4)
-        {
-            float2 font = float2(36.0, 45.0);
-            float2 position = float2(0.65, 0.5);
-            float3 base = PrintValue((uv - position) * font, debugValue.z, 6.0, 4.0).xxx;
-            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
-        }
-        else if (uv.x > 0.8 && uv.y > 0.2)
-        {
-            float2 font = float2(36.0, 45.0);
-            float2 position = float2(0.65, 0.3);
-            float3 base = PrintValue((uv - position) * font, debugValue.w, 6.0, 4.0).xxx;
-            rasterizerDepthTexture[id.xy] = float4(base.xxx, 1.0);
-        }
-        */
     }
 }
 
