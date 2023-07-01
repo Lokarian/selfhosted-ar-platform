@@ -311,7 +311,7 @@ public class MeshProcessor : MonoBehaviour
         commandBuffer.CopyTexture(renderTexture, outputTexture);
         
         //execute command buffer
-        Graphics.ExecuteCommandBufferAsync(commandBuffer,ComputeQueueType.Background);
+        Graphics.ExecuteCommandBuffer(commandBuffer);
         
         //release temporary textures
         RenderTexture.ReleaseTemporary(renderTexture);
