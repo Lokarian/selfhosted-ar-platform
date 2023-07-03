@@ -71,7 +71,7 @@ public class MeshProcessor : MonoBehaviour
     static int meshIdId = Shader.PropertyToID("meshId");
     static int triangleCountId = Shader.PropertyToID("triangleCount");
 
-    private bool doRasterize = false;
+    private bool doRasterize = true;
 
     private void Start()
     {
@@ -232,6 +232,7 @@ public class MeshProcessor : MonoBehaviour
         return mesh;
     }
 
+    
     public Texture2D GenerateTexture(string meshName)
     {
         var meshes=_meshes.Values.ToList();
@@ -259,9 +260,18 @@ public class MeshProcessor : MonoBehaviour
         
         var meshHitBuffer=new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
             samplePhoto.Width * samplePhoto.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
-        
+
         CommandBuffer commandBuffer = new CommandBuffer();
         commandBuffer.name = "GenerateTexture";
+        
+        var barycentricAreaBuffer=new GraphicsBuffer(GraphicsBuffer.Target.Append|GraphicsBuffer.Target.Structured,GraphicsBuffer.UsageFlags.None,5000000,28);
+        var  indirectArgsBuffer=new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments|GraphicsBuffer.Target.Structured,GraphicsBuffer.UsageFlags.None,4,4);
+        
+        commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.Rasterize),"barycentricCalculationAreasAppend",barycentricAreaBuffer);
+        commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.BarycentricCalculation),"barycentricCalculationAreas",barycentricAreaBuffer);
+        
+        commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.ModifyIndirectParams),"barycentricDispatchIndirectArgs",indirectArgsBuffer);
+        commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.BarycentricCalculation),"barycentricDispatchIndirectArgs",indirectArgsBuffer);
         
         //give clear and rasterize shaders access to the temporary textures
         shaderStages.ForEach(stage =>
@@ -288,14 +298,20 @@ public class MeshProcessor : MonoBehaviour
                 var vertexBuffer = mesh.GetVertexBuffer(0);
                 var triangleBuffer = mesh.GetIndexBuffer();
                 
+                
                 commandBuffer.SetComputeIntParam(computeShader, meshIdId, meshId);
                 commandBuffer.SetComputeIntParam(computeShader, triangleCountId, mesh.triangles.Length/3);
                 commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.Rasterize),verticesBufferId,vertexBuffer);
                 commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.Rasterize),trianglesBufferId,triangleBuffer);
+                commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.BarycentricCalculation),verticesBufferId,vertexBuffer);
+                commandBuffer.SetComputeBufferParam(computeShader,ShaderStageId(ShaderStage.BarycentricCalculation),trianglesBufferId,triangleBuffer);
 
-                Debug.Log($"Rasterizing mesh {meshId} {vertexBuffer.count} {triangleBuffer.count}: {(int)Math.Ceiling(mesh.triangles.Length/3f/64)}");
-                commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.Rasterize),(int)Math.Ceiling(mesh.triangles.Length/3f/64),1,1);
-                
+                Debug.Log($"Rasterizing mesh {meshId} {vertexBuffer.count} {triangleBuffer.count}: {(int)Math.Ceiling(mesh.triangles.Length/3f/32)}");
+                commandBuffer.SetBufferCounterValue(barycentricAreaBuffer,0);
+                commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.Rasterize),(int)Math.Ceiling(mesh.triangles.Length/3f/32),1,1);
+                commandBuffer.CopyCounterValue(barycentricAreaBuffer,indirectArgsBuffer,0);
+                commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.ModifyIndirectParams),1,1,1);
+                commandBuffer.DispatchCompute(computeShader,ShaderStageId(ShaderStage.BarycentricCalculation),indirectArgsBuffer,4);
             });
             //give project shader access to the photo texture
             commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(ShaderStage.ProjectOnMesh),inputPhotoId,photo.Texture);
@@ -309,20 +325,25 @@ public class MeshProcessor : MonoBehaviour
         });
         //copy render texture to output texture
         commandBuffer.CopyTexture(renderTexture, outputTexture);
-        
         //execute command buffer
         Graphics.ExecuteCommandBuffer(commandBuffer);
+        
+        //int array of size 1
         
         //release temporary textures
         RenderTexture.ReleaseTemporary(renderTexture);
         meshHitBuffer.Release();
         meshHitBuffer.Dispose();
+        
+        barycentricAreaBuffer.Release();
+        barycentricAreaBuffer.Dispose();
+        indirectArgsBuffer.Release();
+        indirectArgsBuffer.Dispose();
         RenderTexture.ReleaseTemporary(depthDebugTexture);
         
         return outputTexture;
         
     }
-    
 
     int ShaderStageId(ShaderStage stage)
     {
@@ -333,6 +354,8 @@ public class MeshProcessor : MonoBehaviour
             {
                 ShaderStage.ClearRasterizeTexture => "clear_rasterizer_texture",
                 ShaderStage.Rasterize => "rasterize",
+                ShaderStage.ModifyIndirectParams => "modify_indirect_count",
+                ShaderStage.BarycentricCalculation => "barycentric_stage",
                 ShaderStage.ProjectOnMesh => "project_hits_on_texture",
                 _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, null)
             };
@@ -360,12 +383,12 @@ public class MeshProcessor : MonoBehaviour
 
     private void OnGUI()
     {
-        //button on bottom left 
+        /*//button on bottom left 
         if (GUI.Button(new Rect(10, Screen.height - 50, 100, 50), "Generate Texture"))
         {
             //_meshesToGenerateTextures.Enqueue("Mesh 4F8198E77ED61BB9-91B42239FE7753BC");
             doRasterize = true;
-        }
+        }*/
     }
 }
 
@@ -405,10 +428,24 @@ struct ComputeBuffer_MeshHit
     public uint meshIndex; //the index of the mesh that was hit
 };
 
+[StructLayout(LayoutKind.Sequential)]
+struct ComputeBuffer_BarycentricCalculationArea
+{
+    public uint minX;
+    public uint minY;
+    public uint maxX;
+    public uint maxY;
+    public uint v1;
+    public uint v2;
+    public uint v3;
+};
+
 public enum ShaderStage
 {
     ClearRasterizeTexture,
     Rasterize,
+    ModifyIndirectParams,
+    BarycentricCalculation,
     ProjectOnMesh,
     FillTexture
 }
