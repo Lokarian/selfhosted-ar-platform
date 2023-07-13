@@ -1,14 +1,18 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 public class NetworkTexture : NetworkBehaviour
 {
     private Texture2D _texture;
 
-    //public getter
     public Texture2D Texture
     {
         get => _texture;
@@ -24,9 +28,24 @@ public class NetworkTexture : NetworkBehaviour
     public NetworkVariable<int> TextureSize = new NetworkVariable<int>(2048, NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner);
 
+    private List<byte> _pngRepresentation = new List<byte>();
+
+    Tuple<int, Texture2D> _waitingTexture;
+    public int? CurrentVersion;
+
 
     public void SetTexture(Texture2D texture, int? version = null)
     {
+        if (version != null)
+        {
+            if (NetworkMesh != null && !NetworkMesh.SynchroniseVersions(version.Value))
+            {
+                _waitingTexture = new Tuple<int, Texture2D>(version.Value, texture);
+                return;
+            }
+            CurrentVersion = version;
+        }
+
         if (Texture)
         {
             Destroy(Texture);
@@ -55,22 +74,61 @@ public class NetworkTexture : NetworkBehaviour
         }
     }
 
+    public void SetTextureWithReadback(Texture2D texture, int? version = null)
+    {
+        NativeArray<byte> byteArray =
+            new NativeArray<byte>(texture.height * texture.width * 4, Allocator.Persistent);
+        AsyncGPUReadback.RequestIntoNativeArray(ref byteArray, texture, 0, GraphicsFormat.R8G8B8A8_SRGB,
+            (request) =>
+            {
+                if (request.hasError)
+                {
+                    Debug.LogError("GPU readback error detected.");
+                    byteArray.Dispose();
+                    return;
+                }
+
+                var imageBytes = ImageConversion.EncodeNativeArrayToPNG(byteArray, GraphicsFormat.R8G8B8A8_SRGB,
+                    (uint)request.width, (uint)request.height);
+                _pngRepresentation = imageBytes.ToList();
+                imageBytes.Dispose();
+                byteArray.Dispose();
+                SetTexture(texture, version);
+            });
+    }
+
+    public bool SynchroniseVersions(int version)
+    {
+        if (_waitingTexture == null)
+        {
+            return false;
+        }
+
+        if (version == _waitingTexture.Item1)
+        {
+            CurrentVersion = version;
+            var waitingTexture = _waitingTexture;
+            _waitingTexture = null;
+            SetTexture(waitingTexture.Item2);
+            return true;
+        }
+
+        return false;
+    }
+
     public override void OnNetworkSpawn()
     {
-        Debug.Log("OnNetworkSpawn");
         base.OnNetworkSpawn();
         //request initial mesh from server if we are not the server and not the owner
         if (!IsServer && !IsOwner)
         {
-            Debug.Log("Requesting initial texture from server");
             RequestInitialTexture_ServerRpc();
         }
     }
-    
+
 
     public IEnumerator SendTextureCoroutine(Texture2D texture, ulong clientId)
     {
-        Debug.Log("SendTextureCoroutine to client " + clientId);
         var bytesLeft = ToBytes(texture);
 
         var chunkNumber = 0;
@@ -82,8 +140,8 @@ public class NetworkTexture : NetworkBehaviour
                 var bytesToSend = bytesLeft.Take(actualBytes).ToList();
                 bytesLeft.RemoveRange(0, bytesToSend.Count);
                 bytesLeft.TrimExcess();
-
                 UpdateTextureChunk_ClientRpc(new ByteListWrapper(bytesToSend), chunkNumber, bytesLeft.Count == 0,
+                    CurrentVersion ?? -1,
                     new ClientRpcParams()
                         { Send = new ClientRpcSendParams() { TargetClientIds = new[] { clientId } } });
 
@@ -98,7 +156,7 @@ public class NetworkTexture : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void UpdateTextureChunk_ClientRpc(ByteListWrapper bytes, int chunkNumber, bool isLastChunk,
+    public void UpdateTextureChunk_ClientRpc(ByteListWrapper bytes, int chunkNumber, bool isLastChunk, int version,
         ClientRpcParams clientRpcParams = default)
     {
         if (chunkNumber == 0)
@@ -109,8 +167,8 @@ public class NetworkTexture : NetworkBehaviour
         _receivedBytes.AddRange(bytes.Bytes);
         if (isLastChunk)
         {
-            Texture = FromBytes(_receivedBytes, TextureSize.Value);
-            GetComponent<MeshRenderer>().material.mainTexture = Texture;
+            var texture = FromBytes(_receivedBytes, TextureSize.Value);
+            SetTexture(texture, version == -1 ? null : version);
             _receivedBytes.Clear();
         }
     }
@@ -127,14 +185,14 @@ public class NetworkTexture : NetworkBehaviour
 
     public List<byte> ToBytes(Texture2D texture)
     {
-        return texture.EncodeToPNG().ToList();
+        //var bytes = texture.EncodeToPNG();
+        return _pngRepresentation.ToList();
     }
 
     public Texture2D FromBytes(List<byte> bytes, int size)
     {
         var texture = new Texture2D(size, size);
         texture.LoadImage(bytes.ToArray());
-        texture.Apply();
         return texture;
     }
 }

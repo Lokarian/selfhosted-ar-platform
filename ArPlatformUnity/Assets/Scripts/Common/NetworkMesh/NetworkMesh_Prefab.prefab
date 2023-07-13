@@ -150,7 +150,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SyncWithNetworkTexture: 1
+  NetworkTexture: {fileID: -6644030644556078525}
   CurrentVersion: 0
+  DrawGizmos: 0
 --- !u!114 &-6644030644556078525
 MonoBehaviour:
   m_ObjectHideFlags: 0

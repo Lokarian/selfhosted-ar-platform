@@ -4,6 +4,7 @@
 #pragma kernel modify_indirect_count
 #pragma kernel barycentric_stage
 #pragma kernel project_hits_on_texture
+#pragma kernel basecolor_mesh_texture
 #pragma enable_d3d11_debug_symbols
 
 // "PrintValue" function by P.Malin
@@ -340,6 +341,18 @@ void draw_triangle_area(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, V
 
 
 //kernels
+//clear stage for meshHits
+[numthreads(8, 8, 1)]
+void basecolor_mesh_texture(uint3 id : SV_DispatchThreadID)
+{
+    uint width;
+    uint height;
+    meshTexture.GetDimensions(width, height);
+    if (id.x < width && id.y < height)
+    {
+        meshTexture[id.xy] = float4(1, 1, 1, 1);
+    }
+}
 //clear stage for meshHits
 [numthreads(8, 8, 1)]
 void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
