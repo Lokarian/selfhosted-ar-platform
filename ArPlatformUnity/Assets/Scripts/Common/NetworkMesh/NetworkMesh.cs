@@ -18,12 +18,11 @@ public class NetworkMesh : NetworkBehaviour
     public NetworkTexture NetworkTexture;
     public int? CurrentVersion;
     private Tuple<int,Mesh> _waitingMesh;
+    public MeshFilter MeshFilter;
+    public MeshCollider MeshCollider;
 
-    
-    
-    
-    
-    
+
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -43,8 +42,8 @@ public class NetworkMesh : NetworkBehaviour
             return;
         }
 
-        var meshFilter = GetComponent<MeshFilter>();
-        var mesh = meshFilter.mesh;
+        
+        var mesh = MeshFilter.mesh;
         if (mesh != previousMesh)
         {
             previousMesh = mesh;
@@ -216,8 +215,8 @@ public class NetworkMesh : NetworkBehaviour
             }
             CurrentVersion = version.Value;
         }
-        var meshFilter = GetComponent<MeshFilter>();
-        meshFilter.mesh = mesh;
+        MeshFilter.mesh = mesh;
+        MeshCollider.sharedMesh = mesh;
     }
     
     public bool SynchroniseVersions(int version)

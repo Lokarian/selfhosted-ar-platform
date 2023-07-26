@@ -181,7 +181,7 @@ public class MeshProcessor : MonoBehaviour
             var elapsed5 = Stopwatch.ElapsedMilliseconds;
             Stopwatch.Stop();
 
-            //Debug.Log($"ProcessMeshes: {elapsed1}ms, RejoinMeshes: {elapsed2}ms, GenerateTexture: {elapsed4}ms, RejoinTexture: {elapsed5}ms");
+            Debug.Log($"ProcessMeshes: {elapsed1}ms, RejoinMeshes: {elapsed2}ms, GenerateTexture: {elapsed4}ms, RejoinTexture: {elapsed5}ms");
 
             yield return null;
         }

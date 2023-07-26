@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: White_Mat
   m_Shader: {fileID: 4800000, guid: 99fa998bbbed3408aafa652b466d261d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -18,6 +20,7 @@ Material:
   stringTagMap:
     RenderType: Opaque
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -59,7 +62,7 @@ Material:
     - occlusionTexture_texCoord: 0
     - roughnessFactor: 1
     m_Colors:
-    - baseColorFactor: {r: 0.8215339, g: 0.8215339, b: 0.8215339, a: 1}
+    - baseColorFactor: {r: 0.07450585, g: 0.8773585, b: 0, a: 1}
     - baseColorTexture_Rotation: {r: 0, g: 0, b: 0, a: 0}
     - emissiveFactor: {r: 0, g: 0, b: 0, a: 1}
     - emissiveTexture_Rotation: {r: 0, g: 0, b: 0, a: 0}
