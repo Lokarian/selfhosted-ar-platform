@@ -49,8 +49,9 @@ MonoBehaviour:
   LineRenderer: {fileID: 3773115863154210305}
   Color:
     m_InternalValue: {r: 0, g: 1, b: 0, a: 1}
-  Width: 0.1
-  OptimizationCoefficient: 0.9
+  Width:
+    m_InternalValue: 0.01
+  OptimizationCoefficient: 0.005
   Optimize: 1
   MinDistance: 0.03
 --- !u!114 &3162254395177523229

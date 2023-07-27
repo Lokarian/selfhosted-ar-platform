@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 
 enum DrawingState
@@ -27,16 +29,39 @@ public class DesktopDrawingHandler : MonoBehaviour
     private Transform _currentPlane;
     private Vector3 _planeMouseDownPosition;
     private Vector3 _previousMousePosition;
-
+    public Canvas Canvas;
+    public Button DrawButton;
+    public Button ClearPlaneButton;
+    public Button UndoButton;
+    public Button RedButton;
+    public Button GreenButton;
+    public Button BlueButton;
+    
+    int UILayer;
     public void Start()
     {
+        UILayer = LayerMask.NameToLayer("UI");
         _networkPen = FindObjectOfType<NetworkPen>();
+        
+        if (GlobalConfig.Singleton.MyBuildTarget == ArBuildTarget.Web)
+        {
+            Canvas.gameObject.SetActive(true);
+        }
+        else
+        {
+            Canvas.gameObject.SetActive(false);
+            gameObject.SetActive(false);
+        }
     }
 
     public void StartDrawMode()
     {
         _drawingState = DrawingState.Waiting;
         _networkPen.Show();
+        GreenButton.gameObject.SetActive(true);
+        RedButton.gameObject.SetActive(true);
+        BlueButton.gameObject.SetActive(true);
+        UndoButton.gameObject.SetActive(true);
     }
 
     public void StopDrawMode()
@@ -49,6 +74,11 @@ public class DesktopDrawingHandler : MonoBehaviour
             _currentPlane = null;
             _planeState = PlaneState.NoPlane;
         }
+        GreenButton.gameObject.SetActive(false);
+        RedButton.gameObject.SetActive(false);
+        BlueButton.gameObject.SetActive(false);
+        UndoButton.gameObject.SetActive(false);
+        ClearPlaneButton.gameObject.SetActive(false);
     }
 
     public void Update()
@@ -59,8 +89,17 @@ public class DesktopDrawingHandler : MonoBehaviour
             if (Physics.Raycast(ray, out var hit))
             {
                 _networkPen.transform.position = hit.point;
+                _networkPen.SetSize(Vector3.Distance(Camera.main.transform.position, hit.point) * 0.1f);
             }
-
+            else
+            {
+                _networkPen.SetSize(0f);
+            }
+            
+            if (IsPointerOverUIElement())
+            {
+                return;
+            }
             if (Input.GetMouseButtonDown(0))
             {
                 _drawingState = DrawingState.Drawing;
@@ -69,6 +108,10 @@ public class DesktopDrawingHandler : MonoBehaviour
         }
         else if (_drawingState == DrawingState.Drawing)
         {
+            if (IsPointerOverUIElement())
+            {
+                return;
+            }
             if (Input.GetMouseButtonUp(0))
             {
                 _drawingState = DrawingState.Waiting;
@@ -98,6 +141,7 @@ public class DesktopDrawingHandler : MonoBehaviour
                                 Vector3.Cross(hit.normal, Camera.main.transform.right));
                             _currentPlane = Instantiate(PlanePrefab, hit.point, rotation).transform;
                             _planeState = PlaneState.MovePlane;
+                            ClearPlaneButton.gameObject.SetActive(true);
                         }
                     }
 
@@ -140,60 +184,81 @@ public class DesktopDrawingHandler : MonoBehaviour
     }
 
 
-    //add a button saying Draw or Stop Drawing to the UI bottom right
     public void OnGUI()
     {
-        var bottomRightRect = new Rect(Screen.width - 110, Screen.height - 60, 100, 50);
-        if (GUI.Button(bottomRightRect, _drawingState != DrawingState.NotDrawing ? "Stop Drawing" : "Draw"))
-        {
-            if (_drawingState == DrawingState.NotDrawing)
-            {
-                StartDrawMode();
-            }
-            else
-            {
-                StopDrawMode();
-            }
-        }
+        
+    }
 
-        if (_drawingState == DrawingState.NotDrawing)
+    public void RemovePlane()
+    {
+        if (_currentPlane == null)
         {
+            ClearPlaneButton.gameObject.SetActive(false);
             return;
         }
-
-        //5 pixel above the draw button show three color buttons
-        var redButtonRect = new Rect(Screen.width - 110, Screen.height - 115, 30, 50);
-        var greenButtonRect = new Rect(Screen.width - 75, Screen.height - 115, 30, 50);
-        var blueButtonRect = new Rect(Screen.width - 40, Screen.height - 115, 30, 50);
-        GUI.backgroundColor = Color.red;
-        if (GUI.Button(redButtonRect, ""))
+        Destroy(_currentPlane.gameObject);
+        _currentPlane = null;
+        _planeState = PlaneState.NoPlane;
+        ClearPlaneButton.gameObject.SetActive(false);
+    }
+    
+    public void SetColorRed()
+    {
+        _networkPen.Color = Color.red;
+    }
+    public void SetColorGreen()
+    {
+        _networkPen.Color = Color.green;
+    }
+    public void SetColorBlue()
+    {
+        _networkPen.Color = Color.blue;
+    }
+    public void ToggleDrawMode()
+    {
+        if (_drawingState == DrawingState.NotDrawing)
         {
-            _networkPen.Color = Color.red;
+            StartDrawMode();
         }
-
-        GUI.backgroundColor = Color.green;
-        if (GUI.Button(greenButtonRect, ""))
+        else
         {
-            _networkPen.Color = Color.green;
+            StopDrawMode();
         }
-
-        GUI.backgroundColor = Color.blue;
-        if (GUI.Button(blueButtonRect, ""))
+    }
+    public void Undo()
+    {
+        _networkPen.DeleteMyLastLine_ServerRpc();
+    }
+    
+    
+    
+    //Returns 'true' if we touched or hovering on Unity UI element.
+    public bool IsPointerOverUIElement()
+    {
+        return IsPointerOverUIElement(GetEventSystemRaycastResults());
+    }
+ 
+ 
+    //Returns 'true' if we touched or hovering on Unity UI element.
+    private bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
+    {
+        for (int index = 0; index < eventSystemRaysastResults.Count; index++)
         {
-            _networkPen.Color = Color.blue;
+            RaycastResult curRaysastResult = eventSystemRaysastResults[index];
+            if (curRaysastResult.gameObject.layer == UILayer)
+                return true;
         }
-
-        //add a button above the color buttons to clear the plane if planestate is not NoPlane
-        if (_planeState != PlaneState.NoPlane)
-        {
-            var clearPlaneRect = new Rect(Screen.width - 110, Screen.height - 170, 100, 50);
-            GUI.backgroundColor = Color.white;
-            if (GUI.Button(clearPlaneRect, "Clear Plane"))
-            {
-                Destroy(_currentPlane.gameObject);
-                _currentPlane = null;
-                _planeState = PlaneState.NoPlane;
-            }
-        }
+        return false;
+    }
+ 
+ 
+    //Gets all event system raycast results of current mouse or touch position.
+    static List<RaycastResult> GetEventSystemRaycastResults()
+    {
+        PointerEventData eventData = new PointerEventData(EventSystem.current);
+        eventData.position = Input.mousePosition;
+        List<RaycastResult> raysastResults = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, raysastResults);
+        return raysastResults;
     }
 }

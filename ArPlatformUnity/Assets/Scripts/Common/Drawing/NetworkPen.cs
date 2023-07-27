@@ -26,16 +26,19 @@ public class NetworkPen : NetworkBehaviour
         }
         _isDrawing = true;
         var lineGuid = Guid.NewGuid().ToString();
-        CreateLine_ServerRpc(lineGuid);
+        var width = Vector3.Distance(Camera.main.transform.position, transform.position) * 0.01f;
+        CreateLine_ServerRpc(lineGuid, Color, width);
         Renderer.material.color = Color;
     }
-    
+    public void SetSize(float size)
+    {
+        transform.localScale = Vector3.one * size;
+    }
 
     private void Update()
     {
         if (_isDrawing)
         {
-            Debug.Log($"AddPoint_ServerRpc {transform.position}");
             AddPoint_ServerRpc(transform.position);
             
         }
@@ -58,12 +61,13 @@ public class NetworkPen : NetworkBehaviour
     }
     
     [ServerRpc(RequireOwnership = false)]
-    public void CreateLine_ServerRpc(string guid, ServerRpcParams serverRpcParams = default)
+    public void CreateLine_ServerRpc(string guid,Color color,float width, ServerRpcParams serverRpcParams = default)
     {
-        Debug.Log("CreateLine_ServerRpc");
         var go = Instantiate(LinePrefab,LineParentGameObject);
         go.GetComponent<NetworkObject>().Spawn();
         go.name= "NetworkLine_"+guid;
+        go.GetComponent<NetworkLine>().Color.Value=color;
+        go.GetComponent<NetworkLine>().Width.Value=width;
         if(!_userLines.TryGetValue(serverRpcParams.Receive.SenderClientId,out var lines))
         {
             lines = new List<NetworkLine>();
@@ -83,5 +87,16 @@ public class NetworkPen : NetworkBehaviour
         }
         networkLine.AddPoint(point);
     }
-    
+
+    [ServerRpc(RequireOwnership = false)] 
+    public void DeleteMyLastLine_ServerRpc(ServerRpcParams serverRpcParams = default)
+    {
+        var networkLine = _userLines[serverRpcParams.Receive.SenderClientId].LastOrDefault();
+        if (!networkLine)
+        {
+            return;
+        }
+        Destroy(networkLine.gameObject);
+        _userLines[serverRpcParams.Receive.SenderClientId].Remove(networkLine);
+    }
 }
