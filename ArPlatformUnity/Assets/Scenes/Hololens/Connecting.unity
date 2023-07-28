@@ -361,26 +361,6 @@ MonoBehaviour:
   additionalOffset: {x: 0, y: 0, z: 0}
   additionalRotation: {x: 0, y: 0, z: 0}
   updateSolvers: 1
---- !u!1 &383996457 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5870931076965904817, guid: 4d7e2f87fefe0ba468719b15288b46e7, type: 3}
-  m_PrefabInstance: {fileID: 415921419}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &383996460
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 383996457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e215b983dafa1a9448e9229954ea3468, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  handNode: 4
-  jointMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
-  jointMaterial: {fileID: 2100000, guid: 0fb79dd35443bf64c837996ad3f6f954, type: 2}
 --- !u!1001 &415921419
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -474,9 +454,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2351505566771328562, guid: 4d7e2f87fefe0ba468719b15288b46e7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 415921424}
-    - targetCorrespondingSourceObject: {fileID: 5870931076965904817, guid: 4d7e2f87fefe0ba468719b15288b46e7, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 383996460}
   m_SourcePrefab: {fileID: 100100000, guid: 4d7e2f87fefe0ba468719b15288b46e7, type: 3}
 --- !u!114 &415921420 stripped
 MonoBehaviour:

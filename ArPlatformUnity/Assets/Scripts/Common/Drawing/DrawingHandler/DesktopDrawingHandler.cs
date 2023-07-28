@@ -88,7 +88,7 @@ public class DesktopDrawingHandler : MonoBehaviour
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out var hit))
             {
-                _networkPen.transform.position = hit.point;
+                _networkPen.transform.position = hit.point+hit.normal*0.01f;
                 _networkPen.SetSize(Vector3.Distance(Camera.main.transform.position, hit.point) * 0.1f);
             }
             else
@@ -122,7 +122,7 @@ public class DesktopDrawingHandler : MonoBehaviour
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out var hit))
             {
-                _networkPen.transform.position = hit.point;
+                _networkPen.transform.position = hit.point+hit.normal*0.01f;
             }
         }
 

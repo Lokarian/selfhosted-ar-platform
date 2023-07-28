@@ -18,6 +18,10 @@ public class EnvironmentMeshEmulator : MonoBehaviour
 
     private void Start()
     {
+        if (GlobalConfig.Singleton.MyBuildTarget != ArBuildTarget.Server)
+        {
+            gameObject.SetActive(false);
+        }
         if (LoadOnStart)
         {
             //after 1 second, load all meshes
