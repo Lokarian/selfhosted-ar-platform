@@ -76,8 +76,22 @@ public class NetworkTexture : NetworkBehaviour
 
     public void SetTextureWithReadback(Texture2D texture, int? version = null)
     {
+        if(texture== null)
+        {
+            //update current version and notify network mesh
+            if (version != null)
+            {
+                if (NetworkMesh != null && !NetworkMesh.SynchroniseVersions(version.Value))
+                {
+                    _waitingTexture = new Tuple<int, Texture2D>(version.Value, texture);
+                    return;
+                }
+                CurrentVersion = version;
+            }
+            return;
+        }
         NativeArray<byte> byteArray =
-            new NativeArray<byte>(texture.height * texture.width * 4, Allocator.Persistent);
+            new NativeArray<byte>(texture.height * texture.width * 4, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
         AsyncGPUReadback.RequestIntoNativeArray(ref byteArray, texture, 0, GraphicsFormat.R8G8B8A8_SRGB,
             (request) =>
             {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +10,12 @@ using UnityEngine.XR.ARFoundation;
 
 public class EnvironmentMeshHandler : NetworkBehaviour
 {
+    public static EnvironmentMeshHandler Singleton;
+    
     public ARMeshManager arMeshManager;
     public GameObject NetworkMeshPrefab;
-    private readonly Queue<MeshFilter> _pendingUpdates = new();
-
+    private readonly Queue<MeshFilter> _updatesToBePerformed = new();
+    
     private readonly IDictionary<string, NetworkMesh> _spatialMeshNameToNetworkMesh =
         new Dictionary<string, NetworkMesh>();
 
@@ -20,10 +23,23 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     private readonly IDictionary<int, string> _uniqueMeshIdToSpatialMeshName = new Dictionary<int, string>();
     private int _uniqueMeshIdCounter = 0;
 
-    
-    
-    public Dictionary<int,List<Vector3>> _verticesChunks = new Dictionary<int, List<Vector3>>();
-    public Dictionary<int,List<int>> _indicesChunks = new Dictionary<int, List<int>>();
+    public NetworkVariable<float> MinTimeBetweenAllUpdates = new(3);
+    public NetworkVariable<float> MinTimeBetweenUpdatesPerMesh = new(10f);
+    public NetworkVariable<bool> AllowUpdates = new(true);
+    private readonly Dictionary<MeshFilter, float> _lastUpdated = new Dictionary<MeshFilter, float>();
+    private readonly List<MeshFilter> _pendingUpdates = new List<MeshFilter>();
+
+
+    public Dictionary<int, List<Vector3>> _verticesChunks = new Dictionary<int, List<Vector3>>();
+    public Dictionary<int, List<int>> _indicesChunks = new Dictionary<int, List<int>>();
+
+    private void Start()
+    {
+        if (Singleton == null)
+        {
+            Singleton = this;
+        }
+    }
 
     public override void OnNetworkSpawn()
     {
@@ -68,17 +84,48 @@ public class EnvironmentMeshHandler : NetworkBehaviour
 
         foreach (var meshFilter in arMeshManager.meshes)
         {
-            AddPendingUpdate(meshFilter);
+            AddUpdateToBePerformed(meshFilter);
         }
 
         arMeshManager.meshesChanged += ArMeshManagerOnMeshesChanged;
         StartCoroutine(SendMeshCoroutine());
+        StartCoroutine(DequeuePendingUpdatesCoroutine());
     }
+    
+    public IEnumerator DequeuePendingUpdatesCoroutine()
+    {
+        while (true)
+        {
+            yield return null;
+            if(!AllowUpdates.Value)
+            {
+                continue;
+            }
+            if(_updatesToBePerformed.Count>0)
+            {
+                continue;
+            }
+            var lastUpdate = _lastUpdated.Values.Count > 0 ? _lastUpdated.Values.Max() : 0;
+            if (lastUpdate + MinTimeBetweenAllUpdates.Value > Time.realtimeSinceStartup)
+            {
+                continue;
+            }
+            var meshFilter = _pendingUpdates.FirstOrDefault(x => !_lastUpdated.ContainsKey(x) || _lastUpdated[x] + MinTimeBetweenUpdatesPerMesh.Value <
+                Time.realtimeSinceStartup);
+            if (meshFilter == null)
+            {
+                continue;
+            }
+            _pendingUpdates.Remove(meshFilter);
+            AddUpdateToBePerformed(meshFilter);
+        }
+    }
+    
 
     private void ArMeshManagerOnMeshesChanged(ARMeshesChangedEventArgs eventData)
     {
-        eventData.added.ForEach(AddPendingUpdate);
-        eventData.updated.ForEach(AddPendingUpdate);
+        eventData.added.ForEach(x => { _pendingUpdates.Add(x);} );
+        eventData.updated.ForEach(x => { _pendingUpdates.Add(x);} );
         eventData.removed.ForEach(x => { RemoveMesh_ServerRpc(x.gameObject.name); });
     }
 
@@ -86,13 +133,13 @@ public class EnvironmentMeshHandler : NetworkBehaviour
     {
         while (true)
         {
-            if (_pendingUpdates.TryDequeue(out var meshFilter))
+            if (_updatesToBePerformed.TryDequeue(out var meshFilter))
             {
                 var meshId = _spatialMeshNameToUniqueMeshId[meshFilter.gameObject.name];
                 if (meshId == -1)
                 {
                     //not yet ready to send mesh, try again later
-                    AddPendingUpdate(meshFilter);
+                    AddUpdateToBePerformed(meshFilter);
                     yield return null;
                     continue;
                 }
@@ -122,12 +169,13 @@ public class EnvironmentMeshHandler : NetworkBehaviour
 
                     yield return null;
                 }
+                _lastUpdated[meshFilter] = Time.realtimeSinceStartup;
             }
 
             yield return null;
         }
     }
-
+    
     [ServerRpc]
     void UpdateMeshChunk_ServerRpc(int meshId, Vector3[] vertices, int[] triangles, int chunkNumber, bool lastChunk)
     {
@@ -137,7 +185,8 @@ public class EnvironmentMeshHandler : NetworkBehaviour
             {
                 if (_verticesChunks[meshId].Count > 0)
                 {
-                    Debug.LogError($"Received first chunk of mesh {_uniqueMeshIdToSpatialMeshName[meshId]}, but previous chunk was not yet processed");
+                    Debug.LogError(
+                        $"Received first chunk of mesh {_uniqueMeshIdToSpatialMeshName[meshId]}, but previous chunk was not yet processed");
                     _verticesChunks[meshId].Clear();
                     _indicesChunks[meshId].Clear();
                 }
@@ -155,7 +204,8 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         {
             var networkMesh = _spatialMeshNameToNetworkMesh[_uniqueMeshIdToSpatialMeshName[meshId]];
             if (_verticesChunks.Count > 0)
-                MeshProcessor.Singleton.EnqueueMesh(networkMesh, _verticesChunks[meshId].ToArray(), _indicesChunks[meshId].ToArray());
+                MeshProcessor.Singleton.EnqueueMesh(networkMesh, _verticesChunks[meshId].ToArray(),
+                    _indicesChunks[meshId].ToArray());
             _verticesChunks[meshId].Clear();
             _indicesChunks[meshId].Clear();
         }
@@ -186,7 +236,8 @@ public class EnvironmentMeshHandler : NetworkBehaviour
         MeshProcessor.Singleton.RemoveMesh(gameObject.name);
     }
 
-    void AddPendingUpdate(MeshFilter meshFilter)
+    
+    private void AddUpdateToBePerformed(MeshFilter meshFilter)
     {
         var gameObject = meshFilter.gameObject;
         if (!gameObject)
@@ -201,11 +252,12 @@ public class EnvironmentMeshHandler : NetworkBehaviour
             RequestUniqueIdForMesh_ServerRpc(gameObject.name, gameObject.transform.position);
         }
 
-        if (!_pendingUpdates.Contains(meshFilter))
+        if (!_updatesToBePerformed.Contains(meshFilter))
         {
-            _pendingUpdates.Enqueue(meshFilter);
+            _updatesToBePerformed.Enqueue(meshFilter);
         }
     }
+
 
     [ServerRpc]
     public void RequestUniqueIdForMesh_ServerRpc(string name, Vector3 position, ServerRpcParams rpcParams = default)

@@ -367,7 +367,7 @@ void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
     if (id.x < inputResolution.x && id.y < inputResolution.y)
     {
         meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
-        rasterizerDepthTexture[id.xy] = float4(1, 0, 0, 1.0);
+        rasterizerDepthTexture[id.xy] = float4(1, 1, 1, 1.0);
     }
 }
 

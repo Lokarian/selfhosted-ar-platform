@@ -96,11 +96,14 @@ MonoBehaviour:
     e31: 0
     e32: 0
     e33: 0
+  Texture: {fileID: 0}
+  QuadZDistance: 0.75
+  DrawGizmos: 0
+  Width: 0
+  Height: 0
   X: 0
   Y: 0
   Z: 0
-  Width: 0
-  Height: 0
 --- !u!1 &4111895745513028192
 GameObject:
   m_ObjectHideFlags: 0

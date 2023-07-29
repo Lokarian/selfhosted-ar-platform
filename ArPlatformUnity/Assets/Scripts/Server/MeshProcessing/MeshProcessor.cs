@@ -27,6 +27,7 @@ public class MeshProcessor : MonoBehaviour
 {
     public static MeshProcessor Singleton;
 
+
     //meshes that have already been processed, can be used for generating textures
     private SortedDictionary<string, NetworkMesh> _meshes = new();
     public TextureSize textureSize = TextureSize.Large;
@@ -55,11 +56,6 @@ public class MeshProcessor : MonoBehaviour
     private Dictionary<ShaderStage, int> _kernels = new();
 
     public ComputeShader computeShader;
-    private GraphicsBuffer _meshesBuffer;
-    private GraphicsBuffer _verticesBuffer;
-    private GraphicsBuffer _trianglesBuffer;
-    private RenderTexture _rasterizerTexture;
-    private GraphicsBuffer _rasterizerMeshHitBuffer;
 
     static int inputResolutionId = Shader.PropertyToID("inputResolution");
     static int meshTextureResolutionId = Shader.PropertyToID("meshTextureResolution");
@@ -120,8 +116,6 @@ public class MeshProcessor : MonoBehaviour
             var modifiedMeshes = false;
             while (_meshesToRejoin.TryDequeue(out var tuple))
             {
-                Debug.Log("Rejoining mesh");
-
                 var networkMesh = tuple.Item1;
                 if (!networkMesh)
                 {
@@ -131,6 +125,27 @@ public class MeshProcessor : MonoBehaviour
 
                 var mesh = RejoinMesh(tuple.Item2, tuple.Item3, tuple.Item4);
                 networkMesh.SetMesh(mesh, tuple.Item5);
+                //draw the 12 bounding box lines with Debug.DrawLine for 0.5 seconds
+                var meshBounds = mesh.bounds;
+                var meshBoundsCenter = meshBounds.center;
+                var meshBoundsExtents = meshBounds.extents;
+                var meshBoundsMin = meshBoundsCenter - meshBoundsExtents;
+                var meshBoundsMax = meshBoundsCenter + meshBoundsExtents;
+                
+                Debug.DrawLine(meshBoundsMin, new Vector3(meshBoundsMin.x, meshBoundsMin.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(meshBoundsMin, new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMin.z), Color.red, 0.5f);
+                Debug.DrawLine(meshBoundsMin, new Vector3(meshBoundsMax.x, meshBoundsMin.y, meshBoundsMin.z), Color.red, 0.5f);
+                Debug.DrawLine(meshBoundsMax, new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMin.z), Color.red, 0.5f);
+                Debug.DrawLine(meshBoundsMax, new Vector3(meshBoundsMax.x, meshBoundsMin.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(meshBoundsMax, new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMin.z), new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMin.z), new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMin.z), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMin.z), new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMin.y, meshBoundsMax.z), new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMin.y, meshBoundsMax.z), new Vector3(meshBoundsMax.x, meshBoundsMin.y, meshBoundsMax.z), Color.red, 0.5f);
+                
+
 
                 if (!_meshes.ContainsKey(networkMesh.name))
                 {
@@ -154,7 +169,6 @@ public class MeshProcessor : MonoBehaviour
 
                 if (_meshesToGenerateTextures.TryDequeue(out var tuple))
                 {
-                    Debug.Log("Generating texture");
                     var texture = GenerateTexture(tuple.Item1);
                     _texturesToRejoin.Enqueue(new(tuple.Item1, texture, tuple.Item2));
                 }
@@ -165,7 +179,6 @@ public class MeshProcessor : MonoBehaviour
 
             while (_texturesToRejoin.TryDequeue(out var tuple))
             {
-                Debug.Log("Rejoining texture");
                 if (_meshes.TryGetValue(tuple.Item1, out var networkMesh))
                 {
                     if (!networkMesh)
@@ -181,7 +194,8 @@ public class MeshProcessor : MonoBehaviour
             var elapsed5 = Stopwatch.ElapsedMilliseconds;
             Stopwatch.Stop();
 
-            Debug.Log($"ProcessMeshes: {elapsed1}ms, RejoinMeshes: {elapsed2}ms, GenerateTexture: {elapsed4}ms, RejoinTexture: {elapsed5}ms");
+            //Debug.Log(
+            //    $"ProcessMeshes: {elapsed1}ms, RejoinMeshes: {elapsed2}ms, GenerateTexture: {elapsed4}ms, RejoinTexture: {elapsed5}ms");
 
             yield return null;
         }
@@ -207,7 +221,28 @@ public class MeshProcessor : MonoBehaviour
         //get random int in range 1...maxInt
         var meshVersion = UnityEngine.Random.Range(1, int.MaxValue);
         _meshesToProcess.Enqueue(new(networkMesh, vertices, indices, meshVersion));
+        Debug.Log($"Enqueued mesh {networkMesh.name} with version {meshVersion}");
+        //if there are at least 5 meshes in the queue, disable AllowUpdates on EnvironmentMeshHandler
+        if (_meshesToProcess.Count + _meshesToRejoin.Count + _meshesToGenerateTextures.Count + _texturesToRejoin.Count >
+            5)
+        {
+            Debug.Log("Disabling updates");
+            EnvironmentMeshHandler.Singleton.AllowUpdates.Value = false;
+            StartCoroutine(EnableUpdatesAgain());
+        }
     }
+
+    private IEnumerator EnableUpdatesAgain()
+    {
+        while (_meshesToProcess.Count + _meshesToRejoin.Count + _meshesToGenerateTextures.Count +
+               _texturesToRejoin.Count > 5)
+        {
+            yield return null;
+        }
+        Debug.Log("Enabling updates");
+        EnvironmentMeshHandler.Singleton.AllowUpdates.Value = true;
+    }
+
 
     public Mesh RejoinMesh(Vector3[] vertices, int[] indices, Vector2[] uvs)
     {
@@ -232,29 +267,34 @@ public class MeshProcessor : MonoBehaviour
     public Texture2D GenerateTexture(string meshName)
     {
         var meshes = _meshes.Values.ToList();
-        var targetMesh = meshes.Find(x => x.name == meshName).NewestMesh;
+        var networkMesh = meshes.Find(x => x.name == meshName);
+        var targetMesh = networkMesh.NewestMesh;
 
         var desiredMeshId = meshes.FindIndex(x => x.name == meshName);
 
+        Texture2D outputTexture;
+        if (networkMesh.GetComponent<NetworkTexture>().Texture)
+        {
+            outputTexture = networkMesh.GetComponent<NetworkTexture>().Texture;
+        }
+        else
+        {
+            outputTexture = new Texture2D((int)textureSize, (int)textureSize, TextureFormat.RGBA32, false);
+        }
 
-        var outputTexture = new Texture2D((int)textureSize, (int)textureSize, TextureFormat.RGBA32, false);
-        
         var renderTexture =
             RenderTexture.GetTemporary((int)textureSize, (int)textureSize, 0, RenderTextureFormat.ARGB32);
         renderTexture.enableRandomWrite = true;
         renderTexture.Create();
 
-        if (_positionedPhotos.Count == 0)
+        if (_positionedPhotos.Where(x => x.IsMeshInFrustum(targetMesh)).ToList().Count == 0)
         {
-            computeShader.SetTexture(ShaderStageId(ShaderStage.BasecolorMeshTexture),meshTextureId,renderTexture);
-            computeShader.Dispatch( ShaderStageId(ShaderStage.BasecolorMeshTexture),
-                (int)Math.Ceiling(renderTexture.width / 8.0f), (int)Math.Ceiling(renderTexture.height / 8.0f), 1);
-            Graphics.CopyTexture(renderTexture, outputTexture);
-            RenderTexture.ReleaseTemporary(renderTexture);
-            return outputTexture;
+            //we dont need a texture if there are no photos to project on the mesh
+            return null;
         }
         
-        
+        List<GraphicsBuffer> buffersToRelease = new();
+
         // we assume all photos have the same size, so we can use the first one
         var samplePhoto = _positionedPhotos.First();
 
@@ -265,15 +305,21 @@ public class MeshProcessor : MonoBehaviour
 
         var meshHitBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None,
             samplePhoto.Width * samplePhoto.Height, Marshal.SizeOf(typeof(ComputeBuffer_MeshHit)));
-
+        buffersToRelease.Add(meshHitBuffer);
         CommandBuffer commandBuffer = new CommandBuffer();
         commandBuffer.name = "GenerateTexture";
+
+        
+        commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(ShaderStage.BasecolorMeshTexture), meshTextureId, renderTexture);
+        commandBuffer.DispatchCompute(computeShader, ShaderStageId(ShaderStage.BasecolorMeshTexture), (int)textureSize / 8, (int)textureSize / 8, 1);
         
         var barycentricAreaBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append | GraphicsBuffer.Target.Structured,
             GraphicsBuffer.UsageFlags.None, 5000000, 28);
+        buffersToRelease.Add(barycentricAreaBuffer);
         var indirectArgsBuffer =
             new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.Structured,
                 GraphicsBuffer.UsageFlags.None, 4, 4);
+        buffersToRelease.Add(indirectArgsBuffer);
 
         commandBuffer.SetComputeBufferParam(computeShader, ShaderStageId(ShaderStage.Rasterize),
             "barycentricCalculationAreasAppend", barycentricAreaBuffer);
@@ -312,8 +358,9 @@ public class MeshProcessor : MonoBehaviour
                     mesh.vertexBufferTarget |= GraphicsBuffer.Target.Raw;
                     mesh.indexBufferTarget |= GraphicsBuffer.Target.Raw;
                     var vertexBuffer = mesh.GetVertexBuffer(0);
+                    buffersToRelease.Add(vertexBuffer);
                     var triangleBuffer = mesh.GetIndexBuffer();
-
+                    buffersToRelease.Add(triangleBuffer);
 
                     commandBuffer.SetComputeIntParam(computeShader, meshIdId, meshId);
                     commandBuffer.SetComputeIntParam(computeShader, triangleCountId, mesh.triangles.Length / 3);
@@ -358,19 +405,9 @@ public class MeshProcessor : MonoBehaviour
 
         //release temporary textures
         RenderTexture.ReleaseTemporary(renderTexture);
-        meshHitBuffer.Release();
-        meshHitBuffer.Dispose();
-
-        barycentricAreaBuffer.Release();
-        barycentricAreaBuffer.Dispose();
-        indirectArgsBuffer.Release();
-        indirectArgsBuffer.Dispose();
+        buffersToRelease.ForEach(x => x.Release());
         RenderTexture.ReleaseTemporary(depthDebugTexture);
-    
-        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        quad.transform.position = new Vector3(0, 0, 0);
-        quad.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-        quad.GetComponent<MeshRenderer>().material.mainTexture = outputTexture;
+
         return outputTexture;
     }
 
