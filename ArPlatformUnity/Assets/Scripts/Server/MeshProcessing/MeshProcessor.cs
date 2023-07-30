@@ -125,25 +125,6 @@ public class MeshProcessor : MonoBehaviour
 
                 var mesh = RejoinMesh(tuple.Item2, tuple.Item3, tuple.Item4);
                 networkMesh.SetMesh(mesh, tuple.Item5);
-                //draw the 12 bounding box lines with Debug.DrawLine for 0.5 seconds
-                var meshBounds = mesh.bounds;
-                var meshBoundsCenter = meshBounds.center;
-                var meshBoundsExtents = meshBounds.extents;
-                var meshBoundsMin = meshBoundsCenter - meshBoundsExtents;
-                var meshBoundsMax = meshBoundsCenter + meshBoundsExtents;
-                
-                Debug.DrawLine(meshBoundsMin, new Vector3(meshBoundsMin.x, meshBoundsMin.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(meshBoundsMin, new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMin.z), Color.red, 0.5f);
-                Debug.DrawLine(meshBoundsMin, new Vector3(meshBoundsMax.x, meshBoundsMin.y, meshBoundsMin.z), Color.red, 0.5f);
-                Debug.DrawLine(meshBoundsMax, new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMin.z), Color.red, 0.5f);
-                Debug.DrawLine(meshBoundsMax, new Vector3(meshBoundsMax.x, meshBoundsMin.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(meshBoundsMax, new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMin.z), new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMin.z), new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMin.z), Color.red, 0.5f);
-                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMin.z), new Vector3(meshBoundsMax.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMin.y, meshBoundsMax.z), new Vector3(meshBoundsMin.x, meshBoundsMax.y, meshBoundsMax.z), Color.red, 0.5f);
-                Debug.DrawLine(new Vector3(meshBoundsMin.x, meshBoundsMin.y, meshBoundsMax.z), new Vector3(meshBoundsMax.x, meshBoundsMin.y, meshBoundsMax.z), Color.red, 0.5f);
                 
 
 

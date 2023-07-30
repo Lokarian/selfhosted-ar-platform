@@ -237,6 +237,14 @@ public class NetworkMesh : NetworkBehaviour
         return false;
     }
     
+    public void CommitAsUnversionedMesh()
+    {
+        CurrentVersion = null;
+        var waitingMesh = _waitingMesh;
+        _waitingMesh = null;
+        SetMesh(waitingMesh.Item2);
+    }
+    
     public Mesh NewestMesh
     {
         get
