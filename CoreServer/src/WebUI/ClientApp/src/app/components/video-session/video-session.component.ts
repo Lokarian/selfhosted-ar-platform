@@ -124,8 +124,8 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
       if (!session.members.some(m => m.id === key)) {
         console.log("member", key, "left the session");
         this.webRtcConnectionDetails.get(key).pc.close();
-        for(let val of this.remoteStreams.values()){
-          if(val.memberId === key){
+        for (let val of this.remoteStreams.values()) {
+          if (val.memberId === key) {
             this.removeStreamFromUi(val.stream);
           }
         }
@@ -498,7 +498,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
         this.removeLocalTrack(t, this.userMediaStream);
       });
       //add new camera track
-      navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false}).then(stream => {
+      this.getCameraTrack(device).then(stream => {
         if (stream.getVideoTracks().length !== 1) {
           console.warn("unexpected number of video tracks when setting camera", stream.getVideoTracks());
         }
@@ -508,8 +508,88 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     }
   }
 
+  private async getCameraTrack(device: MediaDeviceInfo): Promise<MediaStream> {
+    let stream = await navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false});
+    if(!device.label.includes("QC Back Camera")){
+      return stream;
+    }
+
+    const onPauseSignal = () => {
+      video.pause();
+      video.srcObject = null;
+      stream.getTracks().forEach(t => t.stop());
+    };
+    const onResumeSignal = async () => {
+      if (video.srcObject) {
+        return;
+      }
+      stream = await navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false});
+      video.srcObject = stream;
+      await video.play();
+    };
+    let ws = new WebSocket("ws://127.0.0.1:8080");
+    const onWsMessage = (event) => {
+      if (event.data === "pause") {
+        onPauseSignal();
+      } else if (event.data === "resume") {
+        onResumeSignal();
+      }
+    };
+    const onWsError = (event) => {
+      ws.close();
+      ws = new WebSocket("ws://127.0.0.1:8080");
+      ws.onmessage = onWsMessage;
+      ws.onerror = onWsError;
+    }
+    ws.onmessage = onWsMessage;
+    ws.onerror = onWsError;
+
+    let videoTrack = stream.getVideoTracks()[0];
+    //if we are on hololens we need to make a wrapper around the stream that projects the stream on a canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = videoTrack.getSettings().width;
+    canvas.height = videoTrack.getSettings().height;
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    video.play();
+
+    //update the canvas every frame
+    let animationFrameId = null;
+    const updateCanvas = () => {
+      if (video.paused) {
+        animationFrameId = requestAnimationFrame(updateCanvas);
+        return;
+      }
+      if (video.ended) {
+        //color entire canvas red
+        canvas.getContext("2d").fillStyle = "red";
+        canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      //draw red dot in top left corner
+      animationFrameId = requestAnimationFrame(updateCanvas);
+    };
+    animationFrameId = requestAnimationFrame(updateCanvas);
+
+    const onStopStream = () => {
+      stream.getTracks().forEach(t => t.stop());
+      canvas.remove();
+      video.remove();
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      ws.close();
+    };
+
+    //create new stream from canvas, and swap the stop function
+    const newStream = canvas.captureStream(30);
+    newStream.getTracks().forEach(t => t.stop = onStopStream);
+    return newStream;
+  }
+
   leaveCall() {
-    this.videoClient.leaveVideoSession(new LeaveVideoSessionCommand({videoMemberId:this.myMember.id})).subscribe();
+    this.videoClient.leaveVideoSession(new LeaveVideoSessionCommand({videoMemberId: this.myMember.id})).subscribe();
     this.myTracksForCleanup.forEach(t => t.stop());
     this.webRtcConnectionDetails.forEach(c => c.pc.close());
 
