@@ -237,7 +237,6 @@ public class MeshProcessor : MonoBehaviour
         mesh.SetVertices(vertices);
         mesh.SetIndexBufferParams(indices.Length, IndexFormat.UInt32);
         mesh.SetTriangles(indices, 0);
-        var buffer = mesh.GetIndexBuffer();
         mesh.SetUVs(0, uvs);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();

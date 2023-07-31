@@ -78,15 +78,6 @@ if(!app.Environment.IsDevelopment())
 app.UseStaticFiles(new StaticFileOptions
 {
     ServeUnknownFileTypes = true,
-    //add a cache control header to static files in webgl folder
-    OnPrepareResponse = ctx =>
-    {
-        if (ctx.File.Name.Contains("webgl"))
-        {
-            var lastModified=ctx.File.LastModified;
-            ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={(DateTimeOffset.UtcNow-lastModified).TotalSeconds}");
-        }
-    }
     
 });
 
