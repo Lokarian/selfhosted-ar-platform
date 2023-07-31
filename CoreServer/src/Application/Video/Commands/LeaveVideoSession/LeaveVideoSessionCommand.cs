@@ -27,7 +27,7 @@ public class LeaveVideoSessionCommandHandler : IRequestHandler<LeaveVideoSession
         _dateTime = dateTime;
     }
 
-    public async Task<Unit> Handle(LeaveVideoSessionCommand request, CancellationToken cancellationToken)
+    public async Task Handle(LeaveVideoSessionCommand request, CancellationToken cancellationToken)
     {
         var member = await _context.VideoMembers.FirstOrDefaultAsync(x => x.Id == request.VideoMemberId, cancellationToken);
         if (member == null)
@@ -39,6 +39,6 @@ public class LeaveVideoSessionCommandHandler : IRequestHandler<LeaveVideoSession
         member.AccessKey = null;
         member.AddDomainEvent(new VideoMemberUpdatedEvent(member));
         await _context.SaveChangesAsync(cancellationToken);
-        return Unit.Value;
+        return;
     }
 }

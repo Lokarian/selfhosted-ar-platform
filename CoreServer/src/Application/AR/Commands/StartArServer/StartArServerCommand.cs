@@ -25,7 +25,7 @@ public class StartArServerCommandHandler : IRequestHandler<StartArServerCommand>
         _unityServerService = unityServerService;
     }
 
-    public async Task<Unit> Handle(StartArServerCommand request, CancellationToken cancellationToken)
+    public async Task Handle(StartArServerCommand request, CancellationToken cancellationToken)
     {
         var arSession = await _context.ArSessions
             .FirstOrDefaultAsync(x => x.BaseSessionId == request.ArSessionId, cancellationToken);
@@ -35,6 +35,6 @@ public class StartArServerCommandHandler : IRequestHandler<StartArServerCommand>
         }
 
         await _unityServerService.StartServer(arSession.BaseSessionId, arSession.SessionType);
-        return Unit.Value;
+        return;
     }
 }

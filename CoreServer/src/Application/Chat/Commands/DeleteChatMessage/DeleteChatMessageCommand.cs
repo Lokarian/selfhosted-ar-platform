@@ -19,7 +19,7 @@ public class DeleteChatMessageCommandHandler : IRequestHandler<DeleteChatMessage
         _context = context;
     }
 
-    public async Task<Unit> Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
     {
         ChatMessage? entity = await _context.ChatMessages.FindAsync(request.Id);
 
@@ -32,6 +32,6 @@ public class DeleteChatMessageCommandHandler : IRequestHandler<DeleteChatMessage
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
+        return;
     }
 }

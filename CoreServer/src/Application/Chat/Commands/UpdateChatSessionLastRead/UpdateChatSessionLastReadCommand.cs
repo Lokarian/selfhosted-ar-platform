@@ -25,7 +25,7 @@ public class UpdateChatSessionLastReadCommandHandler : IRequestHandler<UpdateCha
         _mediator = mediator;
     }
 
-    public async Task<Unit> Handle(UpdateChatSessionLastReadCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateChatSessionLastReadCommand request, CancellationToken cancellationToken)
     {
         ChatMember? chatMember =
             await _context.ChatMembers.FirstOrDefaultAsync(x =>
@@ -39,6 +39,6 @@ public class UpdateChatSessionLastReadCommandHandler : IRequestHandler<UpdateCha
         chatMember.LastSeen = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
         await _mediator.Publish(new ChatMemberUpdatedEvent(chatMember), cancellationToken);
-        return Unit.Value;
+        return;
     }
 }

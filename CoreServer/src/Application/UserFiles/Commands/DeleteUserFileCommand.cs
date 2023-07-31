@@ -21,7 +21,7 @@ public class DeleteUserFileCommandHandler : IRequestHandler<DeleteUserFileComman
         _context = context;
     }
 
-    public async Task<Unit> Handle(DeleteUserFileCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteUserFileCommand request, CancellationToken cancellationToken)
     {
         UserFile? userFile = await _context.UserFiles.FindAsync(request.Id);
         if (userFile == null)
@@ -33,6 +33,6 @@ public class DeleteUserFileCommandHandler : IRequestHandler<DeleteUserFileComman
         await _fileStorageService.DeleteFileAsync(userFile);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
+        return;
     }
 }

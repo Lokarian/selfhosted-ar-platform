@@ -26,7 +26,7 @@ public class LeaveArSessionCommandHandler : IRequestHandler<LeaveArSessionComman
         _dateTime = dateTime;
     }
 
-    public async Task<Unit> Handle(LeaveArSessionCommand request, CancellationToken cancellationToken)
+    public async Task Handle(LeaveArSessionCommand request, CancellationToken cancellationToken)
     {
         ArMember? member =
             await _context.ArMembers.FirstOrDefaultAsync(x => x.Id == request.ArMemberId, cancellationToken);
@@ -39,6 +39,6 @@ public class LeaveArSessionCommandHandler : IRequestHandler<LeaveArSessionComman
         member.AccessKey = null;
         member.AddDomainEvent(new ArMemberUpdatedEvent(member));
         await _context.SaveChangesAsync(cancellationToken);
-        return Unit.Value;
+        return;
     }
 }

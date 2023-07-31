@@ -3,7 +3,6 @@ using AutoMapper.QueryableExtensions;
 using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Mappings;
 using CoreServer.Application.Common.Models;
-using CoreServer.Application.TodoItems.Queries.GetTodoItemsWithPagination;
 using CoreServer.Domain.Entities;
 using MediatR;
 

@@ -49,7 +49,8 @@ public class ChatController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult> UpdateLastRead(UpdateChatSessionLastReadCommand command)
     {
-        return Ok(await Mediator.Send(command));
+        await Mediator.Send(command);
+        return Ok();
     }
 
     [HttpDelete("{id}")]

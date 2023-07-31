@@ -65,7 +65,6 @@ public static class ConfigureServices
 
         services.AddTransient<IDateTime, DateTimeService>();
         services.AddTransient<IIdentityService, IdentityService>();
-        services.AddTransient<ICsvFileBuilder, CsvFileBuilder>();
         services.AddTransient<ITokenService, JWTTokenService>();
         services.AddTransient<IFileStorageService, FileStorage>();
         //services.AddAuthentication(); //todo necessary?

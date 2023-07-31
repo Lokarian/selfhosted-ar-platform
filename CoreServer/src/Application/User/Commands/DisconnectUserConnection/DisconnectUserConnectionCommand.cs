@@ -21,20 +21,20 @@ public class DisconnectUserConnectionCommandHandler : IRequestHandler<Disconnect
         _context = context;
     }
 
-    public async Task<Unit> Handle(DisconnectUserConnectionCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DisconnectUserConnectionCommand request, CancellationToken cancellationToken)
     {
         var userConnection = await _context.UserConnections.AsTracking().FirstOrDefaultAsync(
             uc => uc.ConnectionId == request.ConnectionId, cancellationToken);
         if (userConnection is null)
         {
             //connection stopped before it was initialized
-            return Unit.Value;
+            return;
         }
         userConnection.DisconnectedAt = DateTime.UtcNow;
         userConnection.AddDomainEvent(new UserConnectionDisconnectedEvent(userConnection));
         
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
+        return;
     }
 }
