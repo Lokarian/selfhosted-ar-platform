@@ -187,5 +187,6 @@ public class UnityBrokerHub : Hub
         }
 
         await _mediator.Send(new DisconnectUserConnectionCommand() { ConnectionId = Context.ConnectionId });
+        await base.OnDisconnectedAsync(exception);
     }
 }

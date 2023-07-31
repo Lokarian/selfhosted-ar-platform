@@ -3,15 +3,7 @@ import {BehaviorSubject, firstValueFrom, Observable, ReplaySubject, share, skip,
 import {NotificationService} from "./notification.service";
 import {
   ArClient, ArMemberDto,
-  ArSessionDto,
-  ChatMemberDto,
-  ChatSessionDto, CreateArSessionCommand,
-  CreateVideoSessionCommand,
-  CreateVideoStreamCommand, JoinArSessionCommand,
-  JoinVideoSessionCommand,
-  VideoClient, VideoMemberDto,
-  VideoSessionDto,
-  VideoStreamDto
+  ArSessionDto, CreateArSessionCommand, JoinArSessionCommand,
 } from "../web-api-client";
 import {SessionFacade} from "./session-facade.service";
 import {filter, first, map} from "rxjs/operators";
@@ -63,7 +55,7 @@ export class ArFacade {
       this.sessionSubjects[session.baseSessionId].next(session);
     } else {
       session = this.wrapInProxy(session);
-      this.sessionSubjects[session.baseSessionId] = new BehaviorSubject<ChatSessionDto>(session);
+      this.sessionSubjects[session.baseSessionId] = new BehaviorSubject<ArSessionDto>(session);
       this.sessionsSubject.next([...this.sessionsSubject.value, this.sessionSubjects[session.baseSessionId]]);
     }
   }
@@ -115,8 +107,8 @@ export class ArFacade {
   }
 
 
-  private wrapInProxy(chatSession: ChatSessionDto) {
-    return new Proxy(chatSession, {
+  private wrapInProxy(arSession: ArSessionDto) {
+    return new Proxy(arSession, {
       get: (target, prop) => {
         if (prop === 'baseSession') {
           return this.sessionFacade.session(target.baseSessionId);
