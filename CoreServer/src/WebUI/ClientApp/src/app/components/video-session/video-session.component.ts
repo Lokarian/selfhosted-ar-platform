@@ -2,13 +2,14 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
-  ComponentRef, EventEmitter,
+  ComponentRef,
+  EventEmitter,
   Input,
-  OnInit, Output,
+  OnInit,
+  Output,
   ViewChild,
   ViewContainerRef,
-  ViewEncapsulation,
-  ViewRef
+  ViewEncapsulation
 } from '@angular/core';
 import {LeaveVideoSessionCommand, VideoClient, VideoMemberDto, VideoSessionDto} from "../../web-api-client";
 import {BehaviorSubject, concatMap, distinctUntilChanged, switchMap, tap} from "rxjs";
@@ -510,23 +511,47 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
 
   private async getCameraTrack(device: MediaDeviceInfo): Promise<MediaStream> {
     let stream = await navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false});
-    if(!device.label.includes("QC Back Camera")){
-      return stream;
+    if (!device.label.includes("QC Back Camera")) {
+      //return stream;
     }
+    let videoTrack = stream.getVideoTracks()[0];
 
+    const mediaSwitcher = new MediaSwitcher();
+    const outputStream = await mediaSwitcher.initialize(stream) as MediaStream;
+    let canvas;
+    let video;
     const onPauseSignal = () => {
-      video.pause();
-      video.srcObject = null;
-      stream.getTracks().forEach(t => t.stop());
-    };
-    const onResumeSignal = async () => {
-      if (video.srcObject) {
-        return;
-      }
-      stream = await navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false});
+      canvas = document.createElement("canvas");
+      video = document.createElement("video");
       video.srcObject = stream;
-      await video.play();
+      canvas.width = videoTrack.getSettings().width;
+      canvas.height = videoTrack.getSettings().height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const mediaStream = canvas.captureStream(1);
+      stream.getTracks().forEach(t => t.stop());
+      mediaSwitcher.changeTrack(mediaStream.getVideoTracks()[0]);
+      stream = mediaStream;
+      videoTrack = stream.getVideoTracks()[0];
     };
+
+    const onResumeSignal = async () => {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false});
+      stream.getTracks().forEach(t => t.stop());
+      if(canvas){
+        canvas.remove();
+        canvas = null;
+      }
+      if(video){
+        video.remove();
+        video = null;
+      }
+      mediaSwitcher.changeTrack(mediaStream.getVideoTracks()[0]);
+      stream = mediaStream;
+      videoTrack = stream.getVideoTracks()[0];
+    };
+
     let ws = new WebSocket("ws://127.0.0.1:8080");
     const onWsMessage = (event) => {
       if (event.data === "pause") {
@@ -544,48 +569,24 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     ws.onmessage = onWsMessage;
     ws.onerror = onWsError;
 
-    let videoTrack = stream.getVideoTracks()[0];
-    //if we are on hololens we need to make a wrapper around the stream that projects the stream on a canvas
-    const canvas = document.createElement("canvas");
-    canvas.width = videoTrack.getSettings().width;
-    canvas.height = videoTrack.getSettings().height;
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.play();
 
-    //update the canvas every frame
-    let animationFrameId = null;
-    const updateCanvas = () => {
-      if (video.paused) {
-        animationFrameId = requestAnimationFrame(updateCanvas);
-        return;
-      }
-      if (video.ended) {
-        //color entire canvas red
-        canvas.getContext("2d").fillStyle = "red";
-        canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
-        return;
-      }
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-      //draw red dot in top left corner
-      animationFrameId = requestAnimationFrame(updateCanvas);
-    };
-    animationFrameId = requestAnimationFrame(updateCanvas);
 
     const onStopStream = () => {
       stream.getTracks().forEach(t => t.stop());
-      canvas.remove();
-      video.remove();
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if(canvas){
+        canvas.remove();
+        canvas = null;
+      }
+      if(video){
+        video.remove();
+        video = null;
       }
       ws.close();
     };
 
     //create new stream from canvas, and swap the stop function
-    const newStream = canvas.captureStream(30);
-    newStream.getTracks().forEach(t => t.stop = onStopStream);
-    return newStream;
+    outputStream.getTracks().forEach(t => t.stop = onStopStream);
+    return outputStream;
   }
 
   leaveCall() {
@@ -594,5 +595,114 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     this.webRtcConnectionDetails.forEach(c => c.pc.close());
 
     this.onLeaveCall.emit();
+  }
+}
+
+
+class MediaSwitcher {
+
+  inputPeerConnection: RTCPeerConnection;
+  outputPeerConnection: RTCPeerConnection;
+
+  //  Change the entire input stream
+  changeStream = function (stream) {
+    if (
+      !stream ||
+      stream.constructor.name !== 'MediaStream' ||
+      !this.inputPeerConnection ||
+      !this.outputPeerConnection ||
+      this.inputPeerConnection.connectionState !== 'connected' ||
+      this.outputPeerConnection.connectionState !== 'connected'
+    ) return;
+
+    stream.getTracks.forEach(track => {
+      this.changeTrack(track);
+    })
+  }
+
+  //  Change one input track
+  changeTrack = function (track) {
+    if (
+      !track ||
+      (track.constructor.name !== 'MediaStreamTrack' && track.constructor.name !== 'CanvasCaptureMediaStreamTrack') ||
+      !this.inputPeerConnection ||
+      !this.outputPeerConnection ||
+      this.inputPeerConnection.connectionState !== 'connected' ||
+      this.outputPeerConnection.connectionState !== 'connected'
+    ) return;
+
+    const senders = this.inputPeerConnection.getSenders().filter(sender => !!sender.track && sender.track.kind === track.kind);
+    if (!!senders.length)
+      senders[0].replaceTrack(track);
+  }
+
+  //  Call this to, you guessed, initialize the class
+  initialize = function (inputStream) {
+
+    return new Promise(async (resolve, reject) => {
+
+      //  ---------------------------------------------------------------------------------------
+      //  Create input RTC peer connection
+      //  ---------------------------------------------------------------------------------------
+      this.inputPeerConnection = new RTCPeerConnection(null);
+      this.inputPeerConnection.onicecandidate = e =>
+        this.outputPeerConnection.addIceCandidate(e.candidate)
+          .catch(err => reject(err));
+      this.inputPeerConnection.ontrack = e => console.log(e.streams[0]);
+
+      //  ---------------------------------------------------------------------------------------
+      //  Create output RTC peer connection
+      //  ---------------------------------------------------------------------------------------
+      this.outputPeerConnection = new RTCPeerConnection(null);
+      this.outputPeerConnection.onicecandidate = e =>
+        this.inputPeerConnection.addIceCandidate(e.candidate)
+          .catch(err => reject(err));
+      this.outputPeerConnection.ontrack = e => {
+
+        //  Set bitrate between the peers
+        const sender = this.inputPeerConnection.getSenders()[0];
+        const parameters = sender.getParameters();
+        if (!parameters.encodings)
+          parameters.encodings = [{}];
+
+        //  Bitrate is 50 to 100 Mbit
+        parameters.encodings[0].minBitrate = 30000000;
+        parameters.encodings[0].maxBitrate = 100000000;
+
+        sender.setParameters(parameters)
+          .then(() => resolve(e.streams[0]))
+          .catch(e => reject(e));
+      }
+
+      //  ---------------------------------------------------------------------------------------
+      //  Get video source
+      //  ---------------------------------------------------------------------------------------
+
+      //  Create input stream
+      if (!inputStream || inputStream.constructor.name !== 'MediaStream') {
+        reject(new Error('Input stream is nonexistent or invalid.'));
+        return;
+      }
+
+      //  Add stream to input peer
+      inputStream.getTracks().forEach(track => {
+        if (track.kind === 'video')
+          this.videoSender = this.inputPeerConnection.addTrack(track, inputStream);
+        if (track.kind === 'audio')
+          this.audioSender = this.inputPeerConnection.addTrack(track, inputStream);
+      });
+
+      //  ---------------------------------------------------------------------------------------
+      //  Make RTC call
+      //  ---------------------------------------------------------------------------------------
+
+      const offer = await this.inputPeerConnection.createOffer();
+      await this.inputPeerConnection.setLocalDescription(offer);
+      await this.outputPeerConnection.setRemoteDescription(offer);
+
+      const answer = await this.outputPeerConnection.createAnswer();
+      await this.outputPeerConnection.setLocalDescription(answer);
+      await this.inputPeerConnection.setRemoteDescription(answer);
+    });
   }
 }

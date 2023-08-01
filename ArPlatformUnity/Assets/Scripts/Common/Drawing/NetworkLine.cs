@@ -44,16 +44,17 @@ public class NetworkLine : NetworkBehaviour
         Points.Clear();
     }
 
-    private bool _isInitialized = false;
 
-    public void Initialize()
+    public override void OnNetworkSpawn()
     {
-        _isInitialized = true;
         LineRenderer.positionCount = Points.Count;
         LineRenderer.SetPositions(Positions);
         Points.OnListChanged += OnPositionsChanged;
         Color.OnValueChanged += OnColorChanged;
         Width.OnValueChanged += OnWidthChanged;
+        LineRenderer.widthCurve = new AnimationCurve(new Keyframe(0, Width.Value), new Keyframe(1, Width.Value));
+        LineRenderer.positionCount = Points.Count;
+        LineRenderer.SetPositions(Positions);
     }
 
     private void OnColorChanged(Color previousValue, Color newValue)
@@ -68,8 +69,6 @@ public class NetworkLine : NetworkBehaviour
 
     private void OnPositionsChanged(NetworkListEvent<Vector3> changeEvent)
     {
-        if (Points.Count < 2)
-            return;
         LineRenderer.positionCount = Points.Count;
         LineRenderer.SetPositions(Positions);
     }
@@ -90,12 +89,5 @@ public class NetworkLine : NetworkBehaviour
 
             return positions;
         }
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        base.OnNetworkSpawn();
-        if (!_isInitialized)
-            Initialize();
     }
 }

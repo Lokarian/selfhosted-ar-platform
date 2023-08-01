@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -21,7 +22,7 @@ public class SignalRNetworkTransport2 : NetworkTransport
 {
     private bool _isServer = false;
     HubConnection _connection;
-    private Queue<ServerMessage> _messageQueue = new();
+    private ConcurrentQueue<ServerMessage> _messageQueue = new();
     private ulong _clientIdCounter = 1;
 
     private Dictionary<ulong, ChannelWriter<byte[]>> _clientIdToWriter = new();
@@ -234,15 +235,13 @@ public class SignalRNetworkTransport2 : NetworkTransport
 
     public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
     {
-        if (_messageQueue.Count == 0)
+        if (!_messageQueue.TryDequeue(out var serverMessage))
         {
             clientId = 0;
             payload = default;
             receiveTime = 0;
             return NetworkEvent.Nothing;
         }
-
-        var serverMessage = _messageQueue.Dequeue();
         _incomingTrafficBytes += serverMessage.payload?.Length ?? 0;
         clientId = serverMessage.clientId;
         payload = serverMessage.payload == null ? default : new ArraySegment<byte>(serverMessage.payload);

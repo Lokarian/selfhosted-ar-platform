@@ -5,88 +5,86 @@ using System.Linq;
 using EasyButtons;
 using Unity.Netcode;
 using UnityEngine;
-#if UNITY_WSA
+using UnityEngine.UI;
+#if !UNITY_WEBGL
 using UnityEngine.Windows.WebCam;
+using WebSocketSharp.Server;
 #endif
 
 public class CameraProvider : NetworkBehaviour
 {
-    public NetworkVariable<float> PhotoInterval = new NetworkVariable<float>(5f);
-    public NetworkVariable<bool> TakePhoto = new NetworkVariable<bool>(true);
     public GameObject PositionedPhotoPrefab;
-    private Resolution cameraResolution;
+
     private List<byte> _imageBufferList = new List<byte>();
     private Coroutine _sendPhotoCoroutine;
-    private float _lastPhotoTime = 0f;
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
 
-    [ClientRpc]
-    public void StartTakingPhoto_ClientRpc(ClientRpcParams param = default)
+#if !UNITY_WEBGL
+    private PhotoCapture photoCaptureObject = null;
+#endif
+    private bool alreadyTakingPhoto = false;
+
+    // Start is called before the first frame update
+    public override void OnNetworkSpawn()
     {
-#if UNITY_WSA
+        if (GlobalConfig.Singleton.MyBuildTarget != ArBuildTarget.Hololens || !GlobalConfig.Singleton.ShowEnvironment)
+        {
+            return;
+        }
+
+#if !UNITY_WEBGL
         PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
 #endif
     }
-#if UNITY_WSA
-    private PhotoCapture photoCaptureObject = null;
 
-    
-    
-    // Update is called once per frame
-    void Update()
+    [ClientRpc]
+    public void HololensTakePhoto_ClientRpc(ClientRpcParams param = default)
     {
-        if(GlobalConfig.Singleton.ShowEnvironment&&TakePhoto.Value&&_lastPhotoTime+PhotoInterval.Value<Time.realtimeSinceStartup)
+        if (GlobalConfig.Singleton.MyBuildTarget != ArBuildTarget.Hololens || !GlobalConfig.Singleton.ShowEnvironment)
         {
-            _lastPhotoTime = Time.realtimeSinceStartup;
-            PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
+            return;
         }
+
+        if (alreadyTakingPhoto)
+        {
+            return;
+        }
+        alreadyTakingPhoto = true;
+        PauseBrowserCamera();
+        TryTakePhoto();
     }
 
-
-    void OnPhotoCaptureCreated(PhotoCapture captureObject)
+    public void TryTakePhoto()
     {
-        photoCaptureObject = captureObject;
-
-        cameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
-        Debug.Log("Camera Resolution: " + cameraResolution.width + "x" + cameraResolution.height);
+#if !UNITY_WEBGL
+        Resolution cameraResolution =
+ PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
         CameraParameters c = new CameraParameters();
         c.hologramOpacity = 0.0f;
         c.cameraResolutionWidth = cameraResolution.width;
         c.cameraResolutionHeight = cameraResolution.height;
         c.pixelFormat = CapturePixelFormat.JPEG;
-        captureObject.StartPhotoModeAsync(c, OnPhotoModeStarted);
+        Debug.Log("Camera Resolution: " + c.cameraResolutionWidth + "x" + c.cameraResolutionHeight);
+        photoCaptureObject.StartPhotoModeAsync(c, OnPhotoModeStarted);
+#endif
     }
 
+#if !UNITY_WEBGL
+    void OnPhotoCaptureCreated(PhotoCapture captureObject)
+    {
+        photoCaptureObject = captureObject;
+    }
+    
     private void OnPhotoModeStarted(PhotoCapture.PhotoCaptureResult result)
     {
         if (result.success)
         {
-            
-            string filename = string.Format(@"CapturedImage{0}_n.jpg", Time.time);
-            string filePath = System.IO.Path.Combine(Application.persistentDataPath, filename);
-
-            //photoCaptureObject.TakePhotoAsync(filePath, PhotoCaptureFileOutputFormat.JPG, OnCapturedPhotoToDisk);
+            Debug.Log("Photo mode started!");
             photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
         }
         else
         {
-            Debug.LogError("Unable to start photo mode!");
-        }
-    }
-
-    void OnCapturedPhotoToDisk(PhotoCapture.PhotoCaptureResult result)
-    {
-        if (result.success)
-        {
-            Debug.Log("Saved Photo to disk!");
-            photoCaptureObject.StopPhotoModeAsync(OnStoppedPhotoMode);
-        }
-        else
-        {
-            Debug.Log("Failed to save Photo to disk");
+            Debug.LogError("Unable to start photo mode, retrying...");
+            Invoke(nameof(TryTakePhoto), 0.1f);
         }
     }
 
@@ -108,15 +106,36 @@ public class CameraProvider : NetworkBehaviour
             }
 
             Debug.Log("Image Buffer List Count: " + imageBufferList.Count);
-            SendToServer(matrix, cameraToWorldMatrix, cameraResolution.width, cameraResolution.height,
+            SendToServer(matrix, cameraToWorldMatrix,
                 imageBufferList);
+        }
+        else
+        {
+            Debug.LogError("Failed to capture photo to memory!");
         }
 
         photoCaptureObject.StopPhotoModeAsync(OnStoppedPhotoMode);
+        ResumeBrowserCamera();
+        alreadyTakingPhoto = false;
     }
 
-    private void SendToServer(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width, int height,
-        List<byte> imageBufferList)
+    void OnStoppedPhotoMode(PhotoCapture.PhotoCaptureResult result)
+    {
+    }
+#endif
+    [ServerRpc(RequireOwnership = false)]
+    public void TakePhoto_ServerRpc(ServerRpcParams param = default)
+    {
+        Debug.Log("Take Photo Server RPC");
+        HololensTakePhoto_ClientRpc();
+    }
+
+    public void ButtonTakePhoto()
+    {
+        TakePhoto_ServerRpc();
+    }
+
+    private void SendToServer(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, List<byte> imageBufferList)
     {
         if (_sendPhotoCoroutine != null)
         {
@@ -124,12 +143,11 @@ public class CameraProvider : NetworkBehaviour
             return;
         }
 
-        _sendPhotoCoroutine = StartCoroutine(SendPhotoCoroutine(projectionMatrix, cameraToWorldMatrix, width, height,
-            imageBufferList));
+        _sendPhotoCoroutine =
+            StartCoroutine(SendPhotoCoroutine(projectionMatrix, cameraToWorldMatrix, imageBufferList));
     }
 
-    public IEnumerator SendPhotoCoroutine(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width,
-        int height,
+    public IEnumerator SendPhotoCoroutine(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix,
         List<byte> imageBufferList)
     {
         var bytesLeft = imageBufferList.ToList();
@@ -156,26 +174,20 @@ public class CameraProvider : NetworkBehaviour
                 }
 
                 SendImageChunk_ServerRpc(bytesToSend, chunkNumber, lastChunk, projectionMatrixAsArray,
-                    cameraToWorldMatrixAsArray, width, height);
+                    cameraToWorldMatrixAsArray);
                 chunkNumber++;
             }
 
             yield return null;
         }
+
         _sendPhotoCoroutine = null;
     }
 
 
-    void OnStoppedPhotoMode(PhotoCapture.PhotoCaptureResult result)
-    {
-        photoCaptureObject.Dispose();
-        photoCaptureObject = null;
-    }
-#endif
-    
     [ServerRpc(RequireOwnership = false)]
     void SendImageChunk_ServerRpc(byte[] bytes, int chunkNumber, bool lastChunk, float[] projectionMatrixAsArray,
-        float[] cameraToWorldMatrixAsArray, int width, int height)
+        float[] cameraToWorldMatrixAsArray)
     {
         if (!lastChunk)
         {
@@ -216,20 +228,30 @@ public class CameraProvider : NetworkBehaviour
                 cameraToWorldMatrixAsArray[15]));
 
 
-        CreatePositionedPhoto(projectionMatrix, cameraToWorldMatrix, width, height,
-            _imageBufferList.ToArray());
+        CreatePositionedPhoto(projectionMatrix, cameraToWorldMatrix, _imageBufferList.ToArray());
     }
 
-    public void CreatePositionedPhoto(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix, int width, int height,
+    public void CreatePositionedPhoto(Matrix4x4 projectionMatrix, Matrix4x4 cameraToWorldMatrix,
         byte[] imageBufferList)
     {
         //load imageBufferList as IMFMediaBuffer into texture
-        var texture = new Texture2D(width, height, TextureFormat.RGB24, false);
+        var texture = new Texture2D(2, 2, TextureFormat.RGB24, false);
         texture.LoadImage(imageBufferList);
         texture.Apply();
         var positionedPhoto = Instantiate(PositionedPhotoPrefab);
-        positionedPhoto.transform.SetParent(transform,true);
+        positionedPhoto.transform.SetParent(transform, true);
         positionedPhoto.GetComponent<PositionedPhoto>()
-            .Initialize(projectionMatrix, cameraToWorldMatrix, width, height, texture);
+            .Initialize(projectionMatrix, cameraToWorldMatrix, texture.width, texture.height, texture);
+    }
+
+
+    private void PauseBrowserCamera()
+    {
+        GetComponent<WebSocketServer.WebSocketServer>().SendMessageToClient("pause");
+    }
+
+    private void ResumeBrowserCamera()
+    {
+        GetComponent<WebSocketServer.WebSocketServer>().SendMessageToClient("resume");
     }
 }

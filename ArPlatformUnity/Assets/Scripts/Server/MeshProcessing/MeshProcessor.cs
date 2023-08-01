@@ -125,7 +125,6 @@ public class MeshProcessor : MonoBehaviour
 
                 var mesh = RejoinMesh(tuple.Item2, tuple.Item3, tuple.Item4);
                 networkMesh.SetMesh(mesh, tuple.Item5);
-                
 
 
                 if (!_meshes.ContainsKey(networkMesh.name))
@@ -168,7 +167,8 @@ public class MeshProcessor : MonoBehaviour
                         continue;
                     }
 
-                    networkMesh.GetComponent<NetworkTexture>().SetTextureWithReadback(tuple.Item2, tuple.Item3);
+                    networkMesh.GetComponent<NetworkTexture>()
+                        .SetTextureWithReadback(tuple.Item2, tuple.Item3 == -1 ? null : tuple.Item3);
                 }
             }
 
@@ -202,17 +202,16 @@ public class MeshProcessor : MonoBehaviour
         //get random int in range 1...maxInt
         var meshVersion = UnityEngine.Random.Range(1, int.MaxValue);
         _meshesToProcess.Enqueue(new(networkMesh, vertices, indices, meshVersion));
-        Debug.Log($"Enqueued mesh {networkMesh.name} with version {meshVersion}");
         //if there are at least 5 meshes in the queue, disable AllowUpdates on EnvironmentMeshHandler
         if (_meshesToProcess.Count + _meshesToRejoin.Count + _meshesToGenerateTextures.Count + _texturesToRejoin.Count >
-            5)
+            5&&_enableUpdatesCoroutine==null)
         {
             Debug.Log("Disabling updates");
             EnvironmentMeshHandler.Singleton.AllowUpdates.Value = false;
-            StartCoroutine(EnableUpdatesAgain());
+            _enableUpdatesCoroutine=StartCoroutine(EnableUpdatesAgain());
         }
     }
-
+    private Coroutine _enableUpdatesCoroutine;
     private IEnumerator EnableUpdatesAgain()
     {
         while (_meshesToProcess.Count + _meshesToRejoin.Count + _meshesToGenerateTextures.Count +
@@ -220,8 +219,10 @@ public class MeshProcessor : MonoBehaviour
         {
             yield return null;
         }
+
         Debug.Log("Enabling updates");
         EnvironmentMeshHandler.Singleton.AllowUpdates.Value = true;
+        _enableUpdatesCoroutine = null;
     }
 
 
@@ -272,7 +273,7 @@ public class MeshProcessor : MonoBehaviour
             //we dont need a texture if there are no photos to project on the mesh
             return null;
         }
-        
+
         List<GraphicsBuffer> buffersToRelease = new();
 
         // we assume all photos have the same size, so we can use the first one
@@ -289,10 +290,12 @@ public class MeshProcessor : MonoBehaviour
         CommandBuffer commandBuffer = new CommandBuffer();
         commandBuffer.name = "GenerateTexture";
 
-        
-        commandBuffer.SetComputeTextureParam(computeShader,ShaderStageId(ShaderStage.BasecolorMeshTexture), meshTextureId, renderTexture);
-        commandBuffer.DispatchCompute(computeShader, ShaderStageId(ShaderStage.BasecolorMeshTexture), (int)textureSize / 8, (int)textureSize / 8, 1);
-        
+
+        commandBuffer.SetComputeTextureParam(computeShader, ShaderStageId(ShaderStage.BasecolorMeshTexture),
+            meshTextureId, renderTexture);
+        commandBuffer.DispatchCompute(computeShader, ShaderStageId(ShaderStage.BasecolorMeshTexture),
+            (int)textureSize / 8, (int)textureSize / 8, 1);
+
         var barycentricAreaBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append | GraphicsBuffer.Target.Structured,
             GraphicsBuffer.UsageFlags.None, 5000000, 28);
         buffersToRelease.Add(barycentricAreaBuffer);
@@ -420,22 +423,25 @@ public class MeshProcessor : MonoBehaviour
     {
         //todo filter photos which are older and have an almost identical frustum
         _positionedPhotos.Add(photo);
+        _meshes.Values.ToList().ForEach(mesh =>
+        {
+            if(photo.IsMeshInFrustum(mesh.NewestMesh))
+            //if (mesh.NewestMesh.bounds.Contains(photo.transform.position))
+            {
+                EnqueueMesh
+                (
+                    mesh,
+                    mesh.NewestMesh.vertices,
+                    mesh.NewestMesh.triangles
+                );
+            }
+        });
     }
 
     public void ProcessMesh(Vector3[] vertices, int[] indices, out Vector3[] newVertices, out int[] newIndices,
         out Vector2[] uvs)
     {
         UvGenerator.GenerateUVsForMesh(vertices, indices, out newVertices, out newIndices, out uvs);
-    }
-
-    private void OnGUI()
-    {
-        /*//button on bottom left 
-        if (GUI.Button(new Rect(10, Screen.height - 50, 100, 50), "Generate Texture"))
-        {
-            //_meshesToGenerateTextures.Enqueue("Mesh 4F8198E77ED61BB9-91B42239FE7753BC");
-            doRasterize = true;
-        }*/
     }
 }
 

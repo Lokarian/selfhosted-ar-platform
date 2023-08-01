@@ -7,6 +7,7 @@ TagManager:
   - Interactable
   - HololensPlayer
   - WebXRPlayer
+  - EnvironmentMesh
   layers:
   - Default
   - TransparentFX
