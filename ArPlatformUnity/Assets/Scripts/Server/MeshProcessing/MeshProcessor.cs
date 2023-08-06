@@ -36,10 +36,10 @@ public class MeshProcessor : MonoBehaviour
     private ConcurrentQueue<Tuple<string, int>> _meshesToGenerateTextures = new();
     private ConcurrentQueue<Tuple<string, Texture2D, int>> _texturesToRejoin = new();
 
-    [DebugGUIGraph(1, 0, 0)] public float CurrentMeshesToProcess => _meshesToProcess.Count;
-    [DebugGUIGraph(0, 1, 0)] public float CurrentMeshesToRejoin => _meshesToRejoin.Count;
-    [DebugGUIGraph(0, 0, 1)] public float CurrentMeshesToGenerateTextures => _meshesToGenerateTextures.Count;
-    [DebugGUIGraph()] public float CurrentTexturesToRejoin => _texturesToRejoin.Count;
+    //[DebugGUIGraph(1, 0, 0)] public float CurrentMeshesToProcess => _meshesToProcess.Count;
+    //[DebugGUIGraph(0, 1, 0)] public float CurrentMeshesToRejoin => _meshesToRejoin.Count;
+    //[DebugGUIGraph(0, 0, 1)] public float CurrentMeshesToGenerateTextures => _meshesToGenerateTextures.Count;
+    //[DebugGUIGraph()] public float CurrentTexturesToRejoin => _texturesToRejoin.Count;
 
 
     private List<PositionedPhoto> _positionedPhotos = new();

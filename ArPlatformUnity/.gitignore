@@ -84,3 +84,4 @@ crashlytics-build.properties
 
 !/build/docker/
 /build/docker/dedicatedServer/
+/build/docker/native/

@@ -9,7 +9,7 @@ USER mpukgame
 WORKDIR /game
 
 # Add your game files and perform any required init steps.
-COPY ./dedicatedServer .
+COPY ./native .
 # RUN ./init.sh
 
 # Set your game entrypoint.

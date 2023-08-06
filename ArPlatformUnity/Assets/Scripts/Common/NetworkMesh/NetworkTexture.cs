@@ -102,6 +102,8 @@ public class NetworkTexture : NetworkBehaviour
                 _pngRepresentation = imageBytes.ToList();
                 imageBytes.Dispose();
                 byteArray.Dispose();
+                //var path = Path.Combine("C:/temp/arplatform", Guid.NewGuid().ToString() + ".png");
+                //File.WriteAllBytes(path, _pngRepresentation.ToArray());
                 SetTexture(texture, version);
             });
     }
