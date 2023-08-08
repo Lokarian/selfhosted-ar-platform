@@ -20,7 +20,7 @@
       </div>
     </div>
   </div>
-  <div class="flex-1 h-full flex flex-col" *ngIf="selectedSession">
+  <div class="flex-1 h-full flex flex-col" *ngIf="selectedSession$|async as selectedSession">
     <div class="h-12 w-full bg-background-secondary flex flex-row justify-between p-2">
       <div class="flex flex-row">
         <div class="text-white text-lg">
@@ -61,21 +61,11 @@
         </popper-content>
       </div>
       <div class="my-auto">
-        <app-video-session-preview *ngIf="selectedSession.baseSession?.videoSession"
-                                   [session]="selectedSession.baseSession.videoSession"
-        (join)="joinVideoSession(selectedSession.baseSession.videoSession)"></app-video-session-preview>
+        <app-video-session-preview *ngIf="videoSession$|async as videoSession"
+                                   [session]="videoSession"
+        (join)="joinVideoSession(videoSession)"></app-video-session-preview>
       </div>
     </div>
-    <as-split direction="vertical" class="flex-1 w-full min-h-0" [useTransition]="true">
-      <as-split-area *ngIf="videoSession" [size]="65" [order]="0">
-        <app-video-session [session]="videoSession"></app-video-session>
-      </as-split-area>
-      <as-split-area [size]="35" [order]="1">
-        <app-chat  [session]="selectedSession"></app-chat>
-      </as-split-area>
-
-    </as-split>
-
-
+    <app-chat class="flex-1 w-full min-h-0" [session]="selectedSession"></app-chat>
   </div>
 </div>

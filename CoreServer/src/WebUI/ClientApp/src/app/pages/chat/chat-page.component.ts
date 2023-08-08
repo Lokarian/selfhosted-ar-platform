@@ -22,10 +22,8 @@ export class ChatPageComponent implements OnInit {
   public sessions$: Observable<ChatSessionDto[]>;
   public selectedSessionSubject= new BehaviorSubject<ChatSessionDto>(null);
   public selectedSession$=this.selectedSessionSubject.asObservable().pipe(filter(s=>!!s));
-  public videoSession:VideoSessionDto|undefined;
-  public get selectedSession(){
-    return this.selectedSessionSubject.value;
-  }
+
+  public videoSession$=this.selectedSession$.pipe(switchMap(session=>this.videoFacade.session$(session.baseSessionId)));
   public set selectedSession(value){
     this.selectedSessionSubject.next(value);
   }
@@ -96,7 +94,7 @@ export class ChatPageComponent implements OnInit {
 
   public selectSession(session: ChatSessionDto) {
     this.selectedSession = session;
-    this.selectedSessionUserIds= this.sessionFacade.session(this.selectedSession?.baseSessionId).members.map(m => m.userId);
+    this.selectedSessionUserIds= this.sessionFacade.session(this.selectedSession?.baseSessionId)?.members.map(m => m.userId)??[];
   }
 
 

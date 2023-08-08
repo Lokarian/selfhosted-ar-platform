@@ -47,6 +47,9 @@ public class ARFollower : MonoBehaviour
 
     public void StopFollowing()
     {
+        //set z rotation to 0
+        MyPlayer.transform.rotation = Quaternion.Euler(MyPlayer.transform.rotation.eulerAngles.x,
+            MyPlayer.transform.rotation.eulerAngles.y, 0);
         MyPlayer.GetComponent<FlyCameraController>().enabled = true;
         _isFollowing = false;
         StopFollowButton.gameObject.SetActive(false);

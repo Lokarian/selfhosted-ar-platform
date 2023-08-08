@@ -96,6 +96,7 @@ GameObject:
   - component: {fileID: 6653779293360328515}
   - component: {fileID: 4398483559854588175}
   - component: {fileID: -7004557793938318566}
+  - component: {fileID: 6456651342403691288}
   m_Layer: 0
   m_Name: WebXRPlayer
   m_TagString: WebXRPlayer
@@ -194,3 +195,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DistanceThreshold: 0.3
+--- !u!114 &6456651342403691288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6653779293360328516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e147b6b425178b74cbaf235f1f5ebf9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
