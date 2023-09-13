@@ -195,7 +195,13 @@ public class SignalRNetworkTransport2 : NetworkTransport
         var clientId = _clientIdToMemberId.First(x => x.Value == memberId).Key;
         _clientIdToMemberId.Remove(clientId);
         _clientIdToStreamCancelToken[clientId].Cancel();
-        Debug.Log($"Client disconnected and cancellation requested: {clientId}, {memberId}");
+        
+        _messageQueue.Enqueue(new ServerMessage()
+        {
+            networkEvent = NetworkEvent.Disconnect,
+            clientId = clientId,
+            payload = default
+        });
     }
 
 

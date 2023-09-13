@@ -99,6 +99,11 @@ export class ChatPageComponent implements OnInit {
 
 
   joinVideoSession(videoSession: VideoSessionDto) {
-    this.router.navigate(['/call', videoSession.baseSessionId], {queryParams:{video:true}});
+    let qp = {};
+    qp["video"] = true;
+    if(videoSession.baseSession.arSession){
+      qp["ar"] = true;
+    }
+    this.router.navigate(['/call', videoSession.baseSessionId], {queryParams:qp});
   }
 }

@@ -136,9 +136,8 @@ public class DesktopDrawingHandler : MonoBehaviour
                         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                         if (Physics.Raycast(ray, out var hit))
                         {
-                            //create quaternion with upwards being hit=>camera und right the cross product of hit and camera
-                            var rotation = Quaternion.LookRotation(hit.normal,
-                                Vector3.Cross(hit.normal, Camera.main.transform.right));
+                            var rotation = Quaternion.LookRotation(Camera.main.transform.forward,
+                                Camera.main.transform.up);
                             _currentPlane = Instantiate(PlanePrefab, hit.point, rotation).transform;
                             _planeState = PlaneState.MovePlane;
                             ClearPlaneButton.gameObject.SetActive(true);

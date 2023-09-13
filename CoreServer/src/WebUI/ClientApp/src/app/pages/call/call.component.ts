@@ -64,16 +64,19 @@ export class CallComponent implements OnInit {
     }
     let members = this.form.controls.members.value as AppUserDto[];
     this.sessionFacade.createSession(new CreateSessionCommand({userIds: members.map(u => u.id),name:`Call ${new Date().toLocaleString()} `})).subscribe(session => {
+      let qp={};
       if (this.form.controls.includeChat.value) {
         this.chatFacade.createChatSession(session.id);
       }
       if (this.form.controls.includeVideo.value) {
         this.videoFacade.createVideoSession(session.id);
+        qp["video"]=true;
       }
       if (this.form.controls.includeAr.value) {
         this.arFacade.createArSession(session.id);
+        qp["ar"]=true;
       }
-      this.router.navigate([session.id],{relativeTo:this.activatedRoute});
+      this.router.navigate([session.id],{relativeTo:this.activatedRoute,queryParams:qp});
     })
   }
 }

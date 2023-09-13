@@ -83,8 +83,8 @@ public class GlobalConfig : MonoBehaviour
         {
             Debug.Log("ACCESS_TOKEN: " + Environment.GetEnvironmentVariable("ACCESS_TOKEN"));
             AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN") ??
-                          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjY1NjE1ZDRiLTQ0OGYtNGNlMy04MWE4LTNmMWM3NzdjNzllNyIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.X2-lhesCPEuLhdmO6ZBosdEQe8-eUFddXsVFe6uhgcY";
-            ServerUrl = Environment.GetEnvironmentVariable("SERVER_URL") ?? "https://reithmeir.duckdns.org:5001";
+                          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImVlNmVjM2FjLTRmZjEtNGEyMS04ZGY1LTc0Y2YyNWZlNGZhZiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMS8iLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDEvIn0.ojcACMh9cKeQnIVBrSpST7Tbjsn3EITdP5Ymh-1W2S0";
+            ServerUrl = Environment.GetEnvironmentVariable("SERVER_URL") ?? "https://reithmeir.duckdns.org";
             ArSessionId = Environment.GetEnvironmentVariable("SESSION_ID") ?? "c3b66fb7-7322-46be-8c19-020b64aa89ea";
             SessionType = Environment.GetEnvironmentVariable("SESSION_TYPE") != null
                 ? (ArSessionType)Enum.Parse(typeof(ArSessionType), Environment.GetEnvironmentVariable("SESSION_TYPE")!)

@@ -1,6 +1,6 @@
 <app-multi-session *ngIf="session$|async as session" [baseSession]="session" [initiallyShowChat]="!!session.chatSession"
                    [initiallyShowVideo]="joinVideo"
-                   [initiallyShowAr]="!!session.arSession"></app-multi-session>
+                   [initiallyShowAr]="joinAr"></app-multi-session>
 <form [formGroup]="form" *ngIf="!(session$|async)" class="flex flex-col justify-center items-center w-full h-full">
   <div class="rounded-md bg-background-secondary p-4 w-80">
     <h1 class="text-white mb-4">Create a new Call</h1>

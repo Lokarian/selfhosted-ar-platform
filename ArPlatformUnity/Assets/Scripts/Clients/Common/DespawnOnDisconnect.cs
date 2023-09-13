@@ -16,9 +16,5 @@ public class DespawnOnDisconnect : NetworkBehaviour
     
     private void OnClientDisconnect(ulong clientId)
     {
-        if (GetComponent<NetworkObject>().OwnerClientId == clientId)
-        {
-            GetComponent<NetworkObject>().Despawn(true);
-        }
     }
 }

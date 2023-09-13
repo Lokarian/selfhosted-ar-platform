@@ -60,6 +60,7 @@ export class MultiSessionComponent implements OnInit {
               this.joinedArSession=true;
             });
     */
+
     if (asHololens) {
       this.authorizeService.getAccessToken().subscribe(token => {
         window.open(`arplatform://${location.host}/${this.baseSession.id}?token=${token}`, "_blank");
