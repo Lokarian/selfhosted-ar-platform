@@ -13,4 +13,4 @@ COPY ./native .
 # RUN ./init.sh
 
 # Set your game entrypoint.
-ENTRYPOINT [ "/game/server.x86_64" ]
+ENTRYPOINT ["/game/server.x86_64", "-batchmode"]

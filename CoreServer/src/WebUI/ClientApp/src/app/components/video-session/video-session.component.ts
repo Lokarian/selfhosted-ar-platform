@@ -95,7 +95,6 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
   }
 
   async ngAfterViewInit() {
-    await this.getMediaDevices();
     this.session$.pipe(
       map(s => s.baseSessionId),
       distinctUntilChanged(),
@@ -392,14 +391,6 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     }
     const devices = await navigator.mediaDevices.enumerateDevices();
     this.availableMediaDevicesSubject.next(devices);
-    const defaultCamera = devices.find(d => d.deviceId === localStorage.getItem("defaultCamera"));
-    const defaultMicrophone = devices.find(d => d.deviceId === localStorage.getItem("defaultMicrophone"));
-    if (defaultCamera) {
-      this.selectedCamera = defaultCamera;
-    }
-    if (defaultMicrophone) {
-      this.selectedMicrophone = defaultMicrophone;
-    }
   }
 
   get cameraEnabled() {
@@ -422,9 +413,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
         this.setMicrophone(this.selectedMicrophone);
       } else {
         this.microphoneEnabledDesired = true;
-        this.microphoneButtonElement.placement = NgxPopperjsPlacements.TOP;
-        this.microphoneButtonElement.closeOnClickOutside = true;
-        this.microphoneButtonElement.scheduledShow(0);
+        this.showMicrophonePopper();
       }
     }
   }
@@ -439,9 +428,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
         this.setCamera(this.selectedCamera);
       } else {
         this.cameraEnabledDesired = true;
-        this.cameraButtonElement.placement = NgxPopperjsPlacements.TOP;
-        this.cameraButtonElement.closeOnClickOutside = true;
-        this.cameraButtonElement.scheduledShow(0);
+        this.showCameraPopper();
       }
     }
   }
@@ -511,6 +498,7 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
 
   private async getCameraTrack(device: MediaDeviceInfo): Promise<MediaStream> {
     let stream = await navigator.mediaDevices.getUserMedia({video: {deviceId: device.deviceId}, audio: false});
+    return stream;
     if (!device.label.includes("QC Back Camera")) {
       //return stream;
     }
@@ -595,6 +583,27 @@ export class VideoSessionComponent implements OnInit, AfterViewInit {
     this.webRtcConnectionDetails.forEach(c => c.pc.close());
 
     this.onLeaveCall.emit();
+  }
+
+  async showCameraPopper() {
+    console.log("show camera popper");
+    if(this.availableMediaDevicesSubject.value.length === 0){
+      await this.getMediaDevices();
+    }
+    this.cameraButtonElement.placement = NgxPopperjsPlacements.TOP;
+    this.cameraButtonElement.closeOnClickOutside = true;
+    this.cameraButtonElement.scheduledShow(0);
+  }
+
+
+  async showMicrophonePopper() {
+    console.log("show microphone popper");
+    if(this.availableMediaDevicesSubject.value.length === 0){
+      await this.getMediaDevices();
+    }
+    this.microphoneButtonElement.placement = NgxPopperjsPlacements.TOP;
+    this.microphoneButtonElement.closeOnClickOutside = true;
+    this.microphoneButtonElement.scheduledShow(0);
   }
 }
 

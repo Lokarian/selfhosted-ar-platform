@@ -27,6 +27,9 @@ export class ChatPageComponent implements OnInit {
   public set selectedSession(value){
     this.selectedSessionSubject.next(value);
   }
+  public get selectedSession(){
+    return this.selectedSessionSubject.value;
+  }
   public selectedSessionUserIds: string[] = [];
   public isEdit = false;
 
