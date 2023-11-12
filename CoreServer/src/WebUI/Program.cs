@@ -11,20 +11,7 @@ using WebUI.Services;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 
-//run a task in 1 second to write hello world to the console
-Task.Run(async () =>
-{
-    byte[] binaryData = File.ReadAllBytes("C:/ssl/certificate.pfx");
 
-    // Convert the binary data to a base64 string
-    string certificateBase64String = Convert.ToBase64String(binaryData);
-    await Task.Delay(1000);
-    var cert=new X509Certificate2("C:/ssl/certificate2.pfx");
-        var bytes = cert.Export(X509ContentType.Cert);
-        var base64 = Convert.ToBase64String(bytes);
-        Console.WriteLine(base64);
-    
-});
 
 
 // Add services to the container.
@@ -34,9 +21,9 @@ builder.Services.AddWebUIServices(builder.Configuration);
 string? hostName = Environment.GetEnvironmentVariable("HOST_NAME");
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("test", builder =>
+    options.AddPolicy("prod", builder =>
     {
-        builder.WithOrigins("https://localhost:44447", "https://localhost:4200",hostName??"") // the Angular app url
+        builder.WithOrigins("https://localhost:44447", "https://localhost:4200", hostName ?? "") // the Angular app url
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -51,35 +38,33 @@ builder.Services.AddCors(options =>
         });
 });
 WebApplication app = builder.Build();
-app.UseCors("develop");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors("develop");
     app.UseDeveloperExceptionPage();
     app.UseMigrationsEndPoint();
-    // Initialise and seed database
-    using (IServiceScope scope = app.Services.CreateScope())
-    {
-        ApplicationDbContextInitialiser initialiser =
-            scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
-        await initialiser.InitialiseAsync();
-        await initialiser.SeedAsync();
-    }
 }
 else
 {
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseCors("prod");
 }
 
-app.UseHealthChecks("/health");
-if(!app.Environment.IsDevelopment())
-    app.UseHttpsRedirection();
-app.UseStaticFiles(new StaticFileOptions
+// Initialise and seed database
+using (IServiceScope scope = app.Services.CreateScope())
 {
-    ServeUnknownFileTypes = true,
-    
-});
+    ApplicationDbContextInitialiser initialiser =
+        scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
+    await initialiser.InitialiseAsync();
+    await initialiser.SeedAsync();
+}
+
+
+app.UseHealthChecks("/health");
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+app.UseStaticFiles(new StaticFileOptions { ServeUnknownFileTypes = true, });
 
 app.UseSwaggerUi3(settings =>
 {

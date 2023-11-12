@@ -1,4 +1,8 @@
 ﻿using CoreServer.Domain.Entities;
+using CoreServer.Domain.Entities.AR;
+using CoreServer.Domain.Entities.Chat;
+using CoreServer.Domain.Entities.Session;
+using CoreServer.Domain.Entities.Video;
 using CoreServer.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -62,11 +66,11 @@ public class ApplicationDbContextInitialiser
         }
 
         // Default users
-        AppUser appUser = new AppUser { UserName = "administratorapp@localhost", Email = "administrator@localhost" };
+        AppUser appUser = new AppUser { UserName = "Administrator", Email = "administrator@localhost" };
         _context.AppUsers.Add(appUser);
         AppIdentityUser administrator = new AppIdentityUser
         {
-            UserName = "administratoridentity@localhost", Email = "administrator@localhost", AppUser = appUser
+            UserName = "Administrator", Email = "administrator@localhost", AppUser = appUser
         };
 
         if (_userManager.Users.All(u => u.UserName != administrator.UserName))
@@ -80,18 +84,41 @@ public class ApplicationDbContextInitialiser
 
         // Default data
         // Seed, if necessary
-        if (!_context.TodoLists.Any())
+        if (!_context.BaseSessions.Any())
         {
-            _context.TodoLists.Add(new TodoList
+            var baseSession=_context.BaseSessions.Add(new BaseSession()
             {
-                Title = "Todo List",
-                Items =
-                {
-                    new TodoItem { Title = "Make a todo list 📃" },
-                    new TodoItem { Title = "Check off the first item ✅" },
-                    new TodoItem { Title = "Realise you've already done two things on the list! 🤯" },
-                    new TodoItem { Title = "Reward yourself with a nice, long nap 🏆" }
-                }
+                Name = "DemoARSession",
+                Id = Guid.Parse("c3b66fb7-7322-46be-8c19-020b64aa89ea"),
+                CreatedAt = DateTime.Now,
+            });
+            var sessionMember = _context.SessionMembers.Add(new SessionMember()
+            {
+                Id = new Guid(),
+                Session = baseSession.Entity,
+                User = appUser
+            });
+            var arSession = _context.ArSessions.Add(new ArSession()
+            {
+                BaseSession = baseSession.Entity ,
+                Members = new List<ArMember>(),
+                SessionType = ArSessionType.RemoteAssist,
+                ServerState = ArServerState.Stopped,
+            });
+            var videoSession = _context.VideoSessions.Add(new VideoSession()
+            {
+                BaseSession = baseSession.Entity,
+                Members = new List<VideoMember>(),
+            });
+            var chatSession = _context.ChatSessions.Add(new ChatSession()
+            {
+                BaseSession = baseSession.Entity,
+                Members = new List<ChatMember>(),
+            });
+            var chatMember = _context.ChatMembers.Add(new ChatMember()
+            {
+                Session = chatSession.Entity,
+                BaseMember = sessionMember.Entity,
             });
 
             await _context.SaveChangesAsync();
