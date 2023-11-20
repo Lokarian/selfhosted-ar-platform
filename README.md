@@ -18,4 +18,7 @@ docker-compose up -d
 
 This will create a container for the database and the backend.
 
-To
+With this startup Process there will be a user and a Demo Session created. You can log in with:
+> Username: Administator  
+> Password: Administator1!
+

@@ -25,6 +25,7 @@ FROM build AS publish
 RUN dotnet publish "WebUI.csproj" -c Release -o /app/publish
 
 FROM base AS final
+RUN apt-get update && apt-get install -y docker.io
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "WebUI.dll"]
