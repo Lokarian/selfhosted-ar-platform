@@ -1,5 +1,4 @@
-﻿using CoreServer.Domain.Entities;
-using CoreServer.Infrastructure.Identity;
+﻿using CoreServer.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

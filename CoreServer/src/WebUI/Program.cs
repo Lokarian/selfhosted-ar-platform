@@ -1,41 +1,70 @@
+using System.Security.Cryptography.X509Certificates;
 using CoreServer.Application;
 using CoreServer.Infrastructure;
 using CoreServer.Infrastructure.Persistence;
-using CoreServer.WebUI.Services;
+using CoreServer.Infrastructure.RPC;
+using CoreServer.Infrastructure.Unity;
 using WebUI;
+using WebUI.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+
+
+
 
 // Add services to the container.
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddWebUIServices(builder.Configuration);
-
-var app = builder.Build();
-
+string? hostName = Environment.GetEnvironmentVariable("HOST_NAME");
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("prod", builder =>
+    {
+        builder.WithOrigins("https://localhost:44447", "https://localhost:4200", hostName ?? "") // the Angular app url
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+    options.AddPolicy("develop",
+        x =>
+        {
+            x.AllowAnyHeader()
+                .AllowAnyMethod()
+                .SetIsOriginAllowed((host) => true)
+                .AllowCredentials();
+        });
+});
+WebApplication app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors("develop");
     app.UseDeveloperExceptionPage();
     app.UseMigrationsEndPoint();
-
-    // Initialise and seed database
-    using (var scope = app.Services.CreateScope())
-    {
-        var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
-        await initialiser.InitialiseAsync();
-        await initialiser.SeedAsync();
-    }
 }
 else
 {
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseCors("prod");
 }
 
+// Initialise and seed database
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    ApplicationDbContextInitialiser initialiser =
+        scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
+    await initialiser.InitialiseAsync();
+    await initialiser.SeedAsync();
+}
+
+
 app.UseHealthChecks("/health");
-app.UseHttpsRedirection();
-app.UseStaticFiles();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+app.UseStaticFiles(new StaticFileOptions { ServeUnknownFileTypes = true, });
 
 app.UseSwaggerUi3(settings =>
 {
@@ -50,11 +79,11 @@ app.UseAuthorization();
 app.UseMiddleware<UserMiddleware>();
 
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller}/{action=Index}/{id?}");
+    "default",
+    "{controller}/{action=Index}/{id?}");
 
-app.MapRazorPages();
-
+app.MapHub<SignalRHub>("/api/hub");
+app.MapHub<UnityBrokerHub>("/api/unityBrokerHub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

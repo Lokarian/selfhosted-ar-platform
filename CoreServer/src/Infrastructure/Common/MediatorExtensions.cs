@@ -1,24 +1,33 @@
-﻿using CoreServer.Domain.Common;
+﻿using System.Collections;
+using CoreServer.Domain.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace MediatR;
+namespace CoreServer.Infrastructure.Common;
 
 public static class MediatorExtensions
 {
-    public static async Task DispatchDomainEvents(this IMediator mediator, DbContext context) 
+    public static async Task DispatchDomainEvents(this IMediator mediator, IEnumerable<BaseEvent> events)
     {
-        var entities = context.ChangeTracker
-            .Entries<BaseEntity>()
+        foreach (BaseEvent domainEvent in events)
+        {
+            await mediator.Publish(domainEvent);
+        }
+    }
+
+    public static IEnumerable<BaseEvent> GetDomainEvents(this IMediator mediator, DbContext context)
+    {
+        IEnumerable<EntityWithEvents> entities = context.ChangeTracker
+            .Entries<EntityWithEvents>()
             .Where(e => e.Entity.DomainEvents.Any())
             .Select(e => e.Entity);
 
-        var domainEvents = entities
+        var entityWithEventsEnumerable = entities.ToList();
+        List<BaseEvent> domainEvents = entityWithEventsEnumerable
             .SelectMany(e => e.DomainEvents)
             .ToList();
 
-        entities.ToList().ForEach(e => e.ClearDomainEvents());
-
-        foreach (var domainEvent in domainEvents)
-            await mediator.Publish(domainEvent);
+        entityWithEventsEnumerable.ForEach(e => e.ClearDomainEvents());
+        return domainEvents;
     }
 }

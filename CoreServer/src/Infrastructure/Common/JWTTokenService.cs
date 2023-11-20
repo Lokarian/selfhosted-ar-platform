@@ -6,7 +6,7 @@ using CoreServer.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace MediatR;
+namespace CoreServer.Infrastructure.Common;
 
 public class JWTTokenService : ITokenService
 {
@@ -19,14 +19,14 @@ public class JWTTokenService : ITokenService
 
     public Task<string> CreateTokenAsync(AppUser user)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), };
-        var token = new JwtSecurityToken(_config["Jwt:Issuer"],
+        SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+        SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        Claim[] claims = new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) };
+        JwtSecurityToken token = new JwtSecurityToken(_config["Jwt:Issuer"],
             _config["Jwt:Audience"],
             claims,
             signingCredentials: credentials);
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        string? tokenString = new JwtSecurityTokenHandler().WriteToken(token);
         return Task.FromResult(tokenString);
     }
 }

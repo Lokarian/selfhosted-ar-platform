@@ -1,0 +1,37 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: arplatform
+    volumes:
+      - ${DATABASE_VOLUME}:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: CoreServer
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=arplatform;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ASPNETCORE_URLS: https://+;http://+
+      ASPNETCORE_Kestrel__Certificates__Default__Password: ${CART_PASS}
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/${CERT_NAME}
+      HOST_NAME: ${HOST_NAME}
+      UNITY_SERVER_IMAGE_NAME: ${UNITY_SERVER_IMAGE_NAME}
+    volumes:
+      - ${CERTS_VOLUME}:/https
+      - ${FILES_VOLUME}:/filestorage
+      - ${WEBGL_VOLUME}:/app/wwwroot/webgl
+      - //var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - db

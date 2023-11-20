@@ -1,4 +1,5 @@
-﻿using CoreServer.Application.Common.Interfaces;
+﻿using System.Security.Claims;
+using CoreServer.Application.Common.Interfaces;
 using CoreServer.Application.Common.Models;
 using CoreServer.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -9,9 +10,9 @@ namespace CoreServer.Infrastructure.Identity;
 
 public class IdentityService : IIdentityService
 {
-    private readonly UserManager<AppIdentityUser> _userManager;
-    private readonly IUserClaimsPrincipalFactory<AppIdentityUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
+    private readonly IUserClaimsPrincipalFactory<AppIdentityUser> _userClaimsPrincipalFactory;
+    private readonly UserManager<AppIdentityUser> _userManager;
 
     public IdentityService(
         UserManager<AppIdentityUser> userManager,
@@ -25,68 +26,64 @@ public class IdentityService : IIdentityService
 
     public async Task<(Result Result, string UserId)> CreateUserAsync(AppUser appUser, string password)
     {
-        var user = new AppIdentityUser
-        {
-            UserName = appUser.UserName,
-            AppUser = appUser
-        };
+        AppIdentityUser user = new AppIdentityUser { UserName = appUser.UserName, AppUser = appUser };
 
-        var result = await _userManager.CreateAsync(user, password);
+        IdentityResult result = await _userManager.CreateAsync(user, password);
 
         return (result.ToApplicationResult(), user.Id);
     }
 
     public Task<(Result Result, AppUser? user)> LoginAsync(string userName, string password)
     {
-        var user = _userManager.Users
+        AppIdentityUser? user = _userManager.Users
             .Include(u => u.AppUser)
             .SingleOrDefault(u => u.UserName == userName);
 
         if (user == null)
         {
-            return Task.FromResult((Result.Failure(new[] {"User does not exist."}), (AppUser?) null));
+            return Task.FromResult((Result.Failure(new[] { "User does not exist." }), (AppUser?)null));
         }
 
-        var result = _userManager.CheckPasswordAsync(user, password);
+        Task<bool> result = _userManager.CheckPasswordAsync(user, password);
 
         return Task.FromResult(result.Result
             ? (Result.Success(), user.AppUser)
-            : (Result.Failure(new[] {"Invalid credentials."}), null));
+            : (Result.Failure(new[] { "Invalid credentials." }), null));
     }
 
     public async Task<bool> IsInRoleAsync(Guid userId, string role)
     {
-        var user = _userManager.Users.SingleOrDefault(u => u.AppUserId == userId);
+        AppIdentityUser? user = _userManager.Users.SingleOrDefault(u => u.AppUserId == userId);
 
         return user != null && await _userManager.IsInRoleAsync(user, role);
     }
 
     public async Task<bool> AuthorizeAsync(Guid userId, string policyName)
     {
-        var user = _userManager.Users.SingleOrDefault(u => u.AppUserId == userId);
+        AppIdentityUser? user = _userManager.Users.SingleOrDefault(u => u.AppUserId == userId);
 
         if (user == null)
         {
             return false;
         }
 
-        var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+        ClaimsPrincipal principal = await _userClaimsPrincipalFactory.CreateAsync(user);
 
-        var result = await _authorizationService.AuthorizeAsync(principal, policyName);
+        AuthorizationResult result = await _authorizationService.AuthorizeAsync(principal, policyName);
 
         return result.Succeeded;
     }
 
     public async Task<Result> DeleteUserAsync(string userId)
     {
-        var user = _userManager.Users.SingleOrDefault(u => u.Id == userId);
+        AppIdentityUser? user = _userManager.Users.SingleOrDefault(u => u.Id == userId);
 
         return user != null ? await DeleteUserAsync(user) : Result.Success();
     }
 
     public async Task<Result> DeleteUserAsync(AppIdentityUser user)
     {
-        var result = await _userManager.DeleteAsync(user);
+        IdentityResult result = await _userManager.DeleteAsync(user);
 
         return result.ToApplicationResult();
     }

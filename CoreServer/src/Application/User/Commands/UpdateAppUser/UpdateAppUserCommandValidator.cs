@@ -1,12 +1,12 @@
 ﻿using CoreServer.Application.Common.Interfaces;
 using FluentValidation;
 
-namespace CoreServer.Application.User.Commands.RegisterUser;
+namespace CoreServer.Application.User.Commands.UpdateAppUser;
 
 public class UpdateAppUserCommandValidator : AbstractValidator<UpdateAppUserCommand>
 {
-    private readonly ICurrentUserService _currentUserService;
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IIdentityService _identityService;
 
     public UpdateAppUserCommandValidator(ICurrentUserService currentUserService, IApplicationDbContext context,

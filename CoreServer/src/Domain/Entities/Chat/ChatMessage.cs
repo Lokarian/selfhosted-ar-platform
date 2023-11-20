@@ -1,7 +1,14 @@
-﻿namespace CoreServer.Domain.Entities.Chat;
+﻿using CoreServer.Domain.Entities.Session;
+
+namespace CoreServer.Domain.Entities.Chat;
 
 public class ChatMessage : BaseEntity
 {
+    public ChatMessage()
+    {
+        SentAt = DateTime.UtcNow;
+    }
+
     public Guid SessionId { get; set; }
     public ChatSession Session { get; set; } = null!;
 
@@ -9,10 +16,4 @@ public class ChatMessage : BaseEntity
     public AppUser Sender { get; set; } = null!;
     public string Text { get; set; } = null!;
     public DateTime SentAt { get; set; }
-
-
-    public ChatMessage()
-    {
-        SentAt = DateTime.UtcNow;
-    }
 }

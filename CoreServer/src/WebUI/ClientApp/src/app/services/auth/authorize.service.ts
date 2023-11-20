@@ -7,10 +7,10 @@ import {filter, map} from 'rxjs/operators';
 })
 export class AuthorizeService {
   private tokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
-
   constructor() {
     this.tokenSubject.next(this._getAccessToken());
   }
+
   public isAuthenticated(): Observable<boolean> {
     return this.tokenSubject.asObservable()
       .pipe(
@@ -24,21 +24,32 @@ export class AuthorizeService {
           const decodedJwtData = JSON.parse(decodedJwtJsonData);
           const expirationDate = new Date(0);
           expirationDate.setUTCSeconds(decodedJwtData.exp);
-          return expirationDate > new Date()||decodedJwtData.exp===undefined;
+          return expirationDate > new Date() || decodedJwtData.exp === undefined;
         })
+      );
+  }
+
+  public getAuthorizationHeaderValue(): Observable<string | null> {
+    return this.tokenSubject.asObservable()
+      .pipe(
+        filter(token => token !== null),
+        map(token => `Bearer ${token}`)
       );
   }
 
   public getAccessToken(): Observable<string | null> {
     return this.tokenSubject.asObservable();
   }
+
   private _getAccessToken(): string | null {
     return localStorage.getItem('access_token');
   }
+
   public saveAccessToken(token: string) {
     localStorage.setItem('access_token', token);
     this.tokenSubject.next(token);
   }
+
   public removeAccessToken(triggerReload: boolean = false) {
     localStorage.removeItem('access_token');
     if (triggerReload) {

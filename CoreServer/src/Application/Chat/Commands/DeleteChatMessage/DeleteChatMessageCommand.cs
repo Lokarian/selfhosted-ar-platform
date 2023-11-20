@@ -3,7 +3,7 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Entities.Chat;
 using MediatR;
 
-namespace CoreServer.Application.Chat.Commands;
+namespace CoreServer.Application.Chat.Commands.DeleteChatMessage;
 
 public class DeleteChatMessageCommand : IRequest
 {
@@ -19,9 +19,9 @@ public class DeleteChatMessageCommandHandler : IRequestHandler<DeleteChatMessage
         _context = context;
     }
 
-    public async Task<Unit> Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.ChatMessages.FindAsync(request.Id);
+        ChatMessage? entity = await _context.ChatMessages.FindAsync(request.Id);
 
         if (entity == null)
         {
@@ -32,6 +32,6 @@ public class DeleteChatMessageCommandHandler : IRequestHandler<DeleteChatMessage
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
+        return;
     }
 }

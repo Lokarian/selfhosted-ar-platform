@@ -5,9 +5,9 @@ using CoreServer.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.User.Commands;
+namespace CoreServer.Application.User.Commands.UpdateAppUser;
 
-public class UpdateAppUserCommand : IRequest
+public class UpdateAppUserCommand : IRequest<AppUser>
 {
     public Guid Id { get; set; }
     public string? UserName { get; set; }
@@ -15,7 +15,7 @@ public class UpdateAppUserCommand : IRequest
     public UserFile? UserImage { get; set; }
 }
 
-public class UpdateAppUserCommandHandler : IRequestHandler<UpdateAppUserCommand>
+public class UpdateAppUserCommandHandler : IRequestHandler<UpdateAppUserCommand,AppUser>
 {
     private readonly IApplicationDbContext _context;
 
@@ -24,9 +24,9 @@ public class UpdateAppUserCommandHandler : IRequestHandler<UpdateAppUserCommand>
         _context = context;
     }
 
-    public async Task<Unit> Handle(UpdateAppUserCommand request, CancellationToken cancellationToken)
+    public async Task<AppUser> Handle(UpdateAppUserCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.AppUsers.Include(a => a.Image)
+        AppUser? entity = await _context.AppUsers.Include(a => a.Image)
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
 
         if (entity == null)
@@ -46,6 +46,6 @@ public class UpdateAppUserCommandHandler : IRequestHandler<UpdateAppUserCommand>
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
+        return entity;
     }
 }

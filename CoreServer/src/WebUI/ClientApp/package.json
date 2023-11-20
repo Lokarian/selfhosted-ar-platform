@@ -5,9 +5,9 @@
     "ng": "ng",
     "prestart": "node aspnetcore-https",
     "start": "run-script-os",
-    "start:windows": "ng serve --port 44447 --ssl --ssl-cert \"%APPDATA%\\ASP.NET\\https\\%npm_package_name%.pem\" --ssl-key \"%APPDATA%\\ASP.NET\\https\\%npm_package_name%.key\"",
+    "start:windows": "ng serve --port 44447 --host 0.0.0.0 --ssl --ssl-cert \"%APPDATA%\\ASP.NET\\https\\%npm_package_name%.pem\" --ssl-key \"%APPDATA%\\ASP.NET\\https\\%npm_package_name%.key\"",
     "start:default": "ng serve --port 44447 --ssl --ssl-cert \"$HOME/.aspnet/https/${npm_package_name}.pem\" --ssl-key \"$HOME/.aspnet/https/${npm_package_name}.key\"",
-    "build": "ng build",
+    "build": "NG_BUILD_MANGLE=false NG_BUILD_MINIFY=false NG_BUILD_BEAUTIFY=true ng build",
     "build:ssr": "ng run CoreServer.WebUI:server:dev",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -23,8 +23,12 @@
     "@angular/platform-browser-dynamic": "^14.1.3",
     "@angular/platform-server": "^14.1.3",
     "@angular/router": "^14.1.3",
+    "@microsoft/signalr": "^7.0.5",
+    "@microsoft/signalr-protocol-msgpack": "^7.0.5",
+    "angular-split": "^14.0.0",
+    "custom-protocol-check": "^1.4.0",
+    "ngx-popperjs": "^14.1.8",
     "run-script-os": "^1.1.6",
-    "ngx-popperjs": "^14.1.6",
     "rxjs": "~7.5.6",
     "tslib": "^2.4.0",
     "zone.js": "~0.11.8"
@@ -36,6 +40,7 @@
     "@types/jasmine": "~4.3.0",
     "@types/jasminewd2": "~2.0.10",
     "@types/node": "^18.7.11",
+    "autoprefixer": "^10.4.5",
     "jasmine-core": "~4.3.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.1.1",
@@ -45,6 +50,6 @@
     "postcss": "^8.4.21",
     "tailwindcss": "^3.3.1",
     "typescript": "~4.7.4",
-    "autoprefixer": "^10.4.5"
+    "user-agent-data-types": "^0.3.1"
   }
 }

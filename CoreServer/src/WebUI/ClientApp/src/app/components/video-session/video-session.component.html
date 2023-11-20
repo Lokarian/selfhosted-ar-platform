@@ -1,0 +1,127 @@
+<div class="w-full h-full relative group">
+  <div #videoContainer class="absolute w-full h-full bg-background-primary p-2">
+
+    <div class="flex-row h-full w-full gap-2" [ngClass]="focusedStream?'flex':'hidden'">
+      <div class="focused-view flex-1 min-w-0 flex flex-col items-center justify-center">
+        <ng-container #focusedView></ng-container>
+      </div>
+      <div class="focused-list-view flex flex-col flex-nowrap overflow-y-auto shrink-0 justify-center gap-2">
+        <ng-container #focusedListView></ng-container>
+      </div>
+    </div>
+    <div class="flex-row flex-wrap h-full normal-list-view gap-4 overflow-y-auto"
+         [ngClass]="focusedStream?'hidden':'flex'">
+      <ng-container #normalListView></ng-container>
+    </div>
+  </div>
+  <div #controlsContainer
+       class="absolute z-10 bottom-4 flex flex-row gap-8 w-fit left-0 right-0 mx-auto justify-center opacity-0 group-hover:opacity-100 transition-all">
+    <div #cameraButton class="relative" [popper]="cameraSelectionPopper" [popperTrigger]="NgxPopperjsTriggers.none">
+      <div (click)="toggleCamera()"
+           class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white mask">
+        <ng-container *ngIf="cameraEnabled; else videoOff">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M140 896q-24 0-42-18t-18-42V316q0-24 18-42t42-18h520q24 0 42 18t18 42v215l160-160v410L720 621v215q0 24-18 42t-42 18H140Z"/>
+          </svg>
+        </ng-container>
+        <ng-template #videoOff>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M880 781 720 621v111L244 256h416q24 0 42 18t18 42v215l160-160v410Zm-32 248L39 220l42-42 809 809-42 42ZM159 256l561 561v19q0 24-18 42t-42 18H140q-24 0-42-18t-18-42V316q0-24 18-42t42-18h19Z"/>
+          </svg>
+        </ng-template>
+      </div>
+      <button (click)="showCameraPopper()"
+              class="absolute bottom-0.5 right-0.5 rounded-full aspect-square w-4 bg-background-secondary fill-white hover:bg-background-highlight">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+          <path d="M480 711 240 471l43-43 197 198 197-197 43 43-240 239Z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="relative">
+      <div (click)="toggleScreenShare()"
+           class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white">
+        <ng-container *ngIf="screenShareStream; else screenShareDisabled">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M333 669h60v-90q0-24 16-40t40-16h81v70l100-100-100-100v70h-81q-48 0-82 34t-34 82v90ZM70 936q-13 0-21.5-8.5T40 906q0-13 8.5-21.5T70 876h820q13 0 21.5 8.5T920 906q0 13-8.5 21.5T890 936H70Zm70-120q-24 0-42-18t-18-42V276q0-24 18-42t42-18h680q24 0 42 18t18 42v480q0 24-18 42t-42 18H140Z"/>
+          </svg>
+        </ng-container>
+        <ng-template #screenShareDisabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="m837 1028-97-97H40v-60h640l-46-46H147q-24 0-42-18t-18-42V278l-55-55 43-43 805 805-43 43ZM393 584l-51-51q-5 11-7 23.5t-2 22.5v90h60v-85Zm412 241L552 571l78-78-100-100v70h-86L202 222h612q24 0 42 18t18 42v483q0 26-20 44t-49 16Z"/>
+          </svg>
+        </ng-template>
+      </div>
+    </div>
+
+    <div #microphoneButton class="relative" [popper]="microphoneSelectionPopper"
+         [popperTrigger]="NgxPopperjsTriggers.none">
+      <div (click)="toggleMicrophone()"
+           class="rounded-full aspect-square w-16 p-4 bg-background-secondary hover:bg-background-highlight text-white fill-white mask">
+        <ng-container *ngIf="microphoneEnabled; else muted">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="M480 633q-43 0-72-30.917-29-30.916-29-75.083V276q0-41.667 29.441-70.833Q437.882 176 479.941 176t71.559 29.167Q581 234.333 581 276v251q0 44.167-29 75.083Q523 633 480 633Zm-30 303V800q-106-11-178-89t-72-184h60q0 91 64.288 153t155.5 62Q571 742 635.5 680 700 618 700 527h60q0 106-72 184t-178 89v136h-60Z"/>
+          </svg>
+        </ng-container>
+        <ng-template #muted>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+            <path
+              d="m686 695-43-43q21-26 31-58.5t10-66.5h60q0 46-15 89t-43 79ZM558 567 363 372v-95q0-42 29.5-71.5T464 176q42 0 71.5 29.5T565 277v250q0 8-1.5 20t-5.5 20ZM434 936V800q-106-11-178-89t-72-184h60q0 91 64.5 153T464 742q39 0 73.5-12.5T601 695l43 43q-31 26-69 41.5T494 800v136h-60Zm397 65L36 206l38-38 795 795-38 38Z"/>
+          </svg>
+        </ng-template>
+      </div>
+      <button (click)="showMicrophonePopper()"
+              class="absolute bottom-0.5 right-0.5 rounded-full aspect-square w-4 bg-background-secondary fill-white hover:bg-background-highlight">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 96 960 960">
+          <path d="M480 711 240 471l43-43 197 198 197-197 43 43-240 239Z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="relative">
+      <div (click)="leaveCall()"
+           class="rounded-full aspect-square w-16 p-4 bg-error hover:brightness-75 text-white fill-white">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+          <path
+            d="M480-640q126 0 241 50.5T918-443q8 10 8.5 22t-8.5 21l-94 94q-8 8-23 9t-24-6l-114-85q-6-5-9-11t-3-13v-139q-42-16-85.5-22.5T480-580q-42 0-85.5 6.5T309-551v139q0 7-3 13t-9 11l-114 85q-12 9-24.5 8T136-306l-94-94q-9-9-8.5-21t8.5-22q82-96 197-146.5T480-640Z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<popper-content #cameraSelectionPopper>
+  <div class="rounded-2xl bg-background-highlight p-2">
+    <h2 class="text-center font-bold text-text pb-2">Camera</h2>
+    <ul class="max-w-lg text-text bg-background-secondary border border-background-secondary rounded-lg">
+      <li *ngFor="let device of availableCameras$|async;let i=index"
+          (click)="setCamera(device);cameraSelectionPopper.hide()"
+          class="w-full group flex flex-row items-center gap-2 p-2 cursor-pointer last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-secondary hover:bg-background-highlight">
+        <div
+          class=" flex-shrink-0 aspect-square h-4 rounded-full bg-background-highlight group-hover:bg-background-primary"
+          [ngClass]="{'bg-primary':selectedCamera===device,'group-hover:bg-secondary':selectedCamera===device}"></div>
+        <div
+          class="text-text text-sm font-medium text-ellipsis overflow-hidden flex-1 whitespace-nowrap">{{device.label}}</div>
+      </li>
+    </ul>
+  </div>
+</popper-content>
+<popper-content #microphoneSelectionPopper>
+  <div class="rounded-2xl bg-background-highlight p-2">
+    <h2 class="text-center font-bold text-text pb-2">Microphone</h2>
+    <ul class="max-w-lg text-text bg-background-secondary border border-background-secondary rounded-lg">
+      <li *ngFor="let device of availableMicrophones$|async;let i=index"
+          (click)="setMicrophone(device);microphoneSelectionPopper.hide()"
+          class="w-full group flex flex-row items-center gap-2 p-2 cursor-pointer last:border-b-0 border-b first:rounded-t-lg last:rounded-b-lg border-background-secondary hover:bg-background-highlight">
+        <div
+          class=" flex-shrink-0 aspect-square h-4 rounded-full bg-background-highlight group-hover:bg-background-primary"
+          [ngClass]="{'bg-primary':selectedMicrophone===device,'group-hover:bg-secondary':selectedMicrophone===device}"></div>
+        <div
+          class="text-text text-sm font-medium text-ellipsis overflow-hidden flex-1 whitespace-nowrap">{{device.label}}</div>
+      </li>
+    </ul>
+  </div>
+</popper-content>

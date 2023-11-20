@@ -1,0 +1,7 @@
+i have an asp.net application which has a clientapp angular. i want to create a dockercompose file which will build my application and spit out images which i can you on my server to launch an application.
+if you have any question feel free to ask them.
+here are some requirements for the dockercompose file:
+- i want to be able to mount a volume which contains the cert files
+- i want to be able to mount a volume which contains the appsettings.json file
+- i want to be able to mount a volume which contains the database files( also create a postgres container with username and password from docker compose file)
+

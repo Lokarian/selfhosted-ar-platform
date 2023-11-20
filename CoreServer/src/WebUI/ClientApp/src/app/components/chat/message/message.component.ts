@@ -1,6 +1,6 @@
 import {Component, Input} from '@angular/core';
-import {ChatMessage} from "../../../models/chat";
-import {CurrentUserService} from "../../../services/current-user.service";
+import {CurrentUserService} from "../../../services/user/current-user.service";
+import {ChatMessageDto} from "../../../web-api-client";
 
 
 @Component({
@@ -9,10 +9,10 @@ import {CurrentUserService} from "../../../services/current-user.service";
   styleUrls: ['./message.component.scss']
 })
 export class MessageComponent {
-  @Input() message: ChatMessage;
+  @Input() message: ChatMessageDto;
   constructor(private currentUserService: CurrentUserService) {
   }
   public get isOwnMessage(): boolean {
-    return this.message.sender.id === this.currentUserService.user.id;
+    return this.message.senderId === this.currentUserService.user.id;
   }
 }

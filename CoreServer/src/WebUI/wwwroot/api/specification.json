@@ -6,6 +6,223 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/Ar/GetMyArSessions": {
+      "get": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_GetMyArSessions",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArSessionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/GetArSessionMembers": {
+      "get": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_GetArSessionMembers",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArMemberDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/CreateArSession": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_CreateArSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/JoinArSession": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_JoinArSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinArSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArMemberDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/LeaveArSession": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_LeaveArSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveArSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Ar/StartArServer": {
+      "post": {
+        "tags": [
+          "Ar"
+        ],
+        "operationId": "Ar_StartArServer",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartArServerCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Chat/GetMyChatSessions": {
       "get": {
         "tags": [
@@ -40,25 +257,47 @@
           "Chat"
         ],
         "operationId": "Chat_GetChatMessages",
-        "requestBody": {
-          "x-name": "query",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetChatMessagesQuery"
-              }
-            }
+        "parameters": [
+          {
+            "name": "SessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
           },
-          "required": true,
-          "x-position": 1
-        },
+          {
+            "name": "From",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "Count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 3
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatMessageDto"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatMessageDto"
+                  }
                 }
               }
             }
@@ -95,7 +334,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatSession"
+                  "$ref": "#/components/schemas/ChatSessionDto"
                 }
               }
             }
@@ -108,7 +347,7 @@
         ]
       }
     },
-    "/api/Chat/SendMessageToChatSession/message": {
+    "/api/Chat/SendMessageToChatSession": {
       "post": {
         "tags": [
           "Chat"
@@ -119,7 +358,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SendMessageToChatSessionCommand"
+                "$ref": "#/components/schemas/SendMessageToChatCommand"
               }
             }
           },
@@ -145,7 +384,45 @@
         ]
       }
     },
-    "/api/Chat/DeleteChatMessage/message/{id}": {
+    "/api/Chat/UpdateLastRead": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "Chat_UpdateLastRead",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChatSessionLastReadCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Chat/DeleteChatMessage/{id}": {
       "delete": {
         "tags": [
           "Chat"
@@ -183,48 +460,55 @@
         ]
       }
     },
-    "/api/TodoItems/GetTodoItemsWithPagination": {
+    "/api/MediaServer/AuthenticateUser": {
+      "post": {
+        "tags": [
+          "MediaServer"
+        ],
+        "operationId": "MediaServer_AuthenticateUser",
+        "requestBody": {
+          "x-name": "query",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCanAccessStreamQuery"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Session/GetMySessions": {
       "get": {
         "tags": [
-          "TodoItems"
+          "Session"
         ],
-        "operationId": "TodoItems_GetTodoItemsWithPagination",
-        "parameters": [
-          {
-            "name": "ListId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 3
-          }
-        ],
+        "operationId": "Session_GetMySessions",
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedListOfTodoItemBriefDto"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionDto"
+                  }
                 }
               }
             }
@@ -237,18 +521,18 @@
         ]
       }
     },
-    "/api/TodoItems/Create": {
+    "/api/Session/CreateSession": {
       "post": {
         "tags": [
-          "TodoItems"
+          "Session"
         ],
-        "operationId": "TodoItems_Create",
+        "operationId": "Session_CreateSession",
         "requestBody": {
           "x-name": "command",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTodoItemCommand"
+                "$ref": "#/components/schemas/CreateSessionCommand"
               }
             }
           },
@@ -261,8 +545,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "guid"
+                  "$ref": "#/components/schemas/SessionDto"
                 }
               }
             }
@@ -275,208 +558,18 @@
         ]
       }
     },
-    "/api/TodoItems/Update/{id}": {
-      "put": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "TodoItems_Update",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoItemCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoItems/UpdateItemDetails/UpdateItemDetails": {
-      "put": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "TodoItems_UpdateItemDetails",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoItemDetailCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoItems/Delete/{id}": {
-      "delete": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "TodoItems_Delete",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoLists/Get": {
-      "get": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "TodoLists_Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TodosVm"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TodoLists/Get/{id}": {
-      "get": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "TodoLists_Get2",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TodoLists/Create": {
+    "/api/Session/UpdateSession": {
       "post": {
         "tags": [
-          "TodoLists"
+          "Session"
         ],
-        "operationId": "TodoLists_Create",
+        "operationId": "Session_UpdateSession",
         "requestBody": {
           "x-name": "command",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTodoListCommand"
+                "$ref": "#/components/schemas/UpdateSessionCommand"
               }
             }
           },
@@ -489,78 +582,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "guid"
+                  "$ref": "#/components/schemas/SessionDto"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
-    "/api/TodoLists/Update/{id}": {
-      "put": {
+    "/api/UnityServer/AuthenticateUser": {
+      "post": {
         "tags": [
-          "TodoLists"
+          "UnityServer"
         ],
-        "operationId": "TodoLists_Update",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
+        "operationId": "UnityServer_AuthenticateUser",
         "requestBody": {
-          "x-name": "command",
+          "x-name": "query",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTodoListCommand"
+                "$ref": "#/components/schemas/UserCanAccessUnityServerQuery"
               }
             }
           },
           "required": true,
-          "x-position": 2
+          "x-position": 1
         },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TodoLists/Delete/{id}": {
-      "delete": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "TodoLists_Delete",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
         "responses": {
           "200": {
             "description": "",
@@ -652,7 +704,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppUser"
+                  "$ref": "#/components/schemas/AppUserDto"
                 }
               }
             }
@@ -689,7 +741,98 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppUser"
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/User/GetAppUserById/{id}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_GetAppUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/User/GetAppUsersByPartialName": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_GetAppUsersByPartialName",
+        "parameters": [
+          {
+            "name": "PartialName",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfAppUserDto"
                 }
               }
             }
@@ -829,12 +972,12 @@
         ]
       }
     },
-    "/api/WeatherForecast/Get": {
+    "/api/Video/GetMyVideoSessions": {
       "get": {
         "tags": [
-          "WeatherForecast"
+          "Video"
         ],
-        "operationId": "WeatherForecast_Get",
+        "operationId": "Video_GetMyVideoSessions",
         "responses": {
           "200": {
             "description": "",
@@ -843,19 +986,318 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/WeatherForecast"
+                    "$ref": "#/components/schemas/VideoSessionDto"
                   }
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/GetVideoSessionMembers": {
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_GetVideoSessionMembers",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoMemberDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/GetVideoStreams": {
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_GetVideoStreams",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoStreamDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/CreateVideoSession": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_CreateVideoSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideoSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/RequestVideoStream": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_RequestVideoStream",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVideoStreamCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoStreamDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/StopVideoStream": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_StopVideoStream",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopVideoStreamCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoStreamDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/JoinVideoSession": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_JoinVideoSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinVideoSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TupleOfVideoMemberDtoAndString"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Video/LeaveVideoSession": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "operationId": "Video_LeaveVideoSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveVideoSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     }
   },
   "components": {
     "schemas": {
-      "ChatSessionDto": {
+      "ArSessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDto"
+              }
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArMemberDto"
+            }
+          },
+          "sessionType": {
+            "$ref": "#/components/schemas/ArSessionType"
+          },
+          "serverState": {
+            "$ref": "#/components/schemas/ArServerState"
+          }
+        }
+      },
+      "SessionDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -866,8 +1308,83 @@
           "name": {
             "type": "string"
           },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionMemberDto"
+            }
+          },
+          "chatSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatSessionDto"
+              }
+            ]
+          },
+          "videoSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/VideoSessionDto"
+              }
+            ]
+          },
+          "arSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArSessionDto"
+              }
+            ]
+          }
+        }
+      },
+      "SessionMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "ChatSessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDto"
+              }
+            ]
+          },
           "lastMessage": {
-            "$ref": "#/components/schemas/ChatMessage"
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatMessageDto"
+              }
+            ]
           },
           "members": {
             "type": "array",
@@ -877,70 +1394,206 @@
           }
         }
       },
-      "ChatMessage": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/BaseEntity"
+      "ChatMessageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
           },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "sessionId": {
-                "type": "string",
-                "format": "guid"
-              },
-              "session": {
-                "$ref": "#/components/schemas/ChatSession"
-              },
-              "senderId": {
-                "type": "string",
-                "format": "guid"
-              },
-              "sender": {
-                "$ref": "#/components/schemas/AppUser"
-              },
-              "text": {
-                "type": "string"
-              },
-              "sentAt": {
-                "type": "string",
-                "format": "date-time"
+          "text": {
+            "type": "string"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "ChatMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "lastSeen": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "VideoSessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseSession": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDto"
               }
+            ]
+          },
+          "referencePoint": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "members": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/VideoMemberDto"
+            }
+          },
+          "streams": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/VideoStreamDto"
             }
           }
-        ]
+        }
       },
-      "ChatSession": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/BaseEntity"
+      "VideoMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
           },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "messages": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ChatMessage"
-                }
-              },
-              "members": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ChatMember"
-                }
-              },
-              "name": {
-                "type": "string",
-                "nullable": true
-              }
-            }
+          "baseMemberId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
+        }
+      },
+      "VideoStreamDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stoppedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ArMemberDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "baseMemberId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/ArUserRole"
+          }
+        }
+      },
+      "ArUserRole": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Hololens",
+          "Web"
+        ],
+        "enum": [
+          0,
+          1
         ]
       },
-      "ChatMember": {
+      "ArSessionType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "RemoteAssist"
+        ],
+        "enum": [
+          0
+        ]
+      },
+      "ArServerState": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Stopped",
+          "Starting",
+          "Running"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
+      "CreateArSessionCommand": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -948,57 +1601,221 @@
             "type": "string",
             "format": "guid"
           },
-          "session": {
-            "$ref": "#/components/schemas/ChatSession"
-          },
-          "userId": {
+          "sessionType": {
+            "$ref": "#/components/schemas/ArSessionType"
+          }
+        }
+      },
+      "JoinArSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arSessionId": {
             "type": "string",
             "format": "guid"
           },
-          "user": {
-            "$ref": "#/components/schemas/AppUser"
-          },
-          "lastSeen": {
+          "role": {
+            "$ref": "#/components/schemas/ArUserRole"
+          }
+        }
+      },
+      "LeaveArSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arMemberId": {
             "type": "string",
-            "format": "date-time",
+            "format": "guid"
+          }
+        }
+      },
+      "StartArServerCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arSessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "CreateChatSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "SendMessageToChatCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateChatSessionLastReadCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "UserCanAccessStreamQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "guid"
+            }
+          },
+          "name": {
+            "type": "string",
             "nullable": true
           }
         }
       },
-      "AppUser": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/BaseEntity"
+      "UpdateSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "guid"
           },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "userName": {
-                "type": "string"
-              },
-              "email": {
-                "type": "string"
-              },
-              "imageId": {
-                "type": "string",
-                "format": "guid",
-                "nullable": true
-              },
-              "image": {
-                "nullable": true,
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/UserFile"
-                  }
-                ]
-              },
-              "onlineStatus": {
-                "$ref": "#/components/schemas/OnlineStatus"
-              }
+          "userIds": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string",
+              "format": "guid"
             }
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
           }
-        ]
+        }
+      },
+      "UserCanAccessUnityServerQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "arSessionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "memberId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ArUserRole"
+          }
+        }
+      },
+      "LoginUserCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userName": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterUserCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "AppUserDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "imageId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "image": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserFile"
+              }
+            ]
+          },
+          "onlineStatus": {
+            "$ref": "#/components/schemas/OnlineStatus"
+          }
+        }
       },
       "UserFile": {
         "allOf": [
@@ -1033,14 +1850,28 @@
         ]
       },
       "BaseEntity": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EntityWithEvents"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "guid"
+              }
+            }
+          }
+        ]
+      },
+      "EntityWithEvents": {
         "type": "object",
         "x-abstract": true,
         "additionalProperties": false,
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
           "domainEvents": {
             "type": "array",
             "items": {
@@ -1070,347 +1901,6 @@
           3
         ]
       },
-      "ChatMemberDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "userId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "lastSeen": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        }
-      },
-      "ChatMessageDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "text": {
-            "type": "string"
-          },
-          "sentAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "senderId": {
-            "type": "string",
-            "format": "guid"
-          }
-        }
-      },
-      "GetChatMessagesQuery": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "sessionId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "from": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "count": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          }
-        }
-      },
-      "CreateChatSessionCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "userIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "guid"
-            }
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "SendMessageToChatSessionCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "sessionId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "text": {
-            "type": "string"
-          }
-        }
-      },
-      "PaginatedListOfTodoItemBriefDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoItemBriefDto"
-            }
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hasPreviousPage": {
-            "type": "boolean"
-          },
-          "hasNextPage": {
-            "type": "boolean"
-          }
-        }
-      },
-      "TodoItemBriefDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "listId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          }
-        }
-      },
-      "CreateTodoItemCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "listId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateTodoItemCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          }
-        }
-      },
-      "UpdateTodoItemDetailCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "listId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "priority": {
-            "$ref": "#/components/schemas/PriorityLevel"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "PriorityLevel": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "None",
-          "Low",
-          "Medium",
-          "High"
-        ],
-        "enum": [
-          0,
-          1,
-          2,
-          3
-        ]
-      },
-      "TodosVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "priorityLevels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PriorityLevelDto"
-            }
-          },
-          "lists": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoListDto"
-            }
-          }
-        }
-      },
-      "PriorityLevelDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "value": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "TodoListDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "colour": {
-            "type": "string",
-            "nullable": true
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoItemDto"
-            }
-          }
-        }
-      },
-      "TodoItemDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "listId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          },
-          "priority": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "CreateTodoListCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateTodoListCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "LoginUserCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "userName": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterUserCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "userName": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          }
-        }
-      },
       "UpdateAppUserCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -1437,25 +1927,95 @@
           }
         }
       },
-      "WeatherForecast": {
+      "PaginatedListOfAppUserDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "date": {
-            "type": "string",
-            "format": "date-time"
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppUserDto"
+            }
           },
-          "temperatureC": {
+          "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "temperatureF": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
-          "summary": {
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateVideoSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
             "type": "string",
-            "nullable": true
+            "format": "guid"
+          }
+        }
+      },
+      "CreateVideoStreamCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoStreamMemberId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "StopVideoStreamCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoStreamId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "TupleOfVideoMemberDtoAndString": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "item1": {
+            "$ref": "#/components/schemas/VideoMemberDto"
+          },
+          "item2": {
+            "type": "string"
+          }
+        }
+      },
+      "JoinVideoSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoSessionId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "LeaveVideoSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "videoMemberId": {
+            "type": "string",
+            "format": "guid"
           }
         }
       }

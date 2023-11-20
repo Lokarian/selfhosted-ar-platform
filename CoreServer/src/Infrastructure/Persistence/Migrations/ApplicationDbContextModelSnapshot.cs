@@ -23,12 +23,66 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "uuid-ossp");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessKey")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("BaseMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BaseMemberId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("UserConnectionId");
+
+                    b.ToTable("ArMembers");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArSession", b =>
+                {
+                    b.Property<Guid>("BaseSessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ServerState")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SessionType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("BaseSessionId");
+
+                    b.ToTable("ArSessions");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<int>("AccountType")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -53,18 +107,18 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatMember", b =>
                 {
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid>("BaseMemberId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("LastSeen")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("SessionId", "UserId");
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
 
-                    b.HasIndex("UserId");
+                    b.HasKey("BaseMemberId");
+
+                    b.HasIndex("SessionId");
 
                     b.ToTable("ChatMembers");
                 });
@@ -100,17 +154,78 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatSession", b =>
                 {
+                    b.Property<Guid>("BaseSessionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("BaseSessionId");
+
+                    b.ToTable("ChatSessions");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Chat.VideoSession", b =>
+                {
+                    b.Property<Guid>("BaseSessionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("BaseSessionId");
+
+                    b.ToTable("VideoSessions");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Session.BaseSession", b =>
+                {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastModifiedById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatSessions");
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastModifiedById");
+
+                    b.ToTable("BaseSessions");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Session.SessionMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SessionMembers");
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.TodoItem", b =>
@@ -120,7 +235,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
-                    b.Property<DateTime>("Created")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CreatedById")
@@ -170,7 +285,7 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
-                    b.Property<DateTime>("Created")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CreatedById")
@@ -196,6 +311,30 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.ToTable("TodoLists");
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.UserConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<string>("ConnectionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DisconnectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserConnections");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.UserFile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -217,6 +356,61 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("UserFiles");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessKey")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("BaseMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BaseMemberId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("UserConnectionId");
+
+                    b.ToTable("VideoMembers");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoStream", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StoppedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("VideoStreams");
                 });
 
             modelBuilder.Entity("CoreServer.Infrastructure.Identity.AppIdentityUser", b =>
@@ -420,6 +614,44 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArMember", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
+                        .WithMany()
+                        .HasForeignKey("BaseMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.AR.ArSession", "Session")
+                        .WithMany("Members")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.UserConnection", "UserConnection")
+                        .WithMany()
+                        .HasForeignKey("UserConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseMember");
+
+                    b.Navigation("Session");
+
+                    b.Navigation("UserConnection");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArSession", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.BaseSession", "BaseSession")
+                        .WithOne("ArSession")
+                        .HasForeignKey("CoreServer.Domain.Entities.AR.ArSession", "BaseSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseSession");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.AppUser", b =>
                 {
                     b.HasOne("CoreServer.Domain.Entities.UserFile", "Image")
@@ -431,21 +663,21 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatMember", b =>
                 {
+                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
+                        .WithOne()
+                        .HasForeignKey("CoreServer.Domain.Entities.Chat.ChatMember", "BaseMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("CoreServer.Domain.Entities.Chat.ChatSession", "Session")
                         .WithMany("Members")
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CoreServer.Domain.Entities.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("BaseMember");
 
                     b.Navigation("Session");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatMessage", b =>
@@ -465,6 +697,62 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Navigation("Sender");
 
                     b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatSession", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.BaseSession", "BaseSession")
+                        .WithOne("ChatSession")
+                        .HasForeignKey("CoreServer.Domain.Entities.Chat.ChatSession", "BaseSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseSession");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Chat.VideoSession", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.BaseSession", "BaseSession")
+                        .WithOne("VideoSession")
+                        .HasForeignKey("CoreServer.Domain.Entities.Chat.VideoSession", "BaseSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseSession");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Session.BaseSession", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "LastModifiedBy")
+                        .WithMany()
+                        .HasForeignKey("LastModifiedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastModifiedBy");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Session.SessionMember", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.BaseSession", "Session")
+                        .WithMany("Members")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CoreServer.Domain.Entities.TodoItem", b =>
@@ -524,6 +812,55 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastModifiedBy");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.UserConnection", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoMember", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Session.SessionMember", "BaseMember")
+                        .WithMany()
+                        .HasForeignKey("BaseMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.Chat.VideoSession", "Session")
+                        .WithMany("Members")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoreServer.Domain.Entities.UserConnection", "UserConnection")
+                        .WithMany()
+                        .HasForeignKey("UserConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseMember");
+
+                    b.Navigation("Session");
+
+                    b.Navigation("UserConnection");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoStream", b =>
+                {
+                    b.HasOne("CoreServer.Domain.Entities.Video.VideoMember", "Owner")
+                        .WithMany("Streams")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("CoreServer.Infrastructure.Identity.AppIdentityUser", b =>
@@ -586,6 +923,11 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.AR.ArSession", b =>
+                {
+                    b.Navigation("Members");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.Chat.ChatSession", b =>
                 {
                     b.Navigation("Members");
@@ -593,9 +935,30 @@ namespace CoreServer.Infrastructure.Persistence.Migrations
                     b.Navigation("Messages");
                 });
 
+            modelBuilder.Entity("CoreServer.Domain.Entities.Chat.VideoSession", b =>
+                {
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Session.BaseSession", b =>
+                {
+                    b.Navigation("ArSession");
+
+                    b.Navigation("ChatSession");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("VideoSession");
+                });
+
             modelBuilder.Entity("CoreServer.Domain.Entities.TodoList", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("CoreServer.Domain.Entities.Video.VideoMember", b =>
+                {
+                    b.Navigation("Streams");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,7 +1,8 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Domain.Entities.Chat;
 using FluentValidation;
 
-namespace CoreServer.Application.Chat.Commands;
+namespace CoreServer.Application.Chat.Commands.DeleteChatMessage;
 
 public class DeleteChatMessageCommandValidator : AbstractValidator<DeleteChatMessageCommand>
 {
@@ -24,7 +25,7 @@ public class DeleteChatMessageCommandValidator : AbstractValidator<DeleteChatMes
 
     private async Task<bool> MessageBelongsToUser(Guid id, CancellationToken token)
     {
-        var message = await _context.ChatMessages.FindAsync(id);
+        ChatMessage? message = await _context.ChatMessages.FindAsync(id);
         return message.SenderId == _currentUserService.User!.Id;
     }
 }

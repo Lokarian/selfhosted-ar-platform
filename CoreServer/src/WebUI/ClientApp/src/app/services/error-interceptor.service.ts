@@ -21,8 +21,8 @@ export class ErrorInterceptor implements HttpInterceptor {
         try {
           //parse err.error (which is blob) as json
           const json = JSON.parse(await err.error.text());
-          if(json.errors){
-            for (const [key,value] of Object.entries(json.errors)) {
+          if (json.errors) {
+            for (const [key, value] of Object.entries(json.errors)) {
               this.notificationService.add({
                 severity: 'error',
                 title: key,
@@ -30,6 +30,15 @@ export class ErrorInterceptor implements HttpInterceptor {
                 autoClose: true
               });
             }
+          } else if (json.detail) {
+            json.detail.split(";").forEach((value: string) => {
+              this.notificationService.add({
+                severity: 'error',
+                title: 'Error',
+                message: value,
+                autoClose: true
+              });
+            });
           }
 
         } catch (e) {

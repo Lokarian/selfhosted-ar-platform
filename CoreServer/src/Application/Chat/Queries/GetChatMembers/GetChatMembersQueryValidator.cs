@@ -1,8 +1,9 @@
 ﻿using CoreServer.Application.Common.Interfaces;
+using CoreServer.Domain.Entities.Chat;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Queries.GetSessionMembers;
+namespace CoreServer.Application.Chat.Queries.GetChatMembers;
 
 public class GetChatMembersQueryValidator : AbstractValidator<GetChatMembersQuery>
 {
@@ -13,14 +14,14 @@ public class GetChatMembersQueryValidator : AbstractValidator<GetChatMembersQuer
     {
         _context = context;
         _currentUserService = currentUserService;
-        RuleFor(x => x.SessionId).NotEmpty().WithMessage("Session Id must not be empty")
+        RuleFor(x => x.SessionId).NotEmpty().WithMessage("BaseSession Id must not be empty")
             .MustAsync(UserIsChatMember).WithMessage("User is not a member of this session");
     }
 
     private async Task<bool> UserIsChatMember(Guid sessionId, CancellationToken cancellationToken)
     {
-        var chatMember = await _context.ChatMembers.FirstOrDefaultAsync(
-            x => x.SessionId == sessionId && x.UserId == _currentUserService.User!.Id,
+        ChatMember? chatMember = await _context.ChatMembers.FirstOrDefaultAsync(
+            x => x.SessionId == sessionId && x.BaseMember.UserId == _currentUserService.User!.Id,
             cancellationToken);
         return chatMember != null;
     }

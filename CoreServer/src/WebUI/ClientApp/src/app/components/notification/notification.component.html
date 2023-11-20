@@ -1,6 +1,6 @@
-<div class="absolute top-0 right-0 p-2 max-w-screen md:max-w-2xl">
+<div class="absolute top-0 right-0 pt-2 pr-2 max-w-screen md:max-w-2xl">
   <div *ngFor="let notification of notifications">
-    <div class="text-white px-6 py-4 border-0 rounded relative mb-2"
+    <div class="text-white px-6 py-4 border-0 rounded relative mb-2 z-10"
          [ngClass]="{'bg-info': notification.severity === 'info', 'bg-warning': notification.severity === 'warn', 'bg-success': notification.severity === 'success', 'bg-error': notification.severity === 'error'}">
     <span class="inline-block align-middle mr-8">
     <b class="capitalize">{{notification.title}}</b> {{notification.message}}

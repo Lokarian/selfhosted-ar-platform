@@ -1,22 +1,13 @@
-﻿namespace CoreServer.Domain.Entities.Chat;
+﻿using CoreServer.Domain.Entities.Session;
 
-public class ChatMember
+namespace CoreServer.Domain.Entities.Chat;
+
+public class ChatMember : EntityWithEvents
 {
-    public Guid SessionId { get; set; }
+    public SessionMember BaseMember { get; set; } = null!;
+    public Guid BaseMemberId { get; set; }
+
     public ChatSession Session { get; set; } = null!;
-    
-    public Guid UserId { get; set; }
-    public AppUser User { get; set; } = null!;
+    public Guid SessionId { get; set; }
     public DateTime? LastSeen { get; set; }
-
-    public ChatMember(AppUser user, ChatSession session)
-    {
-        User = user;
-        Session = session;
-    }
-    public ChatMember()
-    {
-        
-    }
-
 }

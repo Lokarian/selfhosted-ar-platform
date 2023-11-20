@@ -3,7 +3,7 @@ using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Entities;
 using MediatR;
 
-namespace CoreServer.Application.Files.Commands;
+namespace CoreServer.Application.UserFiles.Commands;
 
 public class DeleteUserFileCommand : IRequest
 {
@@ -12,8 +12,8 @@ public class DeleteUserFileCommand : IRequest
 
 public class DeleteUserFileCommandHandler : IRequestHandler<DeleteUserFileCommand>
 {
-    private readonly IFileStorageService _fileStorageService;
     private readonly IApplicationDbContext _context;
+    private readonly IFileStorageService _fileStorageService;
 
     public DeleteUserFileCommandHandler(IFileStorageService fileStorageService, IApplicationDbContext context)
     {
@@ -21,9 +21,9 @@ public class DeleteUserFileCommandHandler : IRequestHandler<DeleteUserFileComman
         _context = context;
     }
 
-    public async Task<Unit> Handle(DeleteUserFileCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteUserFileCommand request, CancellationToken cancellationToken)
     {
-        var userFile = await _context.UserFiles.FindAsync(request.Id);
+        UserFile? userFile = await _context.UserFiles.FindAsync(request.Id);
         if (userFile == null)
         {
             throw new NotFoundException(nameof(UserFile), request.Id);
@@ -33,6 +33,6 @@ public class DeleteUserFileCommandHandler : IRequestHandler<DeleteUserFileComman
         await _fileStorageService.DeleteFileAsync(userFile);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Unit.Value;
+        return;
     }
 }

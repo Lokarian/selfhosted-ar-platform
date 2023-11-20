@@ -1,4 +1,6 @@
-﻿using CoreServer.Application.Common.Interfaces;
+﻿using CoreServer.Application.Common.Exceptions;
+using CoreServer.Application.Common.Interfaces;
+using CoreServer.Application.Common.Models;
 using CoreServer.Domain.Entities;
 using MediatR;
 
@@ -13,11 +15,12 @@ public class RegisterUserCommand : IRequest<string>
 
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, string>
 {
+    private readonly IApplicationDbContext _context;
     private readonly IIdentityService _identityService;
     private readonly ITokenService _tokenService;
-    private readonly IApplicationDbContext _context;
 
-    public RegisterUserCommandHandler(IIdentityService identityService, ITokenService tokenService, IApplicationDbContext context)
+    public RegisterUserCommandHandler(IIdentityService identityService, ITokenService tokenService,
+        IApplicationDbContext context)
     {
         _identityService = identityService;
         _tokenService = tokenService;
@@ -26,14 +29,15 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, s
 
     public async Task<string> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        var appUser = new AppUser() { UserName = request.UserName, Email = request.Email };
+        AppUser appUser = new() { UserName = request.UserName, Email = request.Email,AccountType = AppUserAccountType.User};
         _context.AppUsers.Add(appUser);
-        var (result, user) = await _identityService.CreateUserAsync(appUser, request.Password);
+        (Result result, string user) = await _identityService.CreateUserAsync(appUser, request.Password);
         if (!result.Succeeded)
         {
             _context.AppUsers.Remove(appUser);
-            throw new Exception(result.Errors.ToString());
+            throw new BusinessRuleException(string.Join(";",result.Errors));
         }
+
         return await _tokenService.CreateTokenAsync(appUser);
     }
 }

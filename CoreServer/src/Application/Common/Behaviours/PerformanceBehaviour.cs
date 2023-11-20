@@ -5,12 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Application.Common.Behaviours;
 
-public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
+public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
 {
-    private readonly Stopwatch _timer;
-    private readonly ILogger<TRequest> _logger;
     private readonly ICurrentUserService _currentUserService;
     private readonly IIdentityService _identityService;
+    private readonly ILogger<TRequest> _logger;
+    private readonly Stopwatch _timer;
 
     public PerformanceBehaviour(
         ILogger<TRequest> logger,
@@ -24,23 +25,25 @@ public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequ
         _identityService = identityService;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         _timer.Start();
 
-        var response = await next();
+        TResponse response = await next();
 
         _timer.Stop();
 
-        var elapsedMilliseconds = _timer.ElapsedMilliseconds;
+        long elapsedMilliseconds = _timer.ElapsedMilliseconds;
 
         if (elapsedMilliseconds > 500)
         {
-            var requestName = typeof(TRequest).Name;
-            var userId = _currentUserService.User?.Id.ToString() ?? string.Empty;
-            var userName = _currentUserService.User?.UserName ?? string.Empty;
+            string requestName = typeof(TRequest).Name;
+            string userId = _currentUserService.User?.Id.ToString() ?? string.Empty;
+            string userName = _currentUserService.User?.UserName ?? string.Empty;
 
-            _logger.LogWarning("CoreServer Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@UserId} {@UserName} {@Request}",
+            _logger.LogWarning(
+                "CoreServer Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@UserId} {@UserName} {@Request}",
                 requestName, elapsedMilliseconds, userId, userName, request);
         }
 

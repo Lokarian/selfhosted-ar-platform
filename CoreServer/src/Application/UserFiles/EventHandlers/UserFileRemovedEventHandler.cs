@@ -1,7 +1,6 @@
 ﻿using CoreServer.Application.Common.Interfaces;
 using CoreServer.Domain.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace CoreServer.Application.UserFiles.EventHandlers;
 
@@ -10,12 +9,12 @@ public class UserFileRemovedEventHandler : INotificationHandler<UserFileRemovedE
     private readonly IApplicationDbContext _context;
     private readonly IFileStorageService _fileStorageService;
 
-    public UserFileRemovedEventHandler(IApplicationDbContext context,IFileStorageService fileStorageService)
+    public UserFileRemovedEventHandler(IApplicationDbContext context, IFileStorageService fileStorageService)
     {
         _context = context;
         _fileStorageService = fileStorageService;
     }
-    
+
     public async Task Handle(UserFileRemovedEvent notification, CancellationToken cancellationToken)
     {
         _context.UserFiles.Remove(notification.UserFile);

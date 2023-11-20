@@ -4,7 +4,7 @@ using CoreServer.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoreServer.Application.Chat.Queries;
+namespace CoreServer.Application.Chat.Queries.GetChatMessages;
 
 public class GetChatMessagesQuery : IRequest<IList<ChatMessageDto>>
 {
@@ -28,6 +28,7 @@ public class GetChatMessagesQueryHandler : IRequestHandler<GetChatMessagesQuery,
     {
         return _context.ChatMessages
             .Include(m => m.Sender)
+            .Where(m => m.SessionId == request.SessionId)
             .Where(m => request.From == null || m.SentAt < request.From)
             .OrderByDescending(m => m.SentAt)
             .Take(request.Count ?? 10)

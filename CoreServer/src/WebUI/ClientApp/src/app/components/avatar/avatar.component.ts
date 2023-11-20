@@ -1,6 +1,6 @@
 import {Component, Input} from '@angular/core';
-import {AppUser, FileType, OnlineStatus, UpdateAppUserCommand, UserClient, UserFilesClient} from "../../web-api-client";
-import {CurrentUserService} from "../../services/current-user.service";
+import {AppUserDto, FileType, OnlineStatus, UpdateAppUserCommand, UserClient, UserFilesClient} from "../../web-api-client";
+import {CurrentUserService} from "../../services/user/current-user.service";
 
 @Component({
   selector: 'app-avatar[user]',
@@ -8,7 +8,7 @@ import {CurrentUserService} from "../../services/current-user.service";
   styleUrls: ['./avatar.component.scss']
 })
 export class AvatarComponent {
-  @Input() user: AppUser;
+  @Input() user: AppUserDto|undefined;
   @Input() size: number = 4;
   @Input() showStatus: boolean = true;
   @Input() allowEdit: boolean = false;
@@ -25,7 +25,6 @@ export class AvatarComponent {
       this.userFileClient.upload(FileType.UserImage, {data: file, fileName: file.name}).subscribe(result => {
         let currentUser = this.curentUserServise.user;
         currentUser.imageId = result.id;
-        currentUser.image = result;
         this.userClient.update(new UpdateAppUserCommand({...this.curentUserServise.user,userImage: result})).subscribe(user=> {
           this.curentUserServise.setUser(user);
         });
@@ -63,4 +62,5 @@ export class AvatarComponent {
     }
     return text.toUpperCase();
   }
+
 }

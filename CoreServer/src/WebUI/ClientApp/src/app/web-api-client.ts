@@ -15,11 +15,365 @@ import { HttpClient, HttpHeaders, HttpResponse, HttpResponseBase } from '@angula
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
+export interface IArClient {
+    getMyArSessions(): Observable<ArSessionDto[]>;
+    getArSessionMembers(sessionId: string | undefined): Observable<ArMemberDto[]>;
+    createArSession(command: CreateArSessionCommand): Observable<ArSessionDto>;
+    joinArSession(command: JoinArSessionCommand): Observable<ArMemberDto>;
+    leaveArSession(command: LeaveArSessionCommand): Observable<FileResponse>;
+    startArServer(command: StartArServerCommand): Observable<FileResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ArClient implements IArClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    getMyArSessions(): Observable<ArSessionDto[]> {
+        let url_ = this.baseUrl + "/api/Ar/GetMyArSessions";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyArSessions(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyArSessions(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArSessionDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArSessionDto[]>;
+        }));
+    }
+
+    protected processGetMyArSessions(response: HttpResponseBase): Observable<ArSessionDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(ArSessionDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    getArSessionMembers(sessionId: string | undefined): Observable<ArMemberDto[]> {
+        let url_ = this.baseUrl + "/api/Ar/GetArSessionMembers?";
+        if (sessionId === null)
+            throw new Error("The parameter 'sessionId' cannot be null.");
+        else if (sessionId !== undefined)
+            url_ += "sessionId=" + encodeURIComponent("" + sessionId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetArSessionMembers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetArSessionMembers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArMemberDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArMemberDto[]>;
+        }));
+    }
+
+    protected processGetArSessionMembers(response: HttpResponseBase): Observable<ArMemberDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(ArMemberDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    createArSession(command: CreateArSessionCommand): Observable<ArSessionDto> {
+        let url_ = this.baseUrl + "/api/Ar/CreateArSession";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateArSession(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateArSession(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArSessionDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArSessionDto>;
+        }));
+    }
+
+    protected processCreateArSession(response: HttpResponseBase): Observable<ArSessionDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = ArSessionDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    joinArSession(command: JoinArSessionCommand): Observable<ArMemberDto> {
+        let url_ = this.baseUrl + "/api/Ar/JoinArSession";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processJoinArSession(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processJoinArSession(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArMemberDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArMemberDto>;
+        }));
+    }
+
+    protected processJoinArSession(response: HttpResponseBase): Observable<ArMemberDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = ArMemberDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    leaveArSession(command: LeaveArSessionCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/Ar/LeaveArSession";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLeaveArSession(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLeaveArSession(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processLeaveArSession(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    startArServer(command: StartArServerCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/Ar/StartArServer";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processStartArServer(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processStartArServer(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processStartArServer(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IChatClient {
     getMyChatSessions(): Observable<ChatSessionDto[]>;
-    getChatMessages(query: GetChatMessagesQuery): Observable<ChatMessageDto>;
-    createChatSession(command: CreateChatSessionCommand): Observable<ChatSession>;
-    sendMessageToChatSession(command: SendMessageToChatSessionCommand): Observable<ChatMessageDto>;
+    getChatMessages(sessionId: string | undefined, from: Date | null | undefined, count: number | null | undefined): Observable<ChatMessageDto[]>;
+    createChatSession(command: CreateChatSessionCommand): Observable<ChatSessionDto>;
+    sendMessageToChatSession(command: SendMessageToChatCommand): Observable<ChatMessageDto>;
+    updateLastRead(command: UpdateChatSessionLastReadCommand): Observable<FileResponse>;
     deleteChatMessage(id: string): Observable<FileResponse>;
 }
 
@@ -91,18 +445,22 @@ export class ChatClient implements IChatClient {
         return _observableOf(null as any);
     }
 
-    getChatMessages(query: GetChatMessagesQuery): Observable<ChatMessageDto> {
-        let url_ = this.baseUrl + "/api/Chat/GetChatMessages";
+    getChatMessages(sessionId: string | undefined, from: Date | null | undefined, count: number | null | undefined): Observable<ChatMessageDto[]> {
+        let url_ = this.baseUrl + "/api/Chat/GetChatMessages?";
+        if (sessionId === null)
+            throw new Error("The parameter 'sessionId' cannot be null.");
+        else if (sessionId !== undefined)
+            url_ += "SessionId=" + encodeURIComponent("" + sessionId) + "&";
+        if (from !== undefined && from !== null)
+            url_ += "From=" + encodeURIComponent(from ? "" + from.toISOString() : "") + "&";
+        if (count !== undefined && count !== null)
+            url_ += "Count=" + encodeURIComponent("" + count) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(query);
-
         let options_ : any = {
-            body: content_,
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
@@ -114,14 +472,14 @@ export class ChatClient implements IChatClient {
                 try {
                     return this.processGetChatMessages(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<ChatMessageDto>;
+                    return _observableThrow(e) as any as Observable<ChatMessageDto[]>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<ChatMessageDto>;
+                return _observableThrow(response_) as any as Observable<ChatMessageDto[]>;
         }));
     }
 
-    protected processGetChatMessages(response: HttpResponseBase): Observable<ChatMessageDto> {
+    protected processGetChatMessages(response: HttpResponseBase): Observable<ChatMessageDto[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -132,7 +490,14 @@ export class ChatClient implements IChatClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = ChatMessageDto.fromJS(resultData200);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(ChatMessageDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -143,7 +508,7 @@ export class ChatClient implements IChatClient {
         return _observableOf(null as any);
     }
 
-    createChatSession(command: CreateChatSessionCommand): Observable<ChatSession> {
+    createChatSession(command: CreateChatSessionCommand): Observable<ChatSessionDto> {
         let url_ = this.baseUrl + "/api/Chat/CreateChatSession";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -166,14 +531,14 @@ export class ChatClient implements IChatClient {
                 try {
                     return this.processCreateChatSession(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<ChatSession>;
+                    return _observableThrow(e) as any as Observable<ChatSessionDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<ChatSession>;
+                return _observableThrow(response_) as any as Observable<ChatSessionDto>;
         }));
     }
 
-    protected processCreateChatSession(response: HttpResponseBase): Observable<ChatSession> {
+    protected processCreateChatSession(response: HttpResponseBase): Observable<ChatSessionDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -184,7 +549,7 @@ export class ChatClient implements IChatClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = ChatSession.fromJS(resultData200);
+            result200 = ChatSessionDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -195,8 +560,8 @@ export class ChatClient implements IChatClient {
         return _observableOf(null as any);
     }
 
-    sendMessageToChatSession(command: SendMessageToChatSessionCommand): Observable<ChatMessageDto> {
-        let url_ = this.baseUrl + "/api/Chat/SendMessageToChatSession/message";
+    sendMessageToChatSession(command: SendMessageToChatCommand): Observable<ChatMessageDto> {
+        let url_ = this.baseUrl + "/api/Chat/SendMessageToChatSession";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -247,8 +612,64 @@ export class ChatClient implements IChatClient {
         return _observableOf(null as any);
     }
 
+    updateLastRead(command: UpdateChatSessionLastReadCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/Chat/UpdateLastRead";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateLastRead(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateLastRead(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processUpdateLastRead(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     deleteChatMessage(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/Chat/DeleteChatMessage/message/{id}";
+        let url_ = this.baseUrl + "/api/Chat/DeleteChatMessage/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
@@ -303,18 +724,14 @@ export class ChatClient implements IChatClient {
     }
 }
 
-export interface ITodoItemsClient {
-    getTodoItemsWithPagination(listId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<PaginatedListOfTodoItemBriefDto>;
-    create(command: CreateTodoItemCommand): Observable<string>;
-    update(id: string, command: UpdateTodoItemCommand): Observable<FileResponse>;
-    updateItemDetails(id: string | undefined, command: UpdateTodoItemDetailCommand): Observable<FileResponse>;
-    delete(id: string): Observable<FileResponse>;
+export interface IMediaServerClient {
+    authenticateUser(query: UserCanAccessStreamQuery): Observable<FileResponse>;
 }
 
 @Injectable({
     providedIn: 'root'
 })
-export class TodoItemsClient implements ITodoItemsClient {
+export class MediaServerClient implements IMediaServerClient {
     private http: HttpClient;
     private baseUrl: string;
     protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
@@ -324,20 +741,84 @@ export class TodoItemsClient implements ITodoItemsClient {
         this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
     }
 
-    getTodoItemsWithPagination(listId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<PaginatedListOfTodoItemBriefDto> {
-        let url_ = this.baseUrl + "/api/TodoItems/GetTodoItemsWithPagination?";
-        if (listId === null)
-            throw new Error("The parameter 'listId' cannot be null.");
-        else if (listId !== undefined)
-            url_ += "ListId=" + encodeURIComponent("" + listId) + "&";
-        if (pageNumber === null)
-            throw new Error("The parameter 'pageNumber' cannot be null.");
-        else if (pageNumber !== undefined)
-            url_ += "PageNumber=" + encodeURIComponent("" + pageNumber) + "&";
-        if (pageSize === null)
-            throw new Error("The parameter 'pageSize' cannot be null.");
-        else if (pageSize !== undefined)
-            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+    authenticateUser(query: UserCanAccessStreamQuery): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/MediaServer/AuthenticateUser";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(query);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuthenticateUser(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuthenticateUser(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processAuthenticateUser(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ISessionClient {
+    getMySessions(): Observable<SessionDto[]>;
+    createSession(command: CreateSessionCommand): Observable<SessionDto>;
+    updateSession(command: UpdateSessionCommand): Observable<SessionDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class SessionClient implements ISessionClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    getMySessions(): Observable<SessionDto[]> {
+        let url_ = this.baseUrl + "/api/Session/GetMySessions";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -349,20 +830,20 @@ export class TodoItemsClient implements ITodoItemsClient {
         };
 
         return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetTodoItemsWithPagination(response_);
+            return this.processGetMySessions(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processGetTodoItemsWithPagination(response_ as any);
+                    return this.processGetMySessions(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<PaginatedListOfTodoItemBriefDto>;
+                    return _observableThrow(e) as any as Observable<SessionDto[]>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<PaginatedListOfTodoItemBriefDto>;
+                return _observableThrow(response_) as any as Observable<SessionDto[]>;
         }));
     }
 
-    protected processGetTodoItemsWithPagination(response: HttpResponseBase): Observable<PaginatedListOfTodoItemBriefDto> {
+    protected processGetMySessions(response: HttpResponseBase): Observable<SessionDto[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -373,7 +854,14 @@ export class TodoItemsClient implements ITodoItemsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = PaginatedListOfTodoItemBriefDto.fromJS(resultData200);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(SessionDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -384,8 +872,8 @@ export class TodoItemsClient implements ITodoItemsClient {
         return _observableOf(null as any);
     }
 
-    create(command: CreateTodoItemCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/TodoItems/Create";
+    createSession(command: CreateSessionCommand): Observable<SessionDto> {
+        let url_ = this.baseUrl + "/api/Session/CreateSession";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -401,20 +889,20 @@ export class TodoItemsClient implements ITodoItemsClient {
         };
 
         return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreate(response_);
+            return this.processCreateSession(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processCreate(response_ as any);
+                    return this.processCreateSession(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<string>;
+                    return _observableThrow(e) as any as Observable<SessionDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<string>;
+                return _observableThrow(response_) as any as Observable<SessionDto>;
         }));
     }
 
-    protected processCreate(response: HttpResponseBase): Observable<string> {
+    protected processCreateSession(response: HttpResponseBase): Observable<SessionDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -425,8 +913,7 @@ export class TodoItemsClient implements ITodoItemsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-                result200 = resultData200 !== undefined ? resultData200 : <any>null;
-    
+            result200 = SessionDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -437,307 +924,8 @@ export class TodoItemsClient implements ITodoItemsClient {
         return _observableOf(null as any);
     }
 
-    update(id: string, command: UpdateTodoItemCommand): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoItems/Update/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(command);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdate(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdate(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processUpdate(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    updateItemDetails(id: string | undefined, command: UpdateTodoItemDetailCommand): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoItems/UpdateItemDetails/UpdateItemDetails?";
-        if (id === null)
-            throw new Error("The parameter 'id' cannot be null.");
-        else if (id !== undefined)
-            url_ += "id=" + encodeURIComponent("" + id) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(command);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateItemDetails(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateItemDetails(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processUpdateItemDetails(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    delete(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoItems/Delete/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDelete(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDelete(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processDelete(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-}
-
-export interface ITodoListsClient {
-    get(): Observable<TodosVm>;
-    get2(id: string): Observable<FileResponse>;
-    create(command: CreateTodoListCommand): Observable<string>;
-    update(id: string, command: UpdateTodoListCommand): Observable<FileResponse>;
-    delete(id: string): Observable<FileResponse>;
-}
-
-@Injectable({
-    providedIn: 'root'
-})
-export class TodoListsClient implements ITodoListsClient {
-    private http: HttpClient;
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
-
-    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
-        this.http = http;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
-    }
-
-    get(): Observable<TodosVm> {
-        let url_ = this.baseUrl + "/api/TodoLists/Get";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGet(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGet(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<TodosVm>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<TodosVm>;
-        }));
-    }
-
-    protected processGet(response: HttpResponseBase): Observable<TodosVm> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = TodosVm.fromJS(resultData200);
-            return _observableOf(result200);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    get2(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoLists/Get/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGet2(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGet2(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processGet2(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    create(command: CreateTodoListCommand): Observable<string> {
-        let url_ = this.baseUrl + "/api/TodoLists/Create";
+    updateSession(command: UpdateSessionCommand): Observable<SessionDto> {
+        let url_ = this.baseUrl + "/api/Session/UpdateSession";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -753,20 +941,20 @@ export class TodoListsClient implements ITodoListsClient {
         };
 
         return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreate(response_);
+            return this.processUpdateSession(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processCreate(response_ as any);
+                    return this.processUpdateSession(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<string>;
+                    return _observableThrow(e) as any as Observable<SessionDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<string>;
+                return _observableThrow(response_) as any as Observable<SessionDto>;
         }));
     }
 
-    protected processCreate(response: HttpResponseBase): Observable<string> {
+    protected processUpdateSession(response: HttpResponseBase): Observable<SessionDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -777,8 +965,7 @@ export class TodoListsClient implements ITodoListsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-                result200 = resultData200 !== undefined ? resultData200 : <any>null;
-    
+            result200 = SessionDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -788,15 +975,30 @@ export class TodoListsClient implements ITodoListsClient {
         }
         return _observableOf(null as any);
     }
+}
 
-    update(id: string, command: UpdateTodoListCommand): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoLists/Update/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+export interface IUnityServerClient {
+    authenticateUser(query: UserCanAccessUnityServerQuery): Observable<FileResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UnityServerClient implements IUnityServerClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+    }
+
+    authenticateUser(query: UserCanAccessUnityServerQuery): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/UnityServer/AuthenticateUser";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(command);
+        const content_ = JSON.stringify(query);
 
         let options_ : any = {
             body: content_,
@@ -808,12 +1010,12 @@ export class TodoListsClient implements ITodoListsClient {
             })
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdate(response_);
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuthenticateUser(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processUpdate(response_ as any);
+                    return this.processAuthenticateUser(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<FileResponse>;
                 }
@@ -822,62 +1024,7 @@ export class TodoListsClient implements ITodoListsClient {
         }));
     }
 
-    protected processUpdate(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    delete(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/TodoLists/Delete/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDelete(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDelete(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processDelete(response: HttpResponseBase): Observable<FileResponse> {
+    protected processAuthenticateUser(response: HttpResponseBase): Observable<FileResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -907,8 +1054,10 @@ export class TodoListsClient implements ITodoListsClient {
 export interface IUserClient {
     login(command: LoginUserCommand): Observable<string>;
     register(command: RegisterUserCommand): Observable<string>;
-    current(): Observable<AppUser>;
-    update(command: UpdateAppUserCommand): Observable<AppUser>;
+    current(): Observable<AppUserDto>;
+    update(command: UpdateAppUserCommand): Observable<AppUserDto>;
+    getAppUserById(id: string): Observable<AppUserDto>;
+    getAppUsersByPartialName(partialName: string | null | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<PaginatedListOfAppUserDto>;
 }
 
 @Injectable({
@@ -1030,7 +1179,7 @@ export class UserClient implements IUserClient {
         return _observableOf(null as any);
     }
 
-    current(): Observable<AppUser> {
+    current(): Observable<AppUserDto> {
         let url_ = this.baseUrl + "/api/User/Current";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1049,14 +1198,14 @@ export class UserClient implements IUserClient {
                 try {
                     return this.processCurrent(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<AppUser>;
+                    return _observableThrow(e) as any as Observable<AppUserDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<AppUser>;
+                return _observableThrow(response_) as any as Observable<AppUserDto>;
         }));
     }
 
-    protected processCurrent(response: HttpResponseBase): Observable<AppUser> {
+    protected processCurrent(response: HttpResponseBase): Observable<AppUserDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1067,7 +1216,7 @@ export class UserClient implements IUserClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = AppUser.fromJS(resultData200);
+            result200 = AppUserDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -1078,7 +1227,7 @@ export class UserClient implements IUserClient {
         return _observableOf(null as any);
     }
 
-    update(command: UpdateAppUserCommand): Observable<AppUser> {
+    update(command: UpdateAppUserCommand): Observable<AppUserDto> {
         let url_ = this.baseUrl + "/api/User/Update";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1101,14 +1250,14 @@ export class UserClient implements IUserClient {
                 try {
                     return this.processUpdate(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<AppUser>;
+                    return _observableThrow(e) as any as Observable<AppUserDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<AppUser>;
+                return _observableThrow(response_) as any as Observable<AppUserDto>;
         }));
     }
 
-    protected processUpdate(response: HttpResponseBase): Observable<AppUser> {
+    protected processUpdate(response: HttpResponseBase): Observable<AppUserDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1119,7 +1268,116 @@ export class UserClient implements IUserClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = AppUser.fromJS(resultData200);
+            result200 = AppUserDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    getAppUserById(id: string): Observable<AppUserDto> {
+        let url_ = this.baseUrl + "/api/User/GetAppUserById/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAppUserById(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAppUserById(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AppUserDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AppUserDto>;
+        }));
+    }
+
+    protected processGetAppUserById(response: HttpResponseBase): Observable<AppUserDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = AppUserDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    getAppUsersByPartialName(partialName: string | null | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<PaginatedListOfAppUserDto> {
+        let url_ = this.baseUrl + "/api/User/GetAppUsersByPartialName?";
+        if (partialName !== undefined && partialName !== null)
+            url_ += "PartialName=" + encodeURIComponent("" + partialName) + "&";
+        if (pageNumber === null)
+            throw new Error("The parameter 'pageNumber' cannot be null.");
+        else if (pageNumber !== undefined)
+            url_ += "PageNumber=" + encodeURIComponent("" + pageNumber) + "&";
+        if (pageSize === null)
+            throw new Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAppUsersByPartialName(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAppUsersByPartialName(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PaginatedListOfAppUserDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PaginatedListOfAppUserDto>;
+        }));
+    }
+
+    protected processGetAppUsersByPartialName(response: HttpResponseBase): Observable<PaginatedListOfAppUserDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = PaginatedListOfAppUserDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -1318,14 +1576,21 @@ export class UserFilesClient implements IUserFilesClient {
     }
 }
 
-export interface IWeatherForecastClient {
-    get(): Observable<WeatherForecast[]>;
+export interface IVideoClient {
+    getMyVideoSessions(): Observable<VideoSessionDto[]>;
+    getVideoSessionMembers(sessionId: string | undefined): Observable<VideoMemberDto[]>;
+    getVideoStreams(sessionId: string | undefined): Observable<VideoStreamDto[]>;
+    createVideoSession(command: CreateVideoSessionCommand): Observable<VideoSessionDto>;
+    requestVideoStream(command: CreateVideoStreamCommand): Observable<VideoStreamDto>;
+    stopVideoStream(command: StopVideoStreamCommand): Observable<VideoStreamDto>;
+    joinVideoSession(command: JoinVideoSessionCommand): Observable<TupleOfVideoMemberDtoAndString>;
+    leaveVideoSession(command: LeaveVideoSessionCommand): Observable<FileResponse>;
 }
 
 @Injectable({
     providedIn: 'root'
 })
-export class WeatherForecastClient implements IWeatherForecastClient {
+export class VideoClient implements IVideoClient {
     private http: HttpClient;
     private baseUrl: string;
     protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
@@ -1335,8 +1600,8 @@ export class WeatherForecastClient implements IWeatherForecastClient {
         this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
     }
 
-    get(): Observable<WeatherForecast[]> {
-        let url_ = this.baseUrl + "/api/WeatherForecast/Get";
+    getMyVideoSessions(): Observable<VideoSessionDto[]> {
+        let url_ = this.baseUrl + "/api/Video/GetMyVideoSessions";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -1348,20 +1613,20 @@ export class WeatherForecastClient implements IWeatherForecastClient {
         };
 
         return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGet(response_);
+            return this.processGetMyVideoSessions(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processGet(response_ as any);
+                    return this.processGetMyVideoSessions(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<WeatherForecast[]>;
+                    return _observableThrow(e) as any as Observable<VideoSessionDto[]>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<WeatherForecast[]>;
+                return _observableThrow(response_) as any as Observable<VideoSessionDto[]>;
         }));
     }
 
-    protected processGet(response: HttpResponseBase): Observable<WeatherForecast[]> {
+    protected processGetMyVideoSessions(response: HttpResponseBase): Observable<VideoSessionDto[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1375,7 +1640,7 @@ export class WeatherForecastClient implements IWeatherForecastClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(WeatherForecast.fromJS(item));
+                    result200!.push(VideoSessionDto.fromJS(item));
             }
             else {
                 result200 = <any>null;
@@ -1389,12 +1654,566 @@ export class WeatherForecastClient implements IWeatherForecastClient {
         }
         return _observableOf(null as any);
     }
+
+    getVideoSessionMembers(sessionId: string | undefined): Observable<VideoMemberDto[]> {
+        let url_ = this.baseUrl + "/api/Video/GetVideoSessionMembers?";
+        if (sessionId === null)
+            throw new Error("The parameter 'sessionId' cannot be null.");
+        else if (sessionId !== undefined)
+            url_ += "sessionId=" + encodeURIComponent("" + sessionId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetVideoSessionMembers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetVideoSessionMembers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<VideoMemberDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<VideoMemberDto[]>;
+        }));
+    }
+
+    protected processGetVideoSessionMembers(response: HttpResponseBase): Observable<VideoMemberDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(VideoMemberDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    getVideoStreams(sessionId: string | undefined): Observable<VideoStreamDto[]> {
+        let url_ = this.baseUrl + "/api/Video/GetVideoStreams?";
+        if (sessionId === null)
+            throw new Error("The parameter 'sessionId' cannot be null.");
+        else if (sessionId !== undefined)
+            url_ += "sessionId=" + encodeURIComponent("" + sessionId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetVideoStreams(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetVideoStreams(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<VideoStreamDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<VideoStreamDto[]>;
+        }));
+    }
+
+    protected processGetVideoStreams(response: HttpResponseBase): Observable<VideoStreamDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(VideoStreamDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    createVideoSession(command: CreateVideoSessionCommand): Observable<VideoSessionDto> {
+        let url_ = this.baseUrl + "/api/Video/CreateVideoSession";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateVideoSession(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateVideoSession(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<VideoSessionDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<VideoSessionDto>;
+        }));
+    }
+
+    protected processCreateVideoSession(response: HttpResponseBase): Observable<VideoSessionDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = VideoSessionDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    requestVideoStream(command: CreateVideoStreamCommand): Observable<VideoStreamDto> {
+        let url_ = this.baseUrl + "/api/Video/RequestVideoStream";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRequestVideoStream(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRequestVideoStream(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<VideoStreamDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<VideoStreamDto>;
+        }));
+    }
+
+    protected processRequestVideoStream(response: HttpResponseBase): Observable<VideoStreamDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = VideoStreamDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    stopVideoStream(command: StopVideoStreamCommand): Observable<VideoStreamDto> {
+        let url_ = this.baseUrl + "/api/Video/StopVideoStream";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processStopVideoStream(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processStopVideoStream(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<VideoStreamDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<VideoStreamDto>;
+        }));
+    }
+
+    protected processStopVideoStream(response: HttpResponseBase): Observable<VideoStreamDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = VideoStreamDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    joinVideoSession(command: JoinVideoSessionCommand): Observable<TupleOfVideoMemberDtoAndString> {
+        let url_ = this.baseUrl + "/api/Video/JoinVideoSession";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processJoinVideoSession(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processJoinVideoSession(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TupleOfVideoMemberDtoAndString>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TupleOfVideoMemberDtoAndString>;
+        }));
+    }
+
+    protected processJoinVideoSession(response: HttpResponseBase): Observable<TupleOfVideoMemberDtoAndString> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = TupleOfVideoMemberDtoAndString.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    leaveVideoSession(command: LeaveVideoSessionCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/Video/LeaveVideoSession";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLeaveVideoSession(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLeaveVideoSession(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processLeaveVideoSession(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export class ArSessionDto implements IArSessionDto {
+    baseSessionId?: string;
+    baseSession?: SessionDto | undefined;
+    members?: ArMemberDto[];
+    sessionType?: ArSessionType;
+    serverState?: ArServerState;
+
+    constructor(data?: IArSessionDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.baseSessionId = _data["baseSessionId"];
+            this.baseSession = _data["baseSession"] ? SessionDto.fromJS(_data["baseSession"]) : <any>undefined;
+            if (Array.isArray(_data["members"])) {
+                this.members = [] as any;
+                for (let item of _data["members"])
+                    this.members!.push(ArMemberDto.fromJS(item));
+            }
+            this.sessionType = _data["sessionType"];
+            this.serverState = _data["serverState"];
+        }
+    }
+
+    static fromJS(data: any): ArSessionDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ArSessionDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["baseSessionId"] = this.baseSessionId;
+        data["baseSession"] = this.baseSession ? this.baseSession.toJSON() : <any>undefined;
+        if (Array.isArray(this.members)) {
+            data["members"] = [];
+            for (let item of this.members)
+                data["members"].push(item.toJSON());
+        }
+        data["sessionType"] = this.sessionType;
+        data["serverState"] = this.serverState;
+        return data;
+    }
+}
+
+export interface IArSessionDto {
+    baseSessionId?: string;
+    baseSession?: SessionDto | undefined;
+    members?: ArMemberDto[];
+    sessionType?: ArSessionType;
+    serverState?: ArServerState;
+}
+
+export class SessionDto implements ISessionDto {
+    id?: string;
+    name?: string;
+    createdAt?: Date;
+    members?: SessionMemberDto[];
+    chatSession?: ChatSessionDto | undefined;
+    videoSession?: VideoSessionDto | undefined;
+    arSession?: ArSessionDto | undefined;
+
+    constructor(data?: ISessionDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.name = _data["name"];
+            this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
+            if (Array.isArray(_data["members"])) {
+                this.members = [] as any;
+                for (let item of _data["members"])
+                    this.members!.push(SessionMemberDto.fromJS(item));
+            }
+            this.chatSession = _data["chatSession"] ? ChatSessionDto.fromJS(_data["chatSession"]) : <any>undefined;
+            this.videoSession = _data["videoSession"] ? VideoSessionDto.fromJS(_data["videoSession"]) : <any>undefined;
+            this.arSession = _data["arSession"] ? ArSessionDto.fromJS(_data["arSession"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): SessionDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SessionDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["name"] = this.name;
+        data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
+        if (Array.isArray(this.members)) {
+            data["members"] = [];
+            for (let item of this.members)
+                data["members"].push(item.toJSON());
+        }
+        data["chatSession"] = this.chatSession ? this.chatSession.toJSON() : <any>undefined;
+        data["videoSession"] = this.videoSession ? this.videoSession.toJSON() : <any>undefined;
+        data["arSession"] = this.arSession ? this.arSession.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface ISessionDto {
+    id?: string;
+    name?: string;
+    createdAt?: Date;
+    members?: SessionMemberDto[];
+    chatSession?: ChatSessionDto | undefined;
+    videoSession?: VideoSessionDto | undefined;
+    arSession?: ArSessionDto | undefined;
+}
+
+export class SessionMemberDto implements ISessionMemberDto {
+    id?: string;
+    userId?: string;
+    sessionId?: string;
+
+    constructor(data?: ISessionMemberDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userId = _data["userId"];
+            this.sessionId = _data["sessionId"];
+        }
+    }
+
+    static fromJS(data: any): SessionMemberDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new SessionMemberDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userId"] = this.userId;
+        data["sessionId"] = this.sessionId;
+        return data;
+    }
+}
+
+export interface ISessionMemberDto {
+    id?: string;
+    userId?: string;
+    sessionId?: string;
 }
 
 export class ChatSessionDto implements IChatSessionDto {
-    id?: string;
-    name?: string;
-    lastMessage?: ChatMessage;
+    baseSessionId?: string;
+    baseSession?: SessionDto | undefined;
+    lastMessage?: ChatMessageDto | undefined;
     members?: ChatMemberDto[];
 
     constructor(data?: IChatSessionDto) {
@@ -1408,9 +2227,9 @@ export class ChatSessionDto implements IChatSessionDto {
 
     init(_data?: any) {
         if (_data) {
-            this.id = _data["id"];
-            this.name = _data["name"];
-            this.lastMessage = _data["lastMessage"] ? ChatMessage.fromJS(_data["lastMessage"]) : <any>undefined;
+            this.baseSessionId = _data["baseSessionId"];
+            this.baseSession = _data["baseSession"] ? SessionDto.fromJS(_data["baseSession"]) : <any>undefined;
+            this.lastMessage = _data["lastMessage"] ? ChatMessageDto.fromJS(_data["lastMessage"]) : <any>undefined;
             if (Array.isArray(_data["members"])) {
                 this.members = [] as any;
                 for (let item of _data["members"])
@@ -1428,8 +2247,8 @@ export class ChatSessionDto implements IChatSessionDto {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["name"] = this.name;
+        data["baseSessionId"] = this.baseSessionId;
+        data["baseSession"] = this.baseSession ? this.baseSession.toJSON() : <any>undefined;
         data["lastMessage"] = this.lastMessage ? this.lastMessage.toJSON() : <any>undefined;
         if (Array.isArray(this.members)) {
             data["members"] = [];
@@ -1441,387 +2260,10 @@ export class ChatSessionDto implements IChatSessionDto {
 }
 
 export interface IChatSessionDto {
-    id?: string;
-    name?: string;
-    lastMessage?: ChatMessage;
+    baseSessionId?: string;
+    baseSession?: SessionDto | undefined;
+    lastMessage?: ChatMessageDto | undefined;
     members?: ChatMemberDto[];
-}
-
-export abstract class BaseEntity implements IBaseEntity {
-    id?: string;
-    domainEvents?: BaseEvent[];
-
-    constructor(data?: IBaseEntity) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            if (Array.isArray(_data["domainEvents"])) {
-                this.domainEvents = [] as any;
-                for (let item of _data["domainEvents"])
-                    this.domainEvents!.push(BaseEvent.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): BaseEntity {
-        data = typeof data === 'object' ? data : {};
-        throw new Error("The abstract class 'BaseEntity' cannot be instantiated.");
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        if (Array.isArray(this.domainEvents)) {
-            data["domainEvents"] = [];
-            for (let item of this.domainEvents)
-                data["domainEvents"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface IBaseEntity {
-    id?: string;
-    domainEvents?: BaseEvent[];
-}
-
-export class ChatMessage extends BaseEntity implements IChatMessage {
-    sessionId?: string;
-    session?: ChatSession;
-    senderId?: string;
-    sender?: AppUser;
-    text?: string;
-    sentAt?: Date;
-
-    constructor(data?: IChatMessage) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.sessionId = _data["sessionId"];
-            this.session = _data["session"] ? ChatSession.fromJS(_data["session"]) : <any>undefined;
-            this.senderId = _data["senderId"];
-            this.sender = _data["sender"] ? AppUser.fromJS(_data["sender"]) : <any>undefined;
-            this.text = _data["text"];
-            this.sentAt = _data["sentAt"] ? new Date(_data["sentAt"].toString()) : <any>undefined;
-        }
-    }
-
-    static override fromJS(data: any): ChatMessage {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatMessage();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["sessionId"] = this.sessionId;
-        data["session"] = this.session ? this.session.toJSON() : <any>undefined;
-        data["senderId"] = this.senderId;
-        data["sender"] = this.sender ? this.sender.toJSON() : <any>undefined;
-        data["text"] = this.text;
-        data["sentAt"] = this.sentAt ? this.sentAt.toISOString() : <any>undefined;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IChatMessage extends IBaseEntity {
-    sessionId?: string;
-    session?: ChatSession;
-    senderId?: string;
-    sender?: AppUser;
-    text?: string;
-    sentAt?: Date;
-}
-
-export class ChatSession extends BaseEntity implements IChatSession {
-    messages?: ChatMessage[];
-    members?: ChatMember[];
-    name?: string | undefined;
-
-    constructor(data?: IChatSession) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            if (Array.isArray(_data["messages"])) {
-                this.messages = [] as any;
-                for (let item of _data["messages"])
-                    this.messages!.push(ChatMessage.fromJS(item));
-            }
-            if (Array.isArray(_data["members"])) {
-                this.members = [] as any;
-                for (let item of _data["members"])
-                    this.members!.push(ChatMember.fromJS(item));
-            }
-            this.name = _data["name"];
-        }
-    }
-
-    static override fromJS(data: any): ChatSession {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatSession();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.messages)) {
-            data["messages"] = [];
-            for (let item of this.messages)
-                data["messages"].push(item.toJSON());
-        }
-        if (Array.isArray(this.members)) {
-            data["members"] = [];
-            for (let item of this.members)
-                data["members"].push(item.toJSON());
-        }
-        data["name"] = this.name;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IChatSession extends IBaseEntity {
-    messages?: ChatMessage[];
-    members?: ChatMember[];
-    name?: string | undefined;
-}
-
-export class ChatMember implements IChatMember {
-    sessionId?: string;
-    session?: ChatSession;
-    userId?: string;
-    user?: AppUser;
-    lastSeen?: Date | undefined;
-
-    constructor(data?: IChatMember) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.sessionId = _data["sessionId"];
-            this.session = _data["session"] ? ChatSession.fromJS(_data["session"]) : <any>undefined;
-            this.userId = _data["userId"];
-            this.user = _data["user"] ? AppUser.fromJS(_data["user"]) : <any>undefined;
-            this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): ChatMember {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatMember();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["sessionId"] = this.sessionId;
-        data["session"] = this.session ? this.session.toJSON() : <any>undefined;
-        data["userId"] = this.userId;
-        data["user"] = this.user ? this.user.toJSON() : <any>undefined;
-        data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IChatMember {
-    sessionId?: string;
-    session?: ChatSession;
-    userId?: string;
-    user?: AppUser;
-    lastSeen?: Date | undefined;
-}
-
-export class AppUser extends BaseEntity implements IAppUser {
-    userName?: string;
-    email?: string;
-    imageId?: string | undefined;
-    image?: UserFile | undefined;
-    onlineStatus?: OnlineStatus;
-
-    constructor(data?: IAppUser) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.userName = _data["userName"];
-            this.email = _data["email"];
-            this.imageId = _data["imageId"];
-            this.image = _data["image"] ? UserFile.fromJS(_data["image"]) : <any>undefined;
-            this.onlineStatus = _data["onlineStatus"];
-        }
-    }
-
-    static override fromJS(data: any): AppUser {
-        data = typeof data === 'object' ? data : {};
-        let result = new AppUser();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["userName"] = this.userName;
-        data["email"] = this.email;
-        data["imageId"] = this.imageId;
-        data["image"] = this.image ? this.image.toJSON() : <any>undefined;
-        data["onlineStatus"] = this.onlineStatus;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IAppUser extends IBaseEntity {
-    userName?: string;
-    email?: string;
-    imageId?: string | undefined;
-    image?: UserFile | undefined;
-    onlineStatus?: OnlineStatus;
-}
-
-export class UserFile extends BaseEntity implements IUserFile {
-    fileName?: string;
-    mimeType?: string;
-    fileType?: FileType;
-
-    constructor(data?: IUserFile) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.fileName = _data["fileName"];
-            this.mimeType = _data["mimeType"];
-            this.fileType = _data["fileType"];
-        }
-    }
-
-    static override fromJS(data: any): UserFile {
-        data = typeof data === 'object' ? data : {};
-        let result = new UserFile();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["fileName"] = this.fileName;
-        data["mimeType"] = this.mimeType;
-        data["fileType"] = this.fileType;
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IUserFile extends IBaseEntity {
-    fileName?: string;
-    mimeType?: string;
-    fileType?: FileType;
-}
-
-export enum FileType {
-    UserImage = 0,
-}
-
-export abstract class BaseEvent implements IBaseEvent {
-
-    constructor(data?: IBaseEvent) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-    }
-
-    static fromJS(data: any): BaseEvent {
-        data = typeof data === 'object' ? data : {};
-        throw new Error("The abstract class 'BaseEvent' cannot be instantiated.");
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        return data;
-    }
-}
-
-export interface IBaseEvent {
-}
-
-export enum OnlineStatus {
-    Online = 0,
-    Offline = 1,
-    Busy = 2,
-    Away = 3,
-}
-
-export class ChatMemberDto implements IChatMemberDto {
-    userId?: string;
-    lastSeen?: Date | undefined;
-
-    constructor(data?: IChatMemberDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.userId = _data["userId"];
-            this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): ChatMemberDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChatMemberDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["userId"] = this.userId;
-        data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IChatMemberDto {
-    userId?: string;
-    lastSeen?: Date | undefined;
 }
 
 export class ChatMessageDto implements IChatMessageDto {
@@ -1829,6 +2271,7 @@ export class ChatMessageDto implements IChatMessageDto {
     text?: string;
     sentAt?: Date;
     senderId?: string;
+    sessionId?: string;
 
     constructor(data?: IChatMessageDto) {
         if (data) {
@@ -1845,6 +2288,7 @@ export class ChatMessageDto implements IChatMessageDto {
             this.text = _data["text"];
             this.sentAt = _data["sentAt"] ? new Date(_data["sentAt"].toString()) : <any>undefined;
             this.senderId = _data["senderId"];
+            this.sessionId = _data["sessionId"];
         }
     }
 
@@ -1861,6 +2305,7 @@ export class ChatMessageDto implements IChatMessageDto {
         data["text"] = this.text;
         data["sentAt"] = this.sentAt ? this.sentAt.toISOString() : <any>undefined;
         data["senderId"] = this.senderId;
+        data["sessionId"] = this.sessionId;
         return data;
     }
 }
@@ -1870,14 +2315,301 @@ export interface IChatMessageDto {
     text?: string;
     sentAt?: Date;
     senderId?: string;
+    sessionId?: string;
 }
 
-export class GetChatMessagesQuery implements IGetChatMessagesQuery {
+export class ChatMemberDto implements IChatMemberDto {
+    userId?: string;
+    lastSeen?: Date | undefined;
     sessionId?: string;
-    from?: Date | undefined;
-    count?: number | undefined;
 
-    constructor(data?: IGetChatMessagesQuery) {
+    constructor(data?: IChatMemberDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.userId = _data["userId"];
+            this.lastSeen = _data["lastSeen"] ? new Date(_data["lastSeen"].toString()) : <any>undefined;
+            this.sessionId = _data["sessionId"];
+        }
+    }
+
+    static fromJS(data: any): ChatMemberDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ChatMemberDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["userId"] = this.userId;
+        data["lastSeen"] = this.lastSeen ? this.lastSeen.toISOString() : <any>undefined;
+        data["sessionId"] = this.sessionId;
+        return data;
+    }
+}
+
+export interface IChatMemberDto {
+    userId?: string;
+    lastSeen?: Date | undefined;
+    sessionId?: string;
+}
+
+export class VideoSessionDto implements IVideoSessionDto {
+    baseSessionId?: string;
+    baseSession?: SessionDto | undefined;
+    referencePoint?: Date;
+    active?: boolean;
+    members?: VideoMemberDto[] | undefined;
+    streams?: VideoStreamDto[] | undefined;
+
+    constructor(data?: IVideoSessionDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.baseSessionId = _data["baseSessionId"];
+            this.baseSession = _data["baseSession"] ? SessionDto.fromJS(_data["baseSession"]) : <any>undefined;
+            this.referencePoint = _data["referencePoint"] ? new Date(_data["referencePoint"].toString()) : <any>undefined;
+            this.active = _data["active"];
+            if (Array.isArray(_data["members"])) {
+                this.members = [] as any;
+                for (let item of _data["members"])
+                    this.members!.push(VideoMemberDto.fromJS(item));
+            }
+            if (Array.isArray(_data["streams"])) {
+                this.streams = [] as any;
+                for (let item of _data["streams"])
+                    this.streams!.push(VideoStreamDto.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): VideoSessionDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new VideoSessionDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["baseSessionId"] = this.baseSessionId;
+        data["baseSession"] = this.baseSession ? this.baseSession.toJSON() : <any>undefined;
+        data["referencePoint"] = this.referencePoint ? this.referencePoint.toISOString() : <any>undefined;
+        data["active"] = this.active;
+        if (Array.isArray(this.members)) {
+            data["members"] = [];
+            for (let item of this.members)
+                data["members"].push(item.toJSON());
+        }
+        if (Array.isArray(this.streams)) {
+            data["streams"] = [];
+            for (let item of this.streams)
+                data["streams"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IVideoSessionDto {
+    baseSessionId?: string;
+    baseSession?: SessionDto | undefined;
+    referencePoint?: Date;
+    active?: boolean;
+    members?: VideoMemberDto[] | undefined;
+    streams?: VideoStreamDto[] | undefined;
+}
+
+export class VideoMemberDto implements IVideoMemberDto {
+    id?: string;
+    baseMemberId?: string;
+    userId?: string;
+    sessionId?: string;
+    deletedAt?: Date | undefined;
+
+    constructor(data?: IVideoMemberDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.baseMemberId = _data["baseMemberId"];
+            this.userId = _data["userId"];
+            this.sessionId = _data["sessionId"];
+            this.deletedAt = _data["deletedAt"] ? new Date(_data["deletedAt"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): VideoMemberDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new VideoMemberDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["baseMemberId"] = this.baseMemberId;
+        data["userId"] = this.userId;
+        data["sessionId"] = this.sessionId;
+        data["deletedAt"] = this.deletedAt ? this.deletedAt.toISOString() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IVideoMemberDto {
+    id?: string;
+    baseMemberId?: string;
+    userId?: string;
+    sessionId?: string;
+    deletedAt?: Date | undefined;
+}
+
+export class VideoStreamDto implements IVideoStreamDto {
+    id?: string;
+    ownerId?: string;
+    createdAt?: Date;
+    stoppedAt?: Date | undefined;
+
+    constructor(data?: IVideoStreamDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.ownerId = _data["ownerId"];
+            this.createdAt = _data["createdAt"] ? new Date(_data["createdAt"].toString()) : <any>undefined;
+            this.stoppedAt = _data["stoppedAt"] ? new Date(_data["stoppedAt"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): VideoStreamDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new VideoStreamDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["ownerId"] = this.ownerId;
+        data["createdAt"] = this.createdAt ? this.createdAt.toISOString() : <any>undefined;
+        data["stoppedAt"] = this.stoppedAt ? this.stoppedAt.toISOString() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IVideoStreamDto {
+    id?: string;
+    ownerId?: string;
+    createdAt?: Date;
+    stoppedAt?: Date | undefined;
+}
+
+export class ArMemberDto implements IArMemberDto {
+    id?: string;
+    baseMemberId?: string;
+    userId?: string;
+    sessionId?: string;
+    deletedAt?: Date | undefined;
+    role?: ArUserRole;
+
+    constructor(data?: IArMemberDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.baseMemberId = _data["baseMemberId"];
+            this.userId = _data["userId"];
+            this.sessionId = _data["sessionId"];
+            this.deletedAt = _data["deletedAt"] ? new Date(_data["deletedAt"].toString()) : <any>undefined;
+            this.role = _data["role"];
+        }
+    }
+
+    static fromJS(data: any): ArMemberDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ArMemberDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["baseMemberId"] = this.baseMemberId;
+        data["userId"] = this.userId;
+        data["sessionId"] = this.sessionId;
+        data["deletedAt"] = this.deletedAt ? this.deletedAt.toISOString() : <any>undefined;
+        data["role"] = this.role;
+        return data;
+    }
+}
+
+export interface IArMemberDto {
+    id?: string;
+    baseMemberId?: string;
+    userId?: string;
+    sessionId?: string;
+    deletedAt?: Date | undefined;
+    role?: ArUserRole;
+}
+
+export enum ArUserRole {
+    Hololens = 0,
+    Web = 1,
+}
+
+export enum ArSessionType {
+    RemoteAssist = 0,
+}
+
+export enum ArServerState {
+    Stopped = 0,
+    Starting = 1,
+    Running = 2,
+}
+
+export class CreateArSessionCommand implements ICreateArSessionCommand {
+    sessionId?: string;
+    sessionType?: ArSessionType;
+
+    constructor(data?: ICreateArSessionCommand) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -1889,14 +2621,13 @@ export class GetChatMessagesQuery implements IGetChatMessagesQuery {
     init(_data?: any) {
         if (_data) {
             this.sessionId = _data["sessionId"];
-            this.from = _data["from"] ? new Date(_data["from"].toString()) : <any>undefined;
-            this.count = _data["count"];
+            this.sessionType = _data["sessionType"];
         }
     }
 
-    static fromJS(data: any): GetChatMessagesQuery {
+    static fromJS(data: any): CreateArSessionCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new GetChatMessagesQuery();
+        let result = new CreateArSessionCommand();
         result.init(data);
         return result;
     }
@@ -1904,23 +2635,309 @@ export class GetChatMessagesQuery implements IGetChatMessagesQuery {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["sessionId"] = this.sessionId;
-        data["from"] = this.from ? this.from.toISOString() : <any>undefined;
-        data["count"] = this.count;
+        data["sessionType"] = this.sessionType;
         return data;
     }
 }
 
-export interface IGetChatMessagesQuery {
+export interface ICreateArSessionCommand {
     sessionId?: string;
-    from?: Date | undefined;
-    count?: number | undefined;
+    sessionType?: ArSessionType;
+}
+
+export class JoinArSessionCommand implements IJoinArSessionCommand {
+    arSessionId?: string;
+    role?: ArUserRole;
+
+    constructor(data?: IJoinArSessionCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.arSessionId = _data["arSessionId"];
+            this.role = _data["role"];
+        }
+    }
+
+    static fromJS(data: any): JoinArSessionCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new JoinArSessionCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["arSessionId"] = this.arSessionId;
+        data["role"] = this.role;
+        return data;
+    }
+}
+
+export interface IJoinArSessionCommand {
+    arSessionId?: string;
+    role?: ArUserRole;
+}
+
+export class LeaveArSessionCommand implements ILeaveArSessionCommand {
+    arMemberId?: string;
+
+    constructor(data?: ILeaveArSessionCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.arMemberId = _data["arMemberId"];
+        }
+    }
+
+    static fromJS(data: any): LeaveArSessionCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new LeaveArSessionCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["arMemberId"] = this.arMemberId;
+        return data;
+    }
+}
+
+export interface ILeaveArSessionCommand {
+    arMemberId?: string;
+}
+
+export class StartArServerCommand implements IStartArServerCommand {
+    arSessionId?: string;
+
+    constructor(data?: IStartArServerCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.arSessionId = _data["arSessionId"];
+        }
+    }
+
+    static fromJS(data: any): StartArServerCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new StartArServerCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["arSessionId"] = this.arSessionId;
+        return data;
+    }
+}
+
+export interface IStartArServerCommand {
+    arSessionId?: string;
 }
 
 export class CreateChatSessionCommand implements ICreateChatSessionCommand {
+    sessionId?: string;
+
+    constructor(data?: ICreateChatSessionCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.sessionId = _data["sessionId"];
+        }
+    }
+
+    static fromJS(data: any): CreateChatSessionCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateChatSessionCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["sessionId"] = this.sessionId;
+        return data;
+    }
+}
+
+export interface ICreateChatSessionCommand {
+    sessionId?: string;
+}
+
+export class SendMessageToChatCommand implements ISendMessageToChatCommand {
+    sessionId?: string;
+    text?: string;
+
+    constructor(data?: ISendMessageToChatCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.sessionId = _data["sessionId"];
+            this.text = _data["text"];
+        }
+    }
+
+    static fromJS(data: any): SendMessageToChatCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new SendMessageToChatCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["sessionId"] = this.sessionId;
+        data["text"] = this.text;
+        return data;
+    }
+}
+
+export interface ISendMessageToChatCommand {
+    sessionId?: string;
+    text?: string;
+}
+
+export class UpdateChatSessionLastReadCommand implements IUpdateChatSessionLastReadCommand {
+    sessionId?: string;
+
+    constructor(data?: IUpdateChatSessionLastReadCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.sessionId = _data["sessionId"];
+        }
+    }
+
+    static fromJS(data: any): UpdateChatSessionLastReadCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateChatSessionLastReadCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["sessionId"] = this.sessionId;
+        return data;
+    }
+}
+
+export interface IUpdateChatSessionLastReadCommand {
+    sessionId?: string;
+}
+
+export class UserCanAccessStreamQuery implements IUserCanAccessStreamQuery {
+    ip?: string;
+    user?: string;
+    password?: string;
+    path?: string;
+    protocol?: string;
+    id?: string;
+    action?: string;
+    query?: string;
+
+    constructor(data?: IUserCanAccessStreamQuery) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.ip = _data["ip"];
+            this.user = _data["user"];
+            this.password = _data["password"];
+            this.path = _data["path"];
+            this.protocol = _data["protocol"];
+            this.id = _data["id"];
+            this.action = _data["action"];
+            this.query = _data["query"];
+        }
+    }
+
+    static fromJS(data: any): UserCanAccessStreamQuery {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserCanAccessStreamQuery();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ip"] = this.ip;
+        data["user"] = this.user;
+        data["password"] = this.password;
+        data["path"] = this.path;
+        data["protocol"] = this.protocol;
+        data["id"] = this.id;
+        data["action"] = this.action;
+        data["query"] = this.query;
+        return data;
+    }
+}
+
+export interface IUserCanAccessStreamQuery {
+    ip?: string;
+    user?: string;
+    password?: string;
+    path?: string;
+    protocol?: string;
+    id?: string;
+    action?: string;
+    query?: string;
+}
+
+export class CreateSessionCommand implements ICreateSessionCommand {
     userIds?: string[];
     name?: string | undefined;
 
-    constructor(data?: ICreateChatSessionCommand) {
+    constructor(data?: ICreateSessionCommand) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -1940,9 +2957,9 @@ export class CreateChatSessionCommand implements ICreateChatSessionCommand {
         }
     }
 
-    static fromJS(data: any): CreateChatSessionCommand {
+    static fromJS(data: any): CreateSessionCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new CreateChatSessionCommand();
+        let result = new CreateSessionCommand();
         result.init(data);
         return result;
     }
@@ -1959,16 +2976,17 @@ export class CreateChatSessionCommand implements ICreateChatSessionCommand {
     }
 }
 
-export interface ICreateChatSessionCommand {
+export interface ICreateSessionCommand {
     userIds?: string[];
     name?: string | undefined;
 }
 
-export class SendMessageToChatSessionCommand implements ISendMessageToChatSessionCommand {
+export class UpdateSessionCommand implements IUpdateSessionCommand {
     sessionId?: string;
-    text?: string;
+    userIds?: string[] | undefined;
+    name?: string | undefined;
 
-    constructor(data?: ISendMessageToChatSessionCommand) {
+    constructor(data?: IUpdateSessionCommand) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -1980,13 +2998,18 @@ export class SendMessageToChatSessionCommand implements ISendMessageToChatSessio
     init(_data?: any) {
         if (_data) {
             this.sessionId = _data["sessionId"];
-            this.text = _data["text"];
+            if (Array.isArray(_data["userIds"])) {
+                this.userIds = [] as any;
+                for (let item of _data["userIds"])
+                    this.userIds!.push(item);
+            }
+            this.name = _data["name"];
         }
     }
 
-    static fromJS(data: any): SendMessageToChatSessionCommand {
+    static fromJS(data: any): UpdateSessionCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new SendMessageToChatSessionCommand();
+        let result = new UpdateSessionCommand();
         result.init(data);
         return result;
     }
@@ -1994,370 +3017,28 @@ export class SendMessageToChatSessionCommand implements ISendMessageToChatSessio
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["sessionId"] = this.sessionId;
-        data["text"] = this.text;
-        return data;
-    }
-}
-
-export interface ISendMessageToChatSessionCommand {
-    sessionId?: string;
-    text?: string;
-}
-
-export class PaginatedListOfTodoItemBriefDto implements IPaginatedListOfTodoItemBriefDto {
-    items?: TodoItemBriefDto[];
-    pageNumber?: number;
-    totalPages?: number;
-    totalCount?: number;
-    hasPreviousPage?: boolean;
-    hasNextPage?: boolean;
-
-    constructor(data?: IPaginatedListOfTodoItemBriefDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
+        if (Array.isArray(this.userIds)) {
+            data["userIds"] = [];
+            for (let item of this.userIds)
+                data["userIds"].push(item);
         }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["items"])) {
-                this.items = [] as any;
-                for (let item of _data["items"])
-                    this.items!.push(TodoItemBriefDto.fromJS(item));
-            }
-            this.pageNumber = _data["pageNumber"];
-            this.totalPages = _data["totalPages"];
-            this.totalCount = _data["totalCount"];
-            this.hasPreviousPage = _data["hasPreviousPage"];
-            this.hasNextPage = _data["hasNextPage"];
-        }
-    }
-
-    static fromJS(data: any): PaginatedListOfTodoItemBriefDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PaginatedListOfTodoItemBriefDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.items)) {
-            data["items"] = [];
-            for (let item of this.items)
-                data["items"].push(item.toJSON());
-        }
-        data["pageNumber"] = this.pageNumber;
-        data["totalPages"] = this.totalPages;
-        data["totalCount"] = this.totalCount;
-        data["hasPreviousPage"] = this.hasPreviousPage;
-        data["hasNextPage"] = this.hasNextPage;
-        return data;
-    }
-}
-
-export interface IPaginatedListOfTodoItemBriefDto {
-    items?: TodoItemBriefDto[];
-    pageNumber?: number;
-    totalPages?: number;
-    totalCount?: number;
-    hasPreviousPage?: boolean;
-    hasNextPage?: boolean;
-}
-
-export class TodoItemBriefDto implements ITodoItemBriefDto {
-    id?: string;
-    listId?: string;
-    title?: string | undefined;
-    done?: boolean;
-
-    constructor(data?: ITodoItemBriefDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.listId = _data["listId"];
-            this.title = _data["title"];
-            this.done = _data["done"];
-        }
-    }
-
-    static fromJS(data: any): TodoItemBriefDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new TodoItemBriefDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["listId"] = this.listId;
-        data["title"] = this.title;
-        data["done"] = this.done;
-        return data;
-    }
-}
-
-export interface ITodoItemBriefDto {
-    id?: string;
-    listId?: string;
-    title?: string | undefined;
-    done?: boolean;
-}
-
-export class CreateTodoItemCommand implements ICreateTodoItemCommand {
-    listId?: string;
-    title?: string | undefined;
-
-    constructor(data?: ICreateTodoItemCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.listId = _data["listId"];
-            this.title = _data["title"];
-        }
-    }
-
-    static fromJS(data: any): CreateTodoItemCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new CreateTodoItemCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["listId"] = this.listId;
-        data["title"] = this.title;
-        return data;
-    }
-}
-
-export interface ICreateTodoItemCommand {
-    listId?: string;
-    title?: string | undefined;
-}
-
-export class UpdateTodoItemCommand implements IUpdateTodoItemCommand {
-    id?: string;
-    title?: string | undefined;
-    done?: boolean;
-
-    constructor(data?: IUpdateTodoItemCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.title = _data["title"];
-            this.done = _data["done"];
-        }
-    }
-
-    static fromJS(data: any): UpdateTodoItemCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new UpdateTodoItemCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["title"] = this.title;
-        data["done"] = this.done;
-        return data;
-    }
-}
-
-export interface IUpdateTodoItemCommand {
-    id?: string;
-    title?: string | undefined;
-    done?: boolean;
-}
-
-export class UpdateTodoItemDetailCommand implements IUpdateTodoItemDetailCommand {
-    id?: string;
-    listId?: string;
-    priority?: PriorityLevel;
-    note?: string | undefined;
-
-    constructor(data?: IUpdateTodoItemDetailCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.listId = _data["listId"];
-            this.priority = _data["priority"];
-            this.note = _data["note"];
-        }
-    }
-
-    static fromJS(data: any): UpdateTodoItemDetailCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new UpdateTodoItemDetailCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["listId"] = this.listId;
-        data["priority"] = this.priority;
-        data["note"] = this.note;
-        return data;
-    }
-}
-
-export interface IUpdateTodoItemDetailCommand {
-    id?: string;
-    listId?: string;
-    priority?: PriorityLevel;
-    note?: string | undefined;
-}
-
-export enum PriorityLevel {
-    None = 0,
-    Low = 1,
-    Medium = 2,
-    High = 3,
-}
-
-export class TodosVm implements ITodosVm {
-    priorityLevels?: PriorityLevelDto[];
-    lists?: TodoListDto[];
-
-    constructor(data?: ITodosVm) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["priorityLevels"])) {
-                this.priorityLevels = [] as any;
-                for (let item of _data["priorityLevels"])
-                    this.priorityLevels!.push(PriorityLevelDto.fromJS(item));
-            }
-            if (Array.isArray(_data["lists"])) {
-                this.lists = [] as any;
-                for (let item of _data["lists"])
-                    this.lists!.push(TodoListDto.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): TodosVm {
-        data = typeof data === 'object' ? data : {};
-        let result = new TodosVm();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.priorityLevels)) {
-            data["priorityLevels"] = [];
-            for (let item of this.priorityLevels)
-                data["priorityLevels"].push(item.toJSON());
-        }
-        if (Array.isArray(this.lists)) {
-            data["lists"] = [];
-            for (let item of this.lists)
-                data["lists"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface ITodosVm {
-    priorityLevels?: PriorityLevelDto[];
-    lists?: TodoListDto[];
-}
-
-export class PriorityLevelDto implements IPriorityLevelDto {
-    value?: number;
-    name?: string | undefined;
-
-    constructor(data?: IPriorityLevelDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.value = _data["value"];
-            this.name = _data["name"];
-        }
-    }
-
-    static fromJS(data: any): PriorityLevelDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PriorityLevelDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["value"] = this.value;
         data["name"] = this.name;
         return data;
     }
 }
 
-export interface IPriorityLevelDto {
-    value?: number;
+export interface IUpdateSessionCommand {
+    sessionId?: string;
+    userIds?: string[] | undefined;
     name?: string | undefined;
 }
 
-export class TodoListDto implements ITodoListDto {
-    id?: string;
-    title?: string | undefined;
-    colour?: string | undefined;
-    items?: TodoItemDto[];
+export class UserCanAccessUnityServerQuery implements IUserCanAccessUnityServerQuery {
+    arSessionId?: string;
+    memberId?: string;
+    role?: ArUserRole;
 
-    constructor(data?: ITodoListDto) {
+    constructor(data?: IUserCanAccessUnityServerQuery) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2368,175 +3049,32 @@ export class TodoListDto implements ITodoListDto {
 
     init(_data?: any) {
         if (_data) {
-            this.id = _data["id"];
-            this.title = _data["title"];
-            this.colour = _data["colour"];
-            if (Array.isArray(_data["items"])) {
-                this.items = [] as any;
-                for (let item of _data["items"])
-                    this.items!.push(TodoItemDto.fromJS(item));
-            }
+            this.arSessionId = _data["arSessionId"];
+            this.memberId = _data["memberId"];
+            this.role = _data["role"];
         }
     }
 
-    static fromJS(data: any): TodoListDto {
+    static fromJS(data: any): UserCanAccessUnityServerQuery {
         data = typeof data === 'object' ? data : {};
-        let result = new TodoListDto();
+        let result = new UserCanAccessUnityServerQuery();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["title"] = this.title;
-        data["colour"] = this.colour;
-        if (Array.isArray(this.items)) {
-            data["items"] = [];
-            for (let item of this.items)
-                data["items"].push(item.toJSON());
-        }
+        data["arSessionId"] = this.arSessionId;
+        data["memberId"] = this.memberId;
+        data["role"] = this.role;
         return data;
     }
 }
 
-export interface ITodoListDto {
-    id?: string;
-    title?: string | undefined;
-    colour?: string | undefined;
-    items?: TodoItemDto[];
-}
-
-export class TodoItemDto implements ITodoItemDto {
-    id?: string;
-    listId?: string;
-    title?: string | undefined;
-    done?: boolean;
-    priority?: number;
-    note?: string | undefined;
-
-    constructor(data?: ITodoItemDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.listId = _data["listId"];
-            this.title = _data["title"];
-            this.done = _data["done"];
-            this.priority = _data["priority"];
-            this.note = _data["note"];
-        }
-    }
-
-    static fromJS(data: any): TodoItemDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new TodoItemDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["listId"] = this.listId;
-        data["title"] = this.title;
-        data["done"] = this.done;
-        data["priority"] = this.priority;
-        data["note"] = this.note;
-        return data;
-    }
-}
-
-export interface ITodoItemDto {
-    id?: string;
-    listId?: string;
-    title?: string | undefined;
-    done?: boolean;
-    priority?: number;
-    note?: string | undefined;
-}
-
-export class CreateTodoListCommand implements ICreateTodoListCommand {
-    title?: string | undefined;
-
-    constructor(data?: ICreateTodoListCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.title = _data["title"];
-        }
-    }
-
-    static fromJS(data: any): CreateTodoListCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new CreateTodoListCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["title"] = this.title;
-        return data;
-    }
-}
-
-export interface ICreateTodoListCommand {
-    title?: string | undefined;
-}
-
-export class UpdateTodoListCommand implements IUpdateTodoListCommand {
-    id?: string;
-    title?: string | undefined;
-
-    constructor(data?: IUpdateTodoListCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.title = _data["title"];
-        }
-    }
-
-    static fromJS(data: any): UpdateTodoListCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new UpdateTodoListCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["title"] = this.title;
-        return data;
-    }
-}
-
-export interface IUpdateTodoListCommand {
-    id?: string;
-    title?: string | undefined;
+export interface IUserCanAccessUnityServerQuery {
+    arSessionId?: string;
+    memberId?: string;
+    role?: ArUserRole;
 }
 
 export class LoginUserCommand implements ILoginUserCommand {
@@ -2623,6 +3161,215 @@ export interface IRegisterUserCommand {
     password?: string;
 }
 
+export class AppUserDto implements IAppUserDto {
+    id?: string;
+    userName?: string;
+    email?: string;
+    imageId?: string | undefined;
+    image?: UserFile | undefined;
+    onlineStatus?: OnlineStatus;
+
+    constructor(data?: IAppUserDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.userName = _data["userName"];
+            this.email = _data["email"];
+            this.imageId = _data["imageId"];
+            this.image = _data["image"] ? UserFile.fromJS(_data["image"]) : <any>undefined;
+            this.onlineStatus = _data["onlineStatus"];
+        }
+    }
+
+    static fromJS(data: any): AppUserDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new AppUserDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["userName"] = this.userName;
+        data["email"] = this.email;
+        data["imageId"] = this.imageId;
+        data["image"] = this.image ? this.image.toJSON() : <any>undefined;
+        data["onlineStatus"] = this.onlineStatus;
+        return data;
+    }
+}
+
+export interface IAppUserDto {
+    id?: string;
+    userName?: string;
+    email?: string;
+    imageId?: string | undefined;
+    image?: UserFile | undefined;
+    onlineStatus?: OnlineStatus;
+}
+
+export abstract class EntityWithEvents implements IEntityWithEvents {
+    domainEvents?: BaseEvent[];
+
+    constructor(data?: IEntityWithEvents) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            if (Array.isArray(_data["domainEvents"])) {
+                this.domainEvents = [] as any;
+                for (let item of _data["domainEvents"])
+                    this.domainEvents!.push(BaseEvent.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): EntityWithEvents {
+        data = typeof data === 'object' ? data : {};
+        throw new Error("The abstract class 'EntityWithEvents' cannot be instantiated.");
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (Array.isArray(this.domainEvents)) {
+            data["domainEvents"] = [];
+            for (let item of this.domainEvents)
+                data["domainEvents"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IEntityWithEvents {
+    domainEvents?: BaseEvent[];
+}
+
+export abstract class BaseEntity extends EntityWithEvents implements IBaseEntity {
+    id?: string;
+
+    constructor(data?: IBaseEntity) {
+        super(data);
+    }
+
+    override init(_data?: any) {
+        super.init(_data);
+        if (_data) {
+            this.id = _data["id"];
+        }
+    }
+
+    static override fromJS(data: any): BaseEntity {
+        data = typeof data === 'object' ? data : {};
+        throw new Error("The abstract class 'BaseEntity' cannot be instantiated.");
+    }
+
+    override toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IBaseEntity extends IEntityWithEvents {
+    id?: string;
+}
+
+export class UserFile extends BaseEntity implements IUserFile {
+    fileName?: string;
+    mimeType?: string;
+    fileType?: FileType;
+
+    constructor(data?: IUserFile) {
+        super(data);
+    }
+
+    override init(_data?: any) {
+        super.init(_data);
+        if (_data) {
+            this.fileName = _data["fileName"];
+            this.mimeType = _data["mimeType"];
+            this.fileType = _data["fileType"];
+        }
+    }
+
+    static override fromJS(data: any): UserFile {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserFile();
+        result.init(data);
+        return result;
+    }
+
+    override toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["fileName"] = this.fileName;
+        data["mimeType"] = this.mimeType;
+        data["fileType"] = this.fileType;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IUserFile extends IBaseEntity {
+    fileName?: string;
+    mimeType?: string;
+    fileType?: FileType;
+}
+
+export enum FileType {
+    UserImage = 0,
+}
+
+export abstract class BaseEvent implements IBaseEvent {
+
+    constructor(data?: IBaseEvent) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+    }
+
+    static fromJS(data: any): BaseEvent {
+        data = typeof data === 'object' ? data : {};
+        throw new Error("The abstract class 'BaseEvent' cannot be instantiated.");
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        return data;
+    }
+}
+
+export interface IBaseEvent {
+}
+
+export enum OnlineStatus {
+    Online = 0,
+    Offline = 1,
+    Busy = 2,
+    Away = 3,
+}
+
 export class UpdateAppUserCommand implements IUpdateAppUserCommand {
     id?: string;
     userName?: string | undefined;
@@ -2671,13 +3418,15 @@ export interface IUpdateAppUserCommand {
     userImage?: UserFile | undefined;
 }
 
-export class WeatherForecast implements IWeatherForecast {
-    date?: Date;
-    temperatureC?: number;
-    temperatureF?: number;
-    summary?: string | undefined;
+export class PaginatedListOfAppUserDto implements IPaginatedListOfAppUserDto {
+    items?: AppUserDto[];
+    pageNumber?: number;
+    totalPages?: number;
+    totalCount?: number;
+    hasPreviousPage?: boolean;
+    hasNextPage?: boolean;
 
-    constructor(data?: IWeatherForecast) {
+    constructor(data?: IPaginatedListOfAppUserDto) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2688,35 +3437,269 @@ export class WeatherForecast implements IWeatherForecast {
 
     init(_data?: any) {
         if (_data) {
-            this.date = _data["date"] ? new Date(_data["date"].toString()) : <any>undefined;
-            this.temperatureC = _data["temperatureC"];
-            this.temperatureF = _data["temperatureF"];
-            this.summary = _data["summary"];
+            if (Array.isArray(_data["items"])) {
+                this.items = [] as any;
+                for (let item of _data["items"])
+                    this.items!.push(AppUserDto.fromJS(item));
+            }
+            this.pageNumber = _data["pageNumber"];
+            this.totalPages = _data["totalPages"];
+            this.totalCount = _data["totalCount"];
+            this.hasPreviousPage = _data["hasPreviousPage"];
+            this.hasNextPage = _data["hasNextPage"];
         }
     }
 
-    static fromJS(data: any): WeatherForecast {
+    static fromJS(data: any): PaginatedListOfAppUserDto {
         data = typeof data === 'object' ? data : {};
-        let result = new WeatherForecast();
+        let result = new PaginatedListOfAppUserDto();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["date"] = this.date ? this.date.toISOString() : <any>undefined;
-        data["temperatureC"] = this.temperatureC;
-        data["temperatureF"] = this.temperatureF;
-        data["summary"] = this.summary;
+        if (Array.isArray(this.items)) {
+            data["items"] = [];
+            for (let item of this.items)
+                data["items"].push(item.toJSON());
+        }
+        data["pageNumber"] = this.pageNumber;
+        data["totalPages"] = this.totalPages;
+        data["totalCount"] = this.totalCount;
+        data["hasPreviousPage"] = this.hasPreviousPage;
+        data["hasNextPage"] = this.hasNextPage;
         return data;
     }
 }
 
-export interface IWeatherForecast {
-    date?: Date;
-    temperatureC?: number;
-    temperatureF?: number;
-    summary?: string | undefined;
+export interface IPaginatedListOfAppUserDto {
+    items?: AppUserDto[];
+    pageNumber?: number;
+    totalPages?: number;
+    totalCount?: number;
+    hasPreviousPage?: boolean;
+    hasNextPage?: boolean;
+}
+
+export class CreateVideoSessionCommand implements ICreateVideoSessionCommand {
+    sessionId?: string;
+
+    constructor(data?: ICreateVideoSessionCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.sessionId = _data["sessionId"];
+        }
+    }
+
+    static fromJS(data: any): CreateVideoSessionCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateVideoSessionCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["sessionId"] = this.sessionId;
+        return data;
+    }
+}
+
+export interface ICreateVideoSessionCommand {
+    sessionId?: string;
+}
+
+export class CreateVideoStreamCommand implements ICreateVideoStreamCommand {
+    videoStreamMemberId?: string;
+
+    constructor(data?: ICreateVideoStreamCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.videoStreamMemberId = _data["videoStreamMemberId"];
+        }
+    }
+
+    static fromJS(data: any): CreateVideoStreamCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateVideoStreamCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["videoStreamMemberId"] = this.videoStreamMemberId;
+        return data;
+    }
+}
+
+export interface ICreateVideoStreamCommand {
+    videoStreamMemberId?: string;
+}
+
+export class StopVideoStreamCommand implements IStopVideoStreamCommand {
+    videoStreamId?: string;
+
+    constructor(data?: IStopVideoStreamCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.videoStreamId = _data["videoStreamId"];
+        }
+    }
+
+    static fromJS(data: any): StopVideoStreamCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new StopVideoStreamCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["videoStreamId"] = this.videoStreamId;
+        return data;
+    }
+}
+
+export interface IStopVideoStreamCommand {
+    videoStreamId?: string;
+}
+
+export class TupleOfVideoMemberDtoAndString implements ITupleOfVideoMemberDtoAndString {
+    item1?: VideoMemberDto;
+    item2?: string;
+
+    constructor(data?: ITupleOfVideoMemberDtoAndString) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.item1 = _data["item1"] ? VideoMemberDto.fromJS(_data["item1"]) : <any>undefined;
+            this.item2 = _data["item2"];
+        }
+    }
+
+    static fromJS(data: any): TupleOfVideoMemberDtoAndString {
+        data = typeof data === 'object' ? data : {};
+        let result = new TupleOfVideoMemberDtoAndString();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["item1"] = this.item1 ? this.item1.toJSON() : <any>undefined;
+        data["item2"] = this.item2;
+        return data;
+    }
+}
+
+export interface ITupleOfVideoMemberDtoAndString {
+    item1?: VideoMemberDto;
+    item2?: string;
+}
+
+export class JoinVideoSessionCommand implements IJoinVideoSessionCommand {
+    videoSessionId?: string;
+
+    constructor(data?: IJoinVideoSessionCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.videoSessionId = _data["videoSessionId"];
+        }
+    }
+
+    static fromJS(data: any): JoinVideoSessionCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new JoinVideoSessionCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["videoSessionId"] = this.videoSessionId;
+        return data;
+    }
+}
+
+export interface IJoinVideoSessionCommand {
+    videoSessionId?: string;
+}
+
+export class LeaveVideoSessionCommand implements ILeaveVideoSessionCommand {
+    videoMemberId?: string;
+
+    constructor(data?: ILeaveVideoSessionCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.videoMemberId = _data["videoMemberId"];
+        }
+    }
+
+    static fromJS(data: any): LeaveVideoSessionCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new LeaveVideoSessionCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["videoMemberId"] = this.videoMemberId;
+        return data;
+    }
+}
+
+export interface ILeaveVideoSessionCommand {
+    videoMemberId?: string;
 }
 
 export interface FileParameter {

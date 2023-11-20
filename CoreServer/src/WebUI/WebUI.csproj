@@ -8,6 +8,7 @@
         <SpaProxyServerUrl>https://localhost:44447</SpaProxyServerUrl>
         <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
         <ImplicitUsings>enable</ImplicitUsings>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -43,14 +44,17 @@
     <ItemGroup>
         <!-- Don't publish the SPA source files, but do show them in the project files list -->
         <Content Remove="$(SpaRoot)**" />
+        <Content Include="..\..\.dockerignore">
+          <Link>.dockerignore</Link>
+        </Content>
         <None Remove="$(SpaRoot)**" />
         <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <_ContentIncludedByDefault Remove="Pages\Error.cshtml" />
-      <_ContentIncludedByDefault Remove="Pages\Shared\_LoginPartial.cshtml" />
-      <_ContentIncludedByDefault Remove="Pages\_ViewImports.cshtml" />
+        <_ContentIncludedByDefault Remove="Pages\Error.cshtml" />
+        <_ContentIncludedByDefault Remove="Pages\Shared\_LoginPartial.cshtml" />
+        <_ContentIncludedByDefault Remove="Pages\_ViewImports.cshtml" />
     </ItemGroup>
 
     <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
@@ -67,7 +71,7 @@
     <PropertyGroup>
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     </PropertyGroup>
-    
+
     <Target Name="NSwag" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Debug' ">
         <Exec ConsoleToMSBuild="true" ContinueOnError="true" WorkingDirectory="$(ProjectDir)" EnvironmentVariables="ASPNETCORE_ENVIRONMENT=Development" Command="$(NSwagExe_Net70) run /variables:Configuration=$(Configuration)">
             <Output TaskParameter="ExitCode" PropertyName="NSwagExitCode" />

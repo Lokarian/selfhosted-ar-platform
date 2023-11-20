@@ -26,5 +26,8 @@ export class NotificationService {
   public getNotifications(): Observable<Notification> {
     return this.notificationSubject.asObservable();
   }
+  public error(message:string){
+    this.add({severity:'error',message:message,autoClose:true});
+  }
 
 }

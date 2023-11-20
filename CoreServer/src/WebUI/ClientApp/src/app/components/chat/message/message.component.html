@@ -1,11 +1,12 @@
 <div class="flex flex-row " [class.justify-end]="isOwnMessage">
   <div *ngIf="!isOwnMessage" class="mr-1 mt-2 flex flex-col-reverse">
-    <app-avatar [user]="message.sender" class="h-12"></app-avatar>
+    <app-avatar [user]="message.senderId|user|async" class="h-12"></app-avatar>
   </div>
   <div class="p-4 bg-background-highlight rounded-md max-w-[80%]" [class.bg-primary-bg]="isOwnMessage">
-    <div class="text-text text-xs"><span class="mr-4"
-                                         *ngIf="!isOwnMessage">{{message.sender.userName}}</span><span>{{message.timestamp|date:'shortTime'}}</span>
+    <div class="text-text text-xs">
+      <span class="mr-4"
+            *ngIf="!isOwnMessage">{{(message.senderId|user|async)?.userName}}</span><span>{{message.sentAt|date:'shortTime'}}</span>
     </div>
-    <div class="text-white">{{message.message}}</div>
+    <div class="text-white whitespace-pre-line">{{message.text}}</div>
   </div>
 </div>

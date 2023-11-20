@@ -1,10 +1,10 @@
-﻿using CoreServer.Application.Files.Commands;
-using CoreServer.Application.Files.Queries;
+﻿using CoreServer.Application.UserFiles.Commands;
+using CoreServer.Application.UserFiles.Queries;
 using CoreServer.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CoreServer.WebUI.Controllers;
+namespace WebUI.Controllers;
 
 [Authorize]
 public class UserFilesController : ApiControllerBase
@@ -12,8 +12,8 @@ public class UserFilesController : ApiControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult> Get(Guid id)
     {
-        var file = await Mediator.Send(new GetUserFileQuery { Id = id });
-        var fileStreamResult = new FileStreamResult(file.FileStream, file.UserFile.MimeType)
+        UserFileWithFilestream file = await Mediator.Send(new GetUserFileQuery { Id = id });
+        FileStreamResult fileStreamResult = new FileStreamResult(file.FileStream, file.UserFile.MimeType)
         {
             FileDownloadName = file.UserFile.FileName
         };
@@ -24,7 +24,7 @@ public class UserFilesController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult<UserFile>> Upload(FileType fileType, IFormFile file)
     {
-        var userFile = await Mediator.Send(new SaveUserFileCommand
+        UserFile userFile = await Mediator.Send(new SaveUserFileCommand
         {
             FileName = file.FileName,
             MimeType = file.ContentType,

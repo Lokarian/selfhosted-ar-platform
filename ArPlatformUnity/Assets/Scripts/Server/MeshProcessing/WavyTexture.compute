@@ -1,0 +1,461 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel clear_rasterizer_texture
+#pragma kernel rasterize
+#pragma kernel modify_indirect_count
+#pragma kernel barycentric_stage
+#pragma kernel project_hits_on_texture
+#pragma kernel basecolor_mesh_texture
+#pragma enable_d3d11_debug_symbols
+
+// "PrintValue" function by P.Malin
+float PrintValue(float2 vCoords, float fValue, float fMaxDigits, float fDecimalPlaces)
+{
+    if ((vCoords.y < 0.0) || (vCoords.y >= 1.0)) return 0.0;
+    bool bNeg = (fValue < 0.0);
+    fValue = abs(fValue);
+    float fBiggestIndex = max(floor(log2(abs(fValue)) / log2(10.0)), 0.0);
+    float fDigitIndex = fMaxDigits - floor(vCoords.x);
+    float fCharBin = 0.0;
+    if (fDigitIndex > (-fDecimalPlaces - 1.01))
+    {
+        if (fDigitIndex > fBiggestIndex)
+        {
+            if ((bNeg) && (fDigitIndex < (fBiggestIndex + 1.5))) fCharBin = 1792.0;
+        }
+        else
+        {
+            if (fDigitIndex == -1.0)
+            {
+                if (fDecimalPlaces > 0.0) fCharBin = 2.0;
+            }
+            else
+            {
+                float fReducedRangeValue = fValue;
+                if (fDigitIndex < 0.0)
+                {
+                    fReducedRangeValue = frac(fValue);
+                    fDigitIndex += 1.0;
+                }
+                float fDigitValue = (abs(fReducedRangeValue / (pow(10.0, fDigitIndex))));
+                int x = int(floor(fDigitValue - 10.0 * floor(fDigitValue / 10.0)));
+                fCharBin = x == 0
+                               ? 480599.0
+                               : x == 1
+                               ? 139810.0
+                               : x == 2
+                               ? 476951.0
+                               : x == 3
+                               ? 476999.0
+                               : x == 4
+                               ? 350020.0
+                               : x == 5
+                               ? 464711.0
+                               : x == 6
+                               ? 464727.0
+                               : x == 7
+                               ? 476228.0
+                               : x == 8
+                               ? 481111.0
+                               : x == 9
+                               ? 481095.0
+                               : 0.0;
+            }
+        }
+    }
+    float result = (fCharBin / pow(2.0, floor(frac(vCoords.x) * 4.0) + (floor(vCoords.y * 5.0) * 4.0)));
+    return floor(result - 2.0 * floor(result / 2.0));
+}
+
+
+//types
+
+
+struct Mesh
+{
+    uint index;
+    uint vertexOffset;
+    uint triangleOffset;
+    uint vertexCount;
+    uint triangleCount;
+};
+
+struct Vertex
+{
+    float3 position;
+    float3 normal;
+    float2 uv;
+};
+
+struct Triangle
+{
+    uint vertexIndex1;
+    uint vertexIndex2;
+    uint vertexIndex3;
+};
+
+struct BarycentricCalculationArea
+{
+    uint2 min;
+    uint2 max;
+    uint3 vertices;
+};
+
+struct MeshHit
+{
+    float2 uv; //the uv coordinate of texture of the mesh that was hit
+    float depth; //the depth of the hit away from the camera
+    uint2 screenPos; //the pixel coordinate of the photo
+    uint meshIndex; //the index of the mesh that was hit
+};
+
+//global buffers and properties
+
+
+int meshId; //the id of the mesh that will be modified
+
+
+StructuredBuffer<Vertex> vertices;
+StructuredBuffer<int> triangles;
+int triangleCount;
+float4x4 worldToCameraMatrix; //the world to camera matrix
+
+AppendStructuredBuffer<BarycentricCalculationArea> barycentricCalculationAreasAppend;
+StructuredBuffer<BarycentricCalculationArea> barycentricCalculationAreas;
+RWStructuredBuffer<int> barycentricDispatchIndirectArgs;
+
+Texture2D<float3> inputPhoto; //the photo that will be projected onto the mesh
+RWTexture2D<float4> rasterizerDepthTexture; //debug view of the rasterizer meshHitsTexture
+RWStructuredBuffer<MeshHit> meshHitsTexture; //technically the output texture of the rasterizer
+int2 inputResolution; //the resolution of the input image
+
+
+RWTexture2D<float4> meshTexture; //the texture of the mesh that will get new colors
+int2 meshTextureResolution; //the resolution of the mesh texture
+
+float3 project(float3 v)
+{
+    float4 transformed = mul(worldToCameraMatrix, float4(v, 1));
+    float3 vector3 = transformed.xyz;
+    // Normalize the vector
+    float num = 1.0f / transformed.w;
+    vector3 *= num;
+    return vector3;
+}
+
+uint index_of(uint x, uint y, int2 resolution)
+{
+    return y * resolution.x + x;
+}
+
+float4 get_min_max(float3 v1, float3 v2, float3 v3)
+{
+    float4 min_max;
+
+    min_max.x = min(min(v1.x, v2.x), v3.x);
+    min_max.y = min(min(v1.y, v2.y), v3.y);
+    min_max.z = max(max(v1.x, v2.x), v3.x);
+    min_max.w = max(max(v1.y, v2.y), v3.y);
+
+    return min_max;
+}
+
+float3 barycentric(float3 v1, float3 v2, float3 v3, float2 p)
+{
+    float3 u = cross(
+        float3(v3.x - v1.x, v2.x - v1.x, v1.x - p.x),
+        float3(v3.y - v1.y, v2.y - v1.y, v1.y - p.y)
+    );
+
+    if (abs(u.z) < 1.0)
+    {
+        return float3(-1.0, 1.0, 1.0);
+    }
+
+    return float3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+}
+
+bool is_on_screen(float3 v)
+{
+    return (v.x > -1 && v.x < 1 && v.y > -1 && v.y < 1 && v.z > -1 && v.z < 1);
+}
+
+float2 to_screen_space(float2 v)
+{
+    return (v + 1.0f) / 2.0f * inputResolution;
+}
+
+void color_pixel(uint2 pos, float4 color)
+{
+    if (rasterizerDepthTexture[pos].a > color.a)
+    {
+        rasterizerDepthTexture[pos] = color;
+    }
+}
+
+void draw_circle(uint2 pos, int radius, float4 color)
+{
+    int2 topLeft = int2(pos) - radius;
+    int2 bottomRight = int2(pos) + radius;
+    topLeft = clamp(topLeft, 0, inputResolution);
+    bottomRight = clamp(bottomRight, 0, inputResolution);
+
+    float2 center = float2(pos);
+    for (int x = topLeft.x; x < bottomRight.x; x++)
+    {
+        for (int y = topLeft.y; y < bottomRight.y; y++)
+        {
+            float2 pixel = float2(x, y);
+            float dist = distance(pixel, center);
+            if (dist < radius)
+            {
+                rasterizerDepthTexture[pixel] = color;
+            }
+        }
+    }
+}
+
+void draw_line(uint2 p1, uint2 p2, float4 color)
+{
+    int2 pos1 = clamp(p1, 0, inputResolution);
+    int2 pos2 = clamp(p2, 0, inputResolution);
+    int steps = max(abs(pos1.x - pos2.x), abs(pos1.y - pos2.y));
+    float2 position = float2(pos1);
+    float2 step = (float2(pos2) - float2(pos1)) / steps;
+    for (int i = 0; i < steps; i++)
+    {
+        rasterizerDepthTexture[position] = color;
+        rasterizerDepthTexture[uint2(position.x, position.y + 1)] = color;
+        rasterizerDepthTexture[uint2(position.x, position.y - 1)] = color;
+        rasterizerDepthTexture[uint2(position.x + 1, position.y)] = color;
+        rasterizerDepthTexture[uint2(position.x - 1, position.y)] = color;
+        position += step;
+    }
+}
+
+void draw_triangle(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3)
+{
+    p1 = float3(to_screen_space(p1.xy), p1.z);
+    p2 = float3(to_screen_space(p2.xy), p2.z);
+    p3 = float3(to_screen_space(p3.xy), p3.z);
+    float4 min_max = get_min_max(p1, p2, p3);
+    uint startX = uint(min_max.x);
+    uint startY = uint(min_max.y);
+    uint endX = uint(min_max.z);
+    uint endY = uint(min_max.w);
+
+    int size= (endX - startX)*(endY - startY);
+    for (uint x = startX; x <= endX; x = x + 1u)
+    {
+        for (uint y = startY; y <= endY; y = y + 1u)
+        {
+            float3 bc = barycentric(p1, p2, p3, float2(float(x), float(y)));
+
+            if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0)
+            {
+                continue;
+            }
+            //color from normal
+            float3 color = normalize(v1.normal + v2.normal + v3.normal);
+            float depth = bc.x * p1.z + bc.y * p2.z + bc.z * p3.z;
+            color_pixel(uint2(x, y), float4(color, depth));
+
+            float2 uv = v1.uv * bc.x + v2.uv * bc.y + v3.uv * bc.z;
+            MeshHit hit;
+            hit.depth = depth;
+            hit.uv = uv;
+            hit.screenPos = uint2(x, y);
+            hit.meshIndex = meshId;
+            if (meshHitsTexture[index_of(x, y, inputResolution)].depth > depth)
+            {
+                meshHitsTexture[index_of(x, y, inputResolution)] = hit;
+            }
+        }
+    }
+}
+void create_barycentric_areas(float3 p1, float3 p2, float3 p3, uint3 indices)
+{
+    p1 = float3(to_screen_space(p1.xy), p1.z);
+    p2 = float3(to_screen_space(p2.xy), p2.z);
+    p3 = float3(to_screen_space(p3.xy), p3.z);
+    float4 min_max = get_min_max(p1, p2, p3);
+    uint startX = uint(min_max.x);
+    uint startY = uint(min_max.y);
+    uint endX = uint(min_max.z);
+    uint endY = uint(min_max.w);
+
+    uint barycentric_size=8;
+    
+    for (uint x = startX; x <= endX; x = x + barycentric_size)
+    {
+        for (uint y = startY; y <= endY; y = y + barycentric_size)
+        {
+            BarycentricCalculationArea area;
+            area.vertices = indices;
+            area.min = uint2(x, y);
+            area.max=min(uint2(x+barycentric_size-1, y+barycentric_size-1), uint2(endX, endY));
+            barycentricCalculationAreasAppend.Append(area);
+        }
+    }
+}
+void draw_triangle_area(float3 p1, float3 p2, float3 p3, Vertex v1, Vertex v2, Vertex v3,uint2 min_coord,uint2 max_coord)
+{
+    p1 = float3(to_screen_space(p1.xy), p1.z);
+    p2 = float3(to_screen_space(p2.xy), p2.z);
+    p3 = float3(to_screen_space(p3.xy), p3.z);
+    
+    uint startX = min_coord.x;
+    uint startY = min_coord.y;
+    uint endX = max_coord.x;
+    uint endY = max_coord.y;
+    
+    for (uint x = startX; x <= endX; x = x + 1u)
+    {
+        for (uint y = startY; y <= endY; y = y + 1u)
+        {
+            float3 bc = barycentric(p1, p2, p3, float2(float(x), float(y)));
+            
+
+            if (bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0)
+            {
+                continue;
+            }
+            
+            //color from normal
+            float3 color = normalize(v1.normal + v2.normal + v3.normal);
+            float depth = bc.x * p1.z + bc.y * p2.z + bc.z * p3.z;
+            color_pixel(uint2(x, y), float4(color, depth));
+
+            float2 uv = v1.uv * bc.x + v2.uv * bc.y + v3.uv * bc.z;
+            MeshHit hit;
+            hit.depth = depth;
+            hit.uv = uv;
+            hit.screenPos = uint2(x, y);
+            hit.meshIndex = meshId;
+            if (meshHitsTexture[index_of(x, y, inputResolution)].depth > depth)
+            {
+                meshHitsTexture[index_of(x, y, inputResolution)] = hit;
+            }
+        }
+    }
+}
+
+
+//kernels
+//clear stage for meshHits
+[numthreads(8, 8, 1)]
+void basecolor_mesh_texture(uint3 id : SV_DispatchThreadID)
+{
+    uint width;
+    uint height;
+    meshTexture.GetDimensions(width, height);
+    if (id.x < width && id.y < height)
+    {
+        meshTexture[id.xy] = float4(1, 1, 1, 1);
+    }
+}
+//clear stage for meshHits
+[numthreads(8, 8, 1)]
+void clear_rasterizer_texture(uint3 id : SV_DispatchThreadID)
+{
+    //important that depth is higher than 1, this indicates that the pixel was not hit
+    MeshHit notHit;
+    notHit.depth = 2;
+    notHit.uv = float2(0, 0);
+    notHit.screenPos = uint2(0, 0);
+    notHit.meshIndex = 0;
+
+    if (id.x < inputResolution.x && id.y < inputResolution.y)
+    {
+        meshHitsTexture[index_of(id.x, id.y, inputResolution)] = notHit;
+        rasterizerDepthTexture[id.xy] = float4(1, 1, 1, 1.0);
+    }
+}
+
+
+//rasterize the meshes
+[numthreads(32, 1, 1)]
+void rasterize(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= triangleCount)
+    {
+        return;
+    }
+
+    uint3 indices=uint3(triangles[id.x * 3 + 0], triangles[id.x * 3 + 1], triangles[id.x * 3 + 2]);
+        
+    Vertex v1 = vertices[indices.x];
+    Vertex v2 = vertices[indices.y];
+    Vertex v3 = vertices[indices.z];
+    float3 p1 = project(v1.position);
+    float3 p2 = project(v2.position);
+    float3 p3 = project(v3.position);
+
+
+    if (!is_on_screen(p1) && !is_on_screen(p2) && !is_on_screen(p3))
+    {
+        return;
+    }
+    //draw_circle(to_screen_space(p1.xy), 20, float4(0, 1, 0, 1));
+    //draw_circle(to_screen_space(p2.xy), 20, float4(0, 1, 0, 1));
+    //draw_circle(to_screen_space(p3.xy), 20, float4(0, 1, 0, 1));
+    //draw_line(to_screen_space(p1.xy), to_screen_space(p2.xy), float4(0, 1, 0, 1));
+    //draw_line(to_screen_space(p2.xy), to_screen_space(p3.xy), float4(0, 1, 0, 1));
+    //draw_line(to_screen_space(p3.xy), to_screen_space(p1.xy), float4(0, 1, 0, 1));
+
+    create_barycentric_areas(p1, p2, p3, indices);
+}
+
+[numthreads(1, 1, 1)]
+void modify_indirect_count(uint3 id : SV_DispatchThreadID)
+{
+    barycentricDispatchIndirectArgs[1] = ceil(barycentricDispatchIndirectArgs[0]/32.0);
+    barycentricDispatchIndirectArgs[2] = 1;
+    barycentricDispatchIndirectArgs[3] = 1;
+}
+
+[numthreads(32, 1, 1)]
+void barycentric_stage(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= barycentricDispatchIndirectArgs[0])
+    {
+        return;
+    }
+    BarycentricCalculationArea area = barycentricCalculationAreas[id.x];
+    
+    Vertex v1 = vertices[area.vertices.x];
+    Vertex v2 = vertices[area.vertices.y];
+    Vertex v3 = vertices[area.vertices.z];
+    float3 p1 = project(v1.position);
+    float3 p2 = project(v2.position);
+    float3 p3 = project(v3.position);
+
+
+    draw_triangle_area(p1, p2, p3, v1, v2, v3,area.min, area.max);
+}
+
+//kernels
+//clear stage for meshHits
+[numthreads(8, 8, 1)]
+void project_hits_on_texture(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= inputResolution.x || id.y >= inputResolution.y)
+    {
+        return;
+    }
+    MeshHit hit = meshHitsTexture[index_of(id.x, id.y, inputResolution)];
+    if (hit.depth < 1.0)
+    {
+        rasterizerDepthTexture[id.xy] = float4(inputPhoto[hit.screenPos], 1);
+        //rasterizerDepthTexture[id.xy] = float4(inputPhoto[hit.screenPos], 1);
+        if (hit.meshIndex == meshId)
+        {
+            meshTexture[hit.uv * meshTextureResolution] = float4(inputPhoto[hit.screenPos], 1);
+        }
+    }
+    else
+    {
+        float4 color = float4(0, 0, 1, 1.0);
+        //rasterizerDepthTexture[id.xy] = color;
+    }
+    //meshTexture[id.xy] = rasterizerDepthTexture[id.xy];
+}

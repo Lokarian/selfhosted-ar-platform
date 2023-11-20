@@ -1,0 +1,76 @@
+<div class="flex flex-row bg-background-highlight rounded-lg gap-2 px-2 w-full" [popper]="searchResultPopup"
+     [popperPlacement]="ngxPopperjsPlacements.BOTTOMSTART" #container>
+  <div class="flex items-center pointer-events-none">
+    <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor"
+         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+    </svg>
+  </div>
+  <input #searchBar type="text"
+         class="flex-1 py-2 text-text bg-transparent border-none focus:outline-none"
+         placeholder="Search" [value]="searchTextSubject.value||''" (keyup)="searchTextSubject.next(searchBar.value)">
+</div>
+<div class="bg-background-highlight p-2 mt-2 rounded-xl {{popperStyle}}" *ngIf="!usePopper&&(selectedUsers.length||users)">
+  <ng-container [ngTemplateOutlet]="selectionArea"></ng-container>
+</div>
+<popper-content #searchResultPopup>
+  <div class="bg-background-highlight p-2 rounded-xl {{popperStyle}}" *ngIf="usePopper" [style.width]="popperWidth+'px'">
+    <ng-container [ngTemplateOutlet]="selectionArea"></ng-container>
+  </div>
+</popper-content>
+<ng-template #selectionArea>
+  <div class="flex flex-row w-full" *ngIf="selectedUsers.length">
+    <div class="flex-1 p-2 flex flex-row flex-wrap gap-2 min-w-0">
+      <div *ngFor="let user of selectedUsers"
+           class="max-w-full p-1 text-white bg-background-primary flex flex-row gap-2 rounded-lg text-xs">
+        <span class="truncate">{{user.userName}}</span>
+        <button (click)="removeUser(user)" class="text-white">
+          <svg aria-hidden="true" class="aspect-square h-3/4 text-white" fill="none" stroke="currentColor"
+               viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <button class="p-2 text-white bg-background-primary hover:bg-background-tertiary rounded-lg" *ngIf="showSubmitButton" (click)="confirm()">
+      <svg aria-hidden="true" class="aspect-square w-4 text-white" fill="none" stroke="currentColor"
+           viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5 13l4 4L19 7"></path>
+      </svg>
+    </button>
+  </div>
+  <ng-container *ngIf="users">
+    <div class="flex flex-row justify-center">
+      <button class="mx-auto text-white" *ngIf="users.hasPreviousPage"
+              (click)="pageNumber=pageNumber-1;searchForUsers()">
+        <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 15l7-7 7 7"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="flex flex-row gap-4 min-w-0 my-2" *ngFor="let user of users.items"
+         (click)="selectUser(user)">
+      <app-avatar class="w-10" [user]="user"></app-avatar>
+      <div class="flex-1 min-w-0">
+        <h2 class="text-text truncate">{{user.userName}}</h2>
+        <p class="text-text text-xs truncate">{{user.email}}</p>
+      </div>
+    </div>
+    <div class="flex flex-row justify-center">
+      <button class="text-white" *ngIf="users.hasNextPage" (click)="pageNumber=pageNumber+1;searchForUsers()">
+        <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+    </div>
+  </ng-container>
+
+
+</ng-template>

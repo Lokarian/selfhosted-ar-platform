@@ -1,26 +1,98 @@
-import {Component} from '@angular/core';
-import {ChatMessage} from "../../models/chat";
-import {OnlineStatus} from "../../models/appUser";
-import {AppUser} from "../../web-api-client";
+import {
+  ApplicationRef,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input, NgZone,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+  ViewChild
+} from '@angular/core';
+import {
+  ChatClient,
+  ChatMessageDto,
+  ChatSessionDto, SendMessageToChatCommand,
+} from "../../web-api-client";
+import {ChatFacade} from "../../services/chat-facade.service";
+import {BehaviorSubject, Observable, of, ReplaySubject, switchMap} from "rxjs";
+import {tap} from "rxjs/operators";
 
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss']
 })
-export class ChatComponent {
-  public messages: ChatMessage[] = [
-    {
-      message: 'Hi, I\'m fine, thanks!',
-      sender: AppUser.fromJS({
-        //id as random guid
-        id:"a5c89bcf-9cc8-4ff1-8827-b865fd5da04b",
-        userName: 'Jane Doe',
-        onlineStatus: OnlineStatus.Online
-      }),
-      timestamp: 1554090956000
-    },
+export class ChatComponent implements OnInit {
 
-  ];
+  private _session: ChatSessionDto;
+  @Input() set session(value: ChatSessionDto) {
+    this._session = value;
+    this.loadMoreMessages();
+    setTimeout(() => {
+      this.chatFacade.updateLastRead(value.baseSessionId);
+    }, 0);
+    this.messages$ = this.chatFacade.chatMessages$(value.baseSessionId);
+  }
 
+  get session(): ChatSessionDto {
+    return this._session;
+  }
+
+  @ViewChild('textArea') private textArea: ElementRef;
+
+  public messages$: Observable<ChatMessageDto[]>;
+  private gettingMoreMessages = false;
+  private gotAllMessages = false;
+
+  constructor(private chatFacade: ChatFacade, private chatClient: ChatClient, private zone: NgZone) {
+
+  }
+
+  ngOnInit(): void {
+  }
+
+  loadMoreMessages() {
+    this.gettingMoreMessages = true;
+    this.chatFacade.loadMoreMessages(this.session.baseSessionId).then((amount) => {
+      setTimeout(() => this.gettingMoreMessages = false, 100);
+      if (amount === 0) {
+        this.gotAllMessages = true;
+      }
+    });
+  }
+
+  onScroll(event: any) {
+    if (event.target.scrollHeight + event.target.scrollTop - event.target.clientHeight < 100) {
+      if (!this.gettingMoreMessages && !this.gotAllMessages) {
+        this.loadMoreMessages();
+      }
+    }
+  }
+
+  sendMessage(event?: any) {
+    //event is from (keyup.enter) on textarea, if shift is also pressed, don't send
+    if (event) {
+      if (event.shiftKey) {
+        return;
+      }
+      event.preventDefault();
+    }
+    const message = this.textArea.nativeElement.value;
+    if (!message || message.trim().length === 0) {
+      return;
+    }
+    this.chatClient.sendMessageToChatSession(new SendMessageToChatCommand({
+      sessionId: this.session.baseSessionId,
+      text: message
+    })).subscribe(() => {
+      this.textArea.nativeElement.value = '';
+    });
+  }
+
+  handleKeydown(e: any) {
+    if (!e.shiftKey) {
+      e.preventDefault();
+    }
+  }
 }

@@ -2,5 +2,5 @@
 
 public enum FileType
 {
-    UserAvatar = 1,
+    UserAvatar = 1
 }
