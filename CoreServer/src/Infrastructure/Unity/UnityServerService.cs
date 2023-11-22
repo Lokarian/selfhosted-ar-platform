@@ -35,7 +35,7 @@ public class UnityServerService : IUnityServerService
 
         var imageName = Environment.GetEnvironmentVariable("UNITY_SERVER_IMAGE_NAME");
         var paramString =
-            $"run -d -e \"AR_SESSION_ID={arSessionId}\" -e \"AR_SESSION_TYPE={sessionType}\" -e \"ACCESS_TOKEN={result.Item2}\" --name arServer-{arSessionId} {imageName}";
+            $"run -d -rm -e \"AR_SESSION_ID={arSessionId}\" -e \"AR_SESSION_TYPE={sessionType}\" -e \"ACCESS_TOKEN={result.Item2}\" --name arServer-{arSessionId} {imageName}";
         _logger.LogInformation($"Starting Unity Server with params: {paramString}");
         var process = new Process
         {
