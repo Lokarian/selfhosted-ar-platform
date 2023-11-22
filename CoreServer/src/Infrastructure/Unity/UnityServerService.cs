@@ -34,8 +34,9 @@ public class UnityServerService : IUnityServerService
         }
 
         var imageName = Environment.GetEnvironmentVariable("UNITY_SERVER_IMAGE_NAME");
+        var volume = Environment.GetEnvironmentVariable("UNITY_SERVER_VOLUME");
         var paramString =
-            $"run -d -rm -e \"AR_SESSION_ID={arSessionId}\" -e \"AR_SESSION_TYPE={sessionType}\" -e \"ACCESS_TOKEN={result.Item2}\" --name arServer-{arSessionId} {imageName}";
+            $"run -d -rm -v {volume}:/remoteassist -e \"AR_SESSION_ID={arSessionId}\" -e \"AR_SESSION_TYPE={sessionType}\" -e \"ACCESS_TOKEN={result.Item2}\" --name arServer-{arSessionId} {imageName}";
         _logger.LogInformation($"Starting Unity Server with params: {paramString}");
         var process = new Process
         {
